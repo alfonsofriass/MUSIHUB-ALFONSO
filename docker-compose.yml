@@ -1,0 +1,15 @@
+services:
+    db:
+      image: postgres:16
+      container_name: musihub_db
+      environment:
+        POSTGRES_DB: musihub
+        POSTGRES_USER: musihub
+        POSTGRES_PASSWORD: musihub_dev_password
+      ports:
+        - "5432:5432"
+      volumes:
+        - musihub_postgres_data:/var/lib/postgresql/data
+
+volumes:
+    musihub_postgres_data:

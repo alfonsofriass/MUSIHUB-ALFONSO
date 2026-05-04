@@ -1,0 +1,12 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+
+main.pdf
+MUSIHUB_PROJECT_CONTEXT.md
+db-diagram.txt
