@@ -1,0 +1,177 @@
+Table users {
+  id integer [primary key, increment]
+  email varchar [not null, unique]
+  password_hash varchar [not null]
+  full_name varchar [not null]
+  created_at timestamp [not null]
+}
+
+//Meter campo role dentro de users? o tenerlo asi separado(en el futuro varios roles un usuario)
+Table roles {
+  id integer [primary key, increment]
+  code varchar [not null, unique] // musico, venta, sala_bar, academia_profesor
+  name varchar [not null]
+}
+
+  Table user_roles {
+  user_id integer [not null]
+  role_id integer [not null]
+  is_primary boolean [not null, default: false]
+}
+
+  Table profiles {
+  id integer [primary key, increment]
+  user_id integer [not null, unique]
+  city varchar
+  province varchar
+  bio text
+  photo_url varchar
+  contact_email varchar
+  contact_phone varchar
+  //red social?
+  created_at timestamp [not null]
+}
+
+Table music_styles {
+  id integer [primary key, increment]
+  name varchar [not null, unique] // Rock, Jazz, Pop..
+}
+
+Table profile_styles {
+  profile_id integer [not null]
+  style_id integer [not null]
+}
+  
+Table instruments {
+  id integer [primary key, increment]
+  name varchar [not null, unique] // Guitarra, Bateria, Piano...
+}
+//Por qué no meterlo solo en profiles; un usuario no tooca solo un instrumento, ademas sirve par busqueda
+Table profile_instruments {
+  profile_id integer [not null]
+  instrument_id integer [not null]
+  is_primary boolean [not null, default: false]
+}
+
+Table bands {
+  id integer [primary key, increment]
+  name varchar [not null]
+  bio text
+  city varchar
+  photo_url varchar
+  created_by_user_id integer [not null]
+  created_at timestamp [not null]
+}
+
+Table band_members {
+  band_id integer [not null]
+  user_id integer [not null]
+  role_in_band varchar [not null] // guitarrista, bateria, vocalista...
+  membership_status varchar [not null, default: 'pending'] // pending, accepted, rejected
+  is_visible_in_profile boolean [not null, default: true]// si quiere mostrar la banda en el perfil
+  joined_at timestamp
+
+  indexes { (band_id,user_id,role_in_band) [pk] }
+}
+Table band_styles {
+  band_id integer [not null]
+  style_id integer [not null]
+
+  indexes {
+    (band_id, style_id) [pk]
+  }
+}
+
+Ref: band_styles.band_id > bands.id
+Ref: band_styles.style_id > music_styles.id
+
+Table opportunity_types {
+  id integer [primary key, increment]
+  code varchar [not null, unique]
+  name varchar [not null]
+}
+
+Table opportunities {
+  id integer [primary key, increment]
+  type_id integer [not null]
+  author_user_id integer [not null] // por qué debe publicarlo un usuario si o si
+  title varchar [not null]
+  description text [not null]
+  city varchar [not null]
+  province varchar [not null] //La rellena la app al elegir la ciudad
+  event_date timestamp
+  price_amount decimal // si hay precio
+  contact_method varchar [not null] // whatsapp, email, instagram
+  contact_value varchar [not null] // se eliminara, habrá boton de quieres contactar?
+  status varchar [not null, default: 'active'] // active, closed, expired
+  created_at timestamp [not null]
+  updated_at timestamp [not null] //nos servirá 
+  expires_at timestamp
+}//Boton Duplicar y editar (y ya se cambia lo que se necesite)
+
+//La oportunidad 15 está asociada al estilo Rock”
+Table opportunity_styles {
+  opportunity_id integer [not null]
+  style_id integer [not null]
+}
+Table opportunity_instruments {
+  opportunity_id integer [not null]
+  instrument_id integer [not null]
+}
+
+//Config de cada cuanto quiere que le informe la app al usuario
+Table alert_preferences {
+  id integer [primary key, increment]
+  user_id integer [not null, unique]
+  frequency varchar [not null] // immediate, daily, weekly
+  preferred_city varchar
+  preferred_province varchar //rellenada automaticamente si elige ciudad
+  notifications_enabled boolean [not null, default: true]
+}
+//Config sobre que quiere que le informe
+Table alert_preference_types {
+  alert_preference_id integer [not null]
+  opportunity_type_id integer [not null]
+}
+
+//Favoritos: Relacion entre usuario y oportunidad: segunda relacion
+Table favorites {
+  user_id integer [not null]
+  opportunity_id integer [not null]
+}
+
+//Relaciones
+Ref: user_roles.user_id > users.id
+Ref: user_roles.role_id > roles.id
+Ref: profiles.user_id > users.id
+
+Ref: profile_styles.profile_id > profiles.id
+Ref: profile_styles.style_id > music_styles.id
+
+Ref: profile_instruments.profile_id > profiles.id
+Ref: profile_instruments.instrument_id > instruments.id
+
+Ref: bands.created_by_user_id > users.id
+
+Ref: band_members.band_id > bands.id
+Ref: band_members.user_id > users.id
+
+Ref: opportunities.type_id > opportunity_types.id
+Ref: opportunities.author_user_id > users.id
+
+Ref: opportunity_styles.opportunity_id > opportunities.id
+Ref: opportunity_styles.style_id > music_styles.id
+
+Ref: opportunity_instruments.opportunity_id > opportunities.id
+Ref: opportunity_instruments.instrument_id > instruments.id
+
+Ref: alert_preferences.user_id > users.id
+Ref: alert_preference_types.alert_preference_id > alert_preferences.id
+Ref: alert_preference_types.opportunity_type_id > opportunity_types.id
+
+Ref: favorites.user_id > users.id
+Ref: favorites.opportunity_id > opportunities.id
+
+
+
+

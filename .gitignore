@@ -10,6 +10,7 @@ __pycache__/
 main.pdf
 MUSIHUB_PROJECT_CONTEXT.md
 db-diagram.txt
+!APP/MusiHub-Front/db-diagram.txt
 Docu/.vscode/
 Docu/Docu/
 Icons Desing/
