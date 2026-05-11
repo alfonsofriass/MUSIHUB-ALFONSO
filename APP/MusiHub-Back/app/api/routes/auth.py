@@ -61,6 +61,46 @@ class MeResponse(BaseModel):
 
 #ENDPOINTS
 
+def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> User:
+    try:
+        payload = decode_access_token(token)
+    except JWTError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+        ) from exc
+
+    subject = payload.get("sub")
+    if not subject:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+        )
+
+    try:
+        user_id = int(subject)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+        ) from exc
+
+    user = db.scalar(
+        select(User).where(User.id == user_id)
+    )
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+        )
+
+    return user
+
+
 #REGISTER
 @router.post(
     "/register",
@@ -142,42 +182,9 @@ def login(
 #ME
 @router.get("/me", response_model=MeResponse)
 def read_me(
-    token: str = Depends(oauth2_scheme),
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> MeResponse:
-    try:
-        payload = decode_access_token(token)
-    except JWTError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token",
-        ) from exc
-
-    subject = payload.get("sub")
-    if not subject:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token",
-        )
-
-    try:
-        user_id = int(subject)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token",
-        ) from exc
-
-    user = db.scalar(
-        select(User).where(User.id == user_id)
-    )
-
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token",
-        )
-
     role = db.scalar(
         select(Role)
         .join(UserRole, UserRole.role_id == Role.id)

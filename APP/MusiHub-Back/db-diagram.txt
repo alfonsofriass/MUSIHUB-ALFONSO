@@ -40,6 +40,10 @@ Table music_styles {
 Table profile_styles {
   profile_id integer [not null]
   style_id integer [not null]
+
+  indexes {
+      (profile_id, style_id) [pk]
+  }
 }
   
 Table instruments {
@@ -51,6 +55,10 @@ Table profile_instruments {
   profile_id integer [not null]
   instrument_id integer [not null]
   is_primary boolean [not null, default: false]
+
+  indexes {
+      (profile_id, instrument_id) [pk]
+  }
 }
 
 Table bands {
@@ -171,7 +179,6 @@ Ref: alert_preference_types.opportunity_type_id > opportunity_types.id
 
 Ref: favorites.user_id > users.id
 Ref: favorites.opportunity_id > opportunities.id
-
 
 
 
