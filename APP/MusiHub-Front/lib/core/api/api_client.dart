@@ -25,6 +25,30 @@ class ApiClient {
     );
   }
 
+  Future<http.Response> put(
+    String path, {
+    Map<String, dynamic>? body,
+    String? token,
+  }) {
+    return _httpClient.put(
+      _uri(path),
+      headers: _headers(token),
+      body: jsonEncode(body ?? <String, dynamic>{}),
+    );
+  }
+
+  Future<http.Response> patch(
+    String path, {
+    Map<String, dynamic>? body,
+    String? token,
+  }) {
+    return _httpClient.patch(
+      _uri(path),
+      headers: _headers(token),
+      body: jsonEncode(body ?? <String, dynamic>{}),
+    );
+  }
+
   Uri _uri(String path) {
     final normalizedPath = path.startsWith('/') ? path : '/$path';
 

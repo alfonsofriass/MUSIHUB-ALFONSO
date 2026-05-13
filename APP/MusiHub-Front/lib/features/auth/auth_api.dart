@@ -24,6 +24,27 @@ class AuthApi {
     return json['access_token'] as String;
   }
 
+  Future<void> register({
+    required String email,
+    required String password,
+    required String fullName,
+    required String role,
+  }) async {
+    final response = await _apiClient.post(
+      '/auth/register',
+      body: {
+        'email': email,
+        'password': password,
+        'full_name': fullName,
+        'role': role,
+      },
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('No se pudo crear la cuenta.');
+    }
+  }
+
   Future<AuthUser> me(String token) async {
     final response = await _apiClient.get('/auth/me', token: token);
 

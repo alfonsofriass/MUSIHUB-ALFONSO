@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:musihub_front/features/auth/login_screen.dart';
+import 'package:musihub_front/features/auth/session_gate.dart';
 
 void main() {
   runApp(const MusiHubApp());
@@ -15,7 +15,7 @@ class MusiHubApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
       ),
-      home: const LoginScreen(),
+      home: const SessionGate(),
     );
   }
 }

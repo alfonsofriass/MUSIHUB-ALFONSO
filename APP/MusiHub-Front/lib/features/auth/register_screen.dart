@@ -1,73 +1,65 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
-import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/features/auth/auth_api.dart';
-import 'package:musihub_front/features/auth/register_screen.dart';
-import 'package:musihub_front/features/home/home_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key, this.initialMessage});
-
-  final String? initialMessage;
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
+  static const _roles = ['musico', 'venta', 'sala_bar', 'academia_profesor'];
+
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _fullNameController = TextEditingController();
   final _apiClient = ApiClient();
-  final _tokenStore = TokenStore();
 
   late final AuthApi _authApi;
 
+  String _selectedRole = _roles.first;
   bool _isLoading = false;
   String? _errorMessage;
-  String? _successMessage;
 
   @override
   void initState() {
     super.initState();
     _authApi = AuthApi(apiClient: _apiClient);
-    _successMessage = widget.initialMessage;
   }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _fullNameController.dispose();
     _apiClient.close();
     super.dispose();
   }
 
-  Future<void> _login() async {
+  Future<void> _register() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
-      _successMessage = null;
     });
 
     try {
-      final token = await _authApi.login(
+      await _authApi.register(
         email: _emailController.text.trim(),
         password: _passwordController.text,
+        fullName: _fullNameController.text.trim(),
+        role: _selectedRole,
       );
-      await _tokenStore.saveAccessToken(token);
-      final user = await _authApi.me(token);
 
       if (!mounted) return;
 
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(
-          builder: (_) => HomeScreen(user: user, tokenStore: _tokenStore),
-        ),
-      );
+      Navigator.of(context).pop(true);
     } catch (_) {
       if (!mounted) return;
 
       setState(() {
-        _errorMessage = 'No se pudo iniciar sesion. Revisa los datos.';
+        _errorMessage = 'No se pudo crear la cuenta. Revisa los datos.';
       });
     } finally {
       if (mounted) {
@@ -78,23 +70,10 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _openRegister() async {
-    final wasRegistered = await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(builder: (_) => const RegisterScreen()),
-    );
-
-    if (wasRegistered != true || !mounted) return;
-
-    setState(() {
-      _successMessage = 'Cuenta creada. Inicia sesion.';
-      _errorMessage = null;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('MusiHub')),
+      appBar: AppBar(title: const Text('Crear cuenta')),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -112,25 +91,34 @@ class _LoginScreenState extends State<LoginScreen> {
                 obscureText: true,
                 decoration: const InputDecoration(labelText: 'Contrasena'),
               ),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _isLoading ? null : _login,
-                child: Text(_isLoading ? 'Entrando...' : 'Entrar'),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _fullNameController,
+                decoration: const InputDecoration(labelText: 'Nombre completo'),
               ),
               const SizedBox(height: 12),
-              TextButton(
-                onPressed: _isLoading ? null : _openRegister,
-                child: const Text('Crear cuenta'),
+              DropdownButtonFormField<String>(
+                initialValue: _selectedRole,
+                decoration: const InputDecoration(labelText: 'Rol'),
+                items: _roles
+                    .map(
+                      (role) =>
+                          DropdownMenuItem(value: role, child: Text(role)),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value == null) return;
+
+                  setState(() {
+                    _selectedRole = value;
+                  });
+                },
               ),
-              if (_successMessage != null) ...[
-                const SizedBox(height: 16),
-                Text(
-                  _successMessage!,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-              ],
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: _isLoading ? null : _register,
+                child: Text(_isLoading ? 'Creando...' : 'Crear cuenta'),
+              ),
               if (_errorMessage != null) ...[
                 const SizedBox(height: 16),
                 Text(

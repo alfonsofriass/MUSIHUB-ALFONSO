@@ -4,8 +4,21 @@ Frontend móvil de MusiHub, app desarrollada en Flutter para el TFG.
 
 ## Estado actual
 - La app Flutter ya está generada con nombre interno `musihub_front`.
-- El backend FastAPI ya tiene autenticación real funcionando.
-- La pantalla mínima de login ya llama a `/auth/login` y después a `/auth/me`.
+- Auth real conectado contra FastAPI:
+  - registro,
+  - login,
+  - validación de sesión con `/auth/me`.
+- Perfil musical mínimo conectado:
+  - carga de catálogos,
+  - lectura de perfil,
+  - creación/edición de perfil.
+- Anuncios mínimos conectados:
+  - listado público,
+  - detalle,
+  - mis anuncios,
+  - creación,
+  - edición,
+  - cierre.
 - El diseño final queda pendiente porque se replicará desde Figma más adelante.
 
 ## Documentación local
@@ -16,7 +29,29 @@ Frontend móvil de MusiHub, app desarrollada en Flutter para el TFG.
 - `db-diagram.txt`: referencia del esquema de base de datos general del proyecto.
 
 ## Alcance inmediato
-- Validar en entorno real el flujo `login -> token -> /auth/me -> home`.
-- Mantener la pantalla simple hasta replicar los diseños de Figma.
+- Mantener la app simple y entendible.
+- Consolidar el flujo actual antes de pasar al siguiente bloque funcional.
+- Preparar búsqueda/filtros como siguiente fase cuando backend esté listo.
 
-Quedan fuera por ahora perfiles, catálogos, anuncios, búsqueda, favoritos, bandas, alertas, FCM y diseño final.
+Quedan fuera por ahora búsqueda/filtros avanzados, favoritos, bandas, alertas, FCM y diseño final.
+
+## Comandos útiles
+Desde `APP/MusiHub-Front`:
+
+```bash
+flutter pub get
+flutter analyze
+flutter test
+```
+
+Para ejecutar en Chrome contra backend local:
+
+```bash
+flutter run -d chrome --dart-define=API_BASE_URL=http://127.0.0.1:8000/api/v1
+```
+
+Para ejecutar en emulador Android contra backend local:
+
+```bash
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api/v1
+```
