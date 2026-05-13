@@ -109,8 +109,8 @@ Table opportunities {
   province varchar [not null] //La rellena la app al elegir la ciudad
   event_date timestamp
   price_amount decimal // si hay precio
-  contact_method varchar [not null] // whatsapp, email, instagram
-  contact_value varchar [not null] // se eliminara, habrá boton de quieres contactar?
+  contact_method varchar [not null] // whatsapp, email, phone, other
+  contact_value varchar [not null] // dato de contacto del anunciante; no debería exponerse públicamente si se activa flujo de solicitud/aceptación
   status varchar [not null, default: 'active'] // active, closed, expired
   created_at timestamp [not null]
   updated_at timestamp [not null] //nos servirá 
@@ -121,10 +121,18 @@ Table opportunities {
 Table opportunity_styles {
   opportunity_id integer [not null]
   style_id integer [not null]
+
+  indexes {
+    (opportunity_id, style_id) [pk]
+  }
 }
 Table opportunity_instruments {
   opportunity_id integer [not null]
   instrument_id integer [not null]
+
+  indexes {
+    (opportunity_id, instrument_id) [pk]
+  }
 }
 
 //Config de cada cuanto quiere que le informe la app al usuario
@@ -179,6 +187,4 @@ Ref: alert_preference_types.opportunity_type_id > opportunity_types.id
 
 Ref: favorites.user_id > users.id
 Ref: favorites.opportunity_id > opportunities.id
-
-
 

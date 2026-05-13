@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import Instrument, MusicStyle
+from app.models import Instrument, MusicStyle, OpportunityType
 
 router = APIRouter(prefix="/catalogs")
 
@@ -18,6 +18,16 @@ class CatalogListResponse(BaseModel):
     items: list[CatalogItemResponse]
 
 
+class OpportunityTypeResponse(BaseModel):
+    id: int
+    code: str
+    name: str
+
+
+class OpportunityTypeListResponse(BaseModel):
+    items: list[OpportunityTypeResponse]
+
+
 @router.get("/instruments", response_model=CatalogListResponse)
 def list_instruments(db: Session = Depends(get_db)) -> CatalogListResponse:
     instruments = db.scalars(
@@ -28,6 +38,24 @@ def list_instruments(db: Session = Depends(get_db)) -> CatalogListResponse:
         items=[
             CatalogItemResponse(id=instrument.id, name=instrument.name)
             for instrument in instruments
+        ]
+    )
+
+
+@router.get("/opportunity-types", response_model=OpportunityTypeListResponse)
+def list_opportunity_types(db: Session = Depends(get_db)) -> OpportunityTypeListResponse:
+    opportunity_types = db.scalars(
+        select(OpportunityType).order_by(OpportunityType.id)
+    ).all()
+
+    return OpportunityTypeListResponse(
+        items=[
+            OpportunityTypeResponse(
+                id=opportunity_type.id,
+                code=opportunity_type.code,
+                name=opportunity_type.name,
+            )
+            for opportunity_type in opportunity_types
         ]
     )
 
