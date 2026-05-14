@@ -1,9 +1,9 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, time, timezone
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.api.routes.auth import get_current_user
@@ -304,11 +304,79 @@ def create_opportunity(
 
 
 @router.get("", response_model=OpportunityListResponse)
-def list_opportunities(db: Session = Depends(get_db)) -> OpportunityListResponse:
+def list_opportunities(
+    type_id: int | None = Query(default=None, gt=0),
+    city: str | None = Query(default=None, min_length=1, max_length=120),
+    province: str | None = Query(default=None, min_length=1, max_length=120),
+    instrument_id: int | None = Query(default=None, gt=0),
+    style_id: int | None = Query(default=None, gt=0),
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None),
+    min_price: Decimal | None = Query(default=None, ge=0),
+    max_price: Decimal | None = Query(default=None, ge=0),
+    db: Session = Depends(get_db),
+) -> OpportunityListResponse:
+    if date_from is not None and date_to is not None and date_from > date_to:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="date_from must be before or equal to date_to",
+        )
+
+    if min_price is not None and max_price is not None and min_price > max_price:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="min_price must be less than or equal to max_price",
+        )
+
+    query = select(Opportunity).where(Opportunity.status == "active")
+
+    if type_id is not None:
+        query = query.where(Opportunity.type_id == type_id)
+
+    if city is not None:
+        query = query.where(func.lower(Opportunity.city) == city.lower())
+
+    if province is not None:
+        query = query.where(func.lower(Opportunity.province) == province.lower())
+
+    if date_from is not None:
+        query = query.where(
+            Opportunity.event_date >= datetime.combine(
+                date_from,
+                time.min,
+                tzinfo=timezone.utc,
+            )
+        )
+
+    if date_to is not None:
+        query = query.where(
+            Opportunity.event_date <= datetime.combine(
+                date_to,
+                time.max,
+                tzinfo=timezone.utc,
+            )
+        )
+
+    if min_price is not None:
+        query = query.where(Opportunity.price_amount >= min_price)
+
+    if max_price is not None:
+        query = query.where(Opportunity.price_amount <= max_price)
+
+    if instrument_id is not None:
+        query = query.join(
+            OpportunityInstrument,
+            OpportunityInstrument.opportunity_id == Opportunity.id,
+        ).where(OpportunityInstrument.instrument_id == instrument_id)
+
+    if style_id is not None:
+        query = query.join(
+            OpportunityStyle,
+            OpportunityStyle.opportunity_id == Opportunity.id,
+        ).where(OpportunityStyle.style_id == style_id)
+
     opportunities = db.scalars(
-        select(Opportunity)
-        .where(Opportunity.status == "active")
-        .order_by(Opportunity.created_at.desc())
+        query.order_by(Opportunity.created_at.desc())
     ).all()
 
     return OpportunityListResponse(
