@@ -9,8 +9,15 @@ class ApiClient {
 
   final http.Client _httpClient;
 
-  Future<http.Response> get(String path, {String? token}) {
-    return _httpClient.get(_uri(path), headers: _headers(token));
+  Future<http.Response> get(
+    String path, {
+    String? token,
+    Map<String, String>? queryParameters,
+  }) {
+    return _httpClient.get(
+      _uri(path, queryParameters: queryParameters),
+      headers: _headers(token),
+    );
   }
 
   Future<http.Response> post(
@@ -49,10 +56,15 @@ class ApiClient {
     );
   }
 
-  Uri _uri(String path) {
+  Uri _uri(String path, {Map<String, String>? queryParameters}) {
     final normalizedPath = path.startsWith('/') ? path : '/$path';
+    final uri = Uri.parse('${ApiConfig.baseUrl}$normalizedPath');
 
-    return Uri.parse('${ApiConfig.baseUrl}$normalizedPath');
+    if (queryParameters == null || queryParameters.isEmpty) {
+      return uri;
+    }
+
+    return uri.replace(queryParameters: queryParameters);
   }
 
   Map<String, String> _headers(String? token) {

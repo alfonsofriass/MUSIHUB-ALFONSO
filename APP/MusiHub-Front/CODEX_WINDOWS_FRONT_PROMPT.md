@@ -72,12 +72,20 @@ Estado actual del front:
   - PUT /profile/me
 - Anuncios conectado:
   - GET /catalogs/opportunity-types
-  - GET /opportunities
+  - GET /opportunities, con filtros opcionales por query params
   - GET /opportunities/{id}
   - GET /opportunities/me
   - POST /opportunities
   - PATCH /opportunities/{id}
   - PATCH /opportunities/{id}/close
+- Filtros minimos de anuncios conectados en UI:
+  - tipo
+  - ciudad
+  - provincia
+  - instrumento
+  - estilo
+  - fecha
+  - precio
 - Las pantallas son minimas y funcionales; el diseno final se replicara desde Figma mas adelante.
 - Los mensajes de error se mantienen genericos por ahora.
 
@@ -88,7 +96,7 @@ Validacion hecha:
 Objetivo inmediato:
 - Cerrar commit limpio del frontend actual.
 - No meter cambios de backend ni de raiz del repo en el commit del front.
-- Siguiente fase funcional probable: busqueda/filtros cuando backend este listo.
+- Validar manualmente filtros contra backend real si hace falta.
 
 Comandos utiles en Windows desde APP/MusiHub-Front:
 
@@ -109,6 +117,9 @@ No implementar todavia:
 - bandas
 - alertas
 - favoritos
+- paginacion
+- busqueda por texto libre
+- orden avanzado
 - diseno final de Figma
 - arquitectura compleja de golpe
 ```

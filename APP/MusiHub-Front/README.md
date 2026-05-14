@@ -19,6 +19,14 @@ Frontend móvil de MusiHub, app desarrollada en Flutter para el TFG.
   - creación,
   - edición,
   - cierre.
+- Filtros mínimos en listado público de anuncios:
+  - tipo,
+  - ciudad,
+  - provincia,
+  - instrumento,
+  - estilo,
+  - fecha,
+  - precio.
 - El diseño final queda pendiente porque se replicará desde Figma más adelante.
 
 ## Documentación local
@@ -31,9 +39,9 @@ Frontend móvil de MusiHub, app desarrollada en Flutter para el TFG.
 ## Alcance inmediato
 - Mantener la app simple y entendible.
 - Consolidar el flujo actual antes de pasar al siguiente bloque funcional.
-- Preparar búsqueda/filtros como siguiente fase cuando backend esté listo.
+- Preparar el siguiente bloque funcional cuando backend esté listo.
 
-Quedan fuera por ahora búsqueda/filtros avanzados, favoritos, bandas, alertas, FCM y diseño final.
+Quedan fuera por ahora favoritos, bandas, alertas, FCM, paginación, búsqueda por texto libre, orden avanzado y diseño final.
 
 ## Comandos útiles
 Desde `APP/MusiHub-Front`:

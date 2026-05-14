@@ -23,8 +23,17 @@ class OpportunitiesApi {
         .toList();
   }
 
-  Future<List<Opportunity>> listOpportunities() async {
-    final response = await _apiClient.get('/opportunities');
+  Future<List<Opportunity>> listOpportunities({
+    OpportunityFilters filters = const OpportunityFilters(),
+  }) async {
+    final response = await _apiClient.get(
+      '/opportunities',
+      queryParameters: filters.toQueryParameters(),
+    );
+
+    if (response.statusCode == 400) {
+      throw const InvalidOpportunityFiltersException();
+    }
 
     if (response.statusCode != 200) {
       throw Exception('No se pudieron cargar los anuncios.');
@@ -123,6 +132,54 @@ class OpportunitiesApi {
     return items
         .map((item) => Opportunity.fromJson(item as Map<String, dynamic>))
         .toList();
+  }
+}
+
+class InvalidOpportunityFiltersException implements Exception {
+  const InvalidOpportunityFiltersException();
+}
+
+class OpportunityFilters {
+  const OpportunityFilters({
+    this.typeId,
+    this.city,
+    this.province,
+    this.instrumentId,
+    this.styleId,
+    this.dateFrom,
+    this.dateTo,
+    this.minPrice,
+    this.maxPrice,
+  });
+
+  final int? typeId;
+  final String? city;
+  final String? province;
+  final int? instrumentId;
+  final int? styleId;
+  final String? dateFrom;
+  final String? dateTo;
+  final num? minPrice;
+  final num? maxPrice;
+
+  bool get hasFilters => toQueryParameters().isNotEmpty;
+
+  Map<String, String> toQueryParameters() {
+    return {
+      if (typeId != null) 'type_id': typeId.toString(),
+      if (_hasText(city)) 'city': city!.trim(),
+      if (_hasText(province)) 'province': province!.trim(),
+      if (instrumentId != null) 'instrument_id': instrumentId.toString(),
+      if (styleId != null) 'style_id': styleId.toString(),
+      if (_hasText(dateFrom)) 'date_from': dateFrom!.trim(),
+      if (_hasText(dateTo)) 'date_to': dateTo!.trim(),
+      if (minPrice != null) 'min_price': minPrice.toString(),
+      if (maxPrice != null) 'max_price': maxPrice.toString(),
+    };
+  }
+
+  static bool _hasText(String? value) {
+    return value != null && value.trim().isNotEmpty;
   }
 }
 

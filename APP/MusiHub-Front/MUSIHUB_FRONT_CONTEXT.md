@@ -61,10 +61,11 @@ El valor principal del producto es combinar perfiles musicales estructurados, pu
 - El frontend ya conecta con backend real para:
   - auth,
   - perfil y catalogos,
-  - anuncios.
+  - anuncios,
+  - busqueda/filtros minimos de anuncios.
 - La validacion actual se mantiene con:
   - `flutter analyze`: sin problemas.
-  - `flutter test`: test de login correcto.
+  - `flutter test`: test de login y query params de filtros correcto.
 
 ## Estado actual del backend relevante para el front
 El backend FastAPI ya tiene autenticacion real funcionando:
@@ -174,15 +175,18 @@ Ya esta implementado de forma minima:
 
 - auth,
 - perfil y catalogos,
-- anuncios.
+- anuncios,
+- busqueda/filtros minimos de anuncios.
 
 No se implementa todavia:
 
-- busqueda/filtros avanzados,
 - favoritos,
 - bandas,
 - alertas,
 - FCM,
+- paginacion,
+- busqueda por texto libre,
+- orden avanzado,
 - diseno final.
 
 Nota de diseno: existen pantallas creadas en Figma que se replicaran mas adelante. Hasta entonces las pantallas Flutter deben ser simples, utiles para probar funcionalidad real y faciles de entender.
@@ -350,13 +354,13 @@ android/app/src/main/AndroidManifest.xml
 - `lib/features/profile/profile_screen.dart`: pantalla minima de crear/editar perfil, carga catalogos, lee perfil actual, rellena formulario y guarda el perfil completo.
 - `lib/features/opportunities/opportunities_api.dart`: implementa la capa API minima de anuncios contra FastAPI:
   - `GET /catalogs/opportunity-types`
-  - `GET /opportunities`
+  - `GET /opportunities`, con filtros opcionales por query params
   - `GET /opportunities/{id}`
   - `GET /opportunities/me`
   - `POST /opportunities`
   - `PATCH /opportunities/{id}`
   - `PATCH /opportunities/{id}/close`
-- `lib/features/opportunities/opportunities_list_screen.dart`: pantalla minima de listado publico de anuncios activos.
+- `lib/features/opportunities/opportunities_list_screen.dart`: pantalla minima de listado publico de anuncios activos, con filtros por tipo, ciudad, provincia, instrumento, estilo, fecha y precio.
 - `lib/features/opportunities/opportunity_detail_screen.dart`: pantalla minima de detalle publico de un anuncio.
 - `lib/features/opportunities/my_opportunities_screen.dart`: pantalla minima de anuncios del usuario autenticado usando `GET /opportunities/me`.
 - `lib/features/opportunities/opportunity_form_screen.dart`: formulario minimo de creacion/edicion de anuncios usando tipos, instrumentos, estilos, `POST /opportunities` y `PATCH /opportunities/{id}`.
@@ -376,14 +380,15 @@ android/app/src/main/AndroidManifest.xml
 - Mis anuncios conectado en UI: desde Home se puede abrir `Mis anuncios` y listar anuncios propios activos y cerrados.
 - Creacion de anuncios conectada en UI: desde Home o `Mis anuncios` se puede abrir `Crear anuncio`, cargar catalogos, validar reglas basicas por tipo y enviar `POST /opportunities`.
 - Edicion y cierre de anuncios conectado en UI: desde `Mis anuncios`, si el anuncio esta activo, se puede editar con `PATCH /opportunities/{id}` o cerrar con `PATCH /opportunities/{id}/close`.
+- Busqueda/filtros minimos de anuncios conectados en UI: el listado publico carga catalogos, permite aplicar/limpiar filtros y construye query params solo para campos rellenados.
 - Mensajes de error mantenidos genericos: no se filtran casos concretos todavia.
 - `flutter analyze`: sin problemas.
-- `flutter test`: test de pantalla de login correcto.
+- `flutter test`: test de pantalla de login y construccion de query params correcto.
 
 ## Siguiente paso recomendado
 Antes del siguiente bloque funcional:
 
 1. Cerrar commit limpio del frontend actual.
 2. Mantener fuera del commit los cambios no relacionados de backend o raiz del repo.
-3. Cuando backend lo permita, empezar busqueda/filtros de anuncios de forma minima.
-4. No empezar todavia FCM, bandas ni diseno final de Figma.
+3. Validar manualmente filtros principales contra backend real.
+4. No empezar todavia FCM, bandas, favoritos ni diseno final de Figma.
