@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
-import 'package:musihub_front/core/catalog/catalog_item.dart';
+import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
 import 'package:musihub_front/features/opportunities/opportunity_detail_screen.dart';
+import 'package:musihub_front/features/opportunities/opportunity_form_screen.dart';
+import 'package:musihub_front/features/opportunities/widgets/opportunity_feed_widgets.dart';
 import 'package:musihub_front/features/profile/profile_api.dart';
+import 'package:musihub_front/features/profile/profile_screen.dart';
 
 class OpportunitiesListScreen extends StatefulWidget {
-  const OpportunitiesListScreen({super.key});
+  const OpportunitiesListScreen({super.key, required this.tokenStore});
+
+  final TokenStore tokenStore;
 
   @override
   State<OpportunitiesListScreen> createState() =>
@@ -24,13 +29,14 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
 
   late final OpportunitiesApi _opportunitiesApi;
   late final ProfileApi _profileApi;
-  late Future<_OpportunityFilterData> _filterDataFuture;
+  late Future<OpportunityFilterData> _filterDataFuture;
   late Future<List<Opportunity>> _opportunitiesFuture;
 
   OpportunityFilters _filters = const OpportunityFilters();
   int? _selectedTypeId;
   int? _selectedInstrumentId;
   int? _selectedStyleId;
+  bool _filtersExpanded = false;
 
   @override
   void initState() {
@@ -53,7 +59,7 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
     super.dispose();
   }
 
-  Future<_OpportunityFilterData> _loadFilterData() async {
+  Future<OpportunityFilterData> _loadFilterData() async {
     final typesFuture = _opportunitiesApi.listOpportunityTypes();
     final instrumentsFuture = _profileApi.listInstruments();
     final stylesFuture = _profileApi.listMusicStyles();
@@ -62,7 +68,7 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
     final instruments = await instrumentsFuture;
     final styles = await stylesFuture;
 
-    return _OpportunityFilterData(
+    return OpportunityFilterData(
       types: types,
       instruments: instruments,
       styles: styles,
@@ -82,8 +88,37 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
   Future<void> _openDetail(Opportunity opportunity) async {
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
-        builder: (_) => OpportunityDetailScreen(opportunityId: opportunity.id),
+        builder: (_) => OpportunityDetailScreen(
+          opportunityId: opportunity.id,
+          tokenStore: widget.tokenStore,
+        ),
       ),
+    );
+  }
+
+  Future<void> _openCreateOpportunity() async {
+    final wasCreated = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => OpportunityFormScreen(tokenStore: widget.tokenStore),
+      ),
+    );
+
+    if (wasCreated != true || !mounted) return;
+
+    _refresh();
+  }
+
+  Future<void> _openProfile() async {
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => ProfileScreen(tokenStore: widget.tokenStore),
+      ),
+    );
+  }
+
+  void _showFutureFeature(String label) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$label estara disponible mas adelante.')),
     );
   }
 
@@ -95,17 +130,15 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
 
   void _applyFilters() {
     setState(() {
-      _filters = OpportunityFilters(
-        typeId: _selectedTypeId,
-        city: _textOrNull(_cityController.text),
-        province: _textOrNull(_provinceController.text),
-        instrumentId: _selectedInstrumentId,
-        styleId: _selectedStyleId,
-        dateFrom: _textOrNull(_dateFromController.text),
-        dateTo: _textOrNull(_dateToController.text),
-        minPrice: _priceOrNull(_minPriceController.text),
-        maxPrice: _priceOrNull(_maxPriceController.text),
-      );
+      _filters = _currentFilters();
+      _opportunitiesFuture = _loadOpportunities();
+    });
+  }
+
+  void _applyTypeFilter(int? typeId) {
+    setState(() {
+      _selectedTypeId = typeId;
+      _filters = _currentFilters();
       _opportunitiesFuture = _loadOpportunities();
     });
   }
@@ -126,6 +159,20 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
     });
   }
 
+  OpportunityFilters _currentFilters() {
+    return OpportunityFilters(
+      typeId: _selectedTypeId,
+      city: _textOrNull(_cityController.text),
+      province: _textOrNull(_provinceController.text),
+      instrumentId: _selectedInstrumentId,
+      styleId: _selectedStyleId,
+      dateFrom: _textOrNull(_dateFromController.text),
+      dateTo: _textOrNull(_dateToController.text),
+      minPrice: _priceOrNull(_minPriceController.text),
+      maxPrice: _priceOrNull(_maxPriceController.text),
+    );
+  }
+
   String? _textOrNull(String value) {
     final trimmed = value.trim();
     return trimmed.isEmpty ? null : trimmed;
@@ -144,21 +191,20 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Anuncios'),
-        actions: [
-          IconButton(
-            onPressed: _refresh,
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Actualizar anuncios',
-          ),
-        ],
-      ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(26, 24, 26, 96),
           children: [
-            FutureBuilder<_OpportunityFilterData>(
+            Text(
+              'Oportunidades',
+              style: Theme.of(context).textTheme.headlineLarge,
+            ),
+            const SizedBox(height: 10),
+            OpportunitySearchPlaceholder(
+              onTap: () => _showFutureFeature('La busqueda'),
+            ),
+            const SizedBox(height: 14),
+            FutureBuilder<OpportunityFilterData>(
               future: _filterDataFuture,
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
@@ -166,18 +212,23 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
                 }
 
                 if (snapshot.hasError) {
-                  return _FilterLoadError(onRetry: _retryFilters);
+                  return OpportunityFilterLoadError(onRetry: _retryFilters);
                 }
 
-                return const _FilterLoading();
+                return const OpportunityFilterLoading();
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
             FutureBuilder<List<Opportunity>>(
               future: _opportunitiesFuture,
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
-                  return _buildOpportunities(snapshot.data!);
+                  return OpportunityFeedResults(
+                    opportunities: snapshot.data!,
+                    hasFilters: _filters.hasFilters,
+                    onOpen: _openDetail,
+                    onFavoriteTap: () => _showFutureFeature('Favoritos'),
+                  );
                 }
 
                 if (snapshot.hasError) {
@@ -186,281 +237,81 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
                       ? 'Revisa los rangos de fecha o precio.'
                       : 'No se pudieron cargar los anuncios.';
 
-                  return _OpportunitiesLoadError(
+                  return OpportunitiesLoadError(
                     message: message,
                     onRetry: _refresh,
                   );
                 }
 
-                return const Center(child: CircularProgressIndicator());
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 32),
+                  child: Center(child: CircularProgressIndicator()),
+                );
               },
             ),
           ],
         ),
       ),
+      bottomNavigationBar: OpportunityFeedBottomNav(
+        onHome: () {},
+        onPublish: _openCreateOpportunity,
+        onSaved: () => _showFutureFeature('Guardados'),
+        onProfile: _openProfile,
+      ),
     );
   }
 
-  Widget _buildFilters(_OpportunityFilterData data) {
-    return _FilterSection(
-      children: [
-        Text('Filtros', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<int>(
-          initialValue: _selectedTypeId,
-          decoration: const InputDecoration(labelText: 'Tipo'),
-          hint: const Text('Todos los tipos'),
-          items: data.types
-              .map(
-                (type) => DropdownMenuItem<int>(
-                  value: type.id,
-                  child: Text(type.name),
-                ),
-              )
-              .toList(),
-          onChanged: (value) {
-            setState(() {
-              _selectedTypeId = value;
-            });
-          },
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _cityController,
-          textInputAction: TextInputAction.search,
-          decoration: const InputDecoration(labelText: 'Ciudad'),
-          onSubmitted: (_) => _applyFilters(),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _provinceController,
-          textInputAction: TextInputAction.search,
-          decoration: const InputDecoration(labelText: 'Provincia'),
-          onSubmitted: (_) => _applyFilters(),
-        ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<int>(
-          initialValue: _selectedInstrumentId,
-          decoration: const InputDecoration(labelText: 'Instrumento'),
-          hint: const Text('Todos los instrumentos'),
-          items: data.instruments
-              .map(
-                (instrument) => DropdownMenuItem<int>(
-                  value: instrument.id,
-                  child: Text(instrument.name),
-                ),
-              )
-              .toList(),
-          onChanged: (value) {
-            setState(() {
-              _selectedInstrumentId = value;
-            });
-          },
-        ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<int>(
-          initialValue: _selectedStyleId,
-          decoration: const InputDecoration(labelText: 'Estilo'),
-          hint: const Text('Todos los estilos'),
-          items: data.styles
-              .map(
-                (style) => DropdownMenuItem<int>(
-                  value: style.id,
-                  child: Text(style.name),
-                ),
-              )
-              .toList(),
-          onChanged: (value) {
-            setState(() {
-              _selectedStyleId = value;
-            });
-          },
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _dateFromController,
-          textInputAction: TextInputAction.search,
-          decoration: const InputDecoration(
-            labelText: 'Fecha desde',
-            helperText: 'Formato: YYYY-MM-DD',
-          ),
-          onSubmitted: (_) => _applyFilters(),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _dateToController,
-          textInputAction: TextInputAction.search,
-          decoration: const InputDecoration(
-            labelText: 'Fecha hasta',
-            helperText: 'Formato: YYYY-MM-DD',
-          ),
-          onSubmitted: (_) => _applyFilters(),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _minPriceController,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          textInputAction: TextInputAction.search,
-          decoration: const InputDecoration(labelText: 'Precio minimo'),
-          onSubmitted: (_) => _applyFilters(),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _maxPriceController,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          textInputAction: TextInputAction.search,
-          decoration: const InputDecoration(labelText: 'Precio maximo'),
-          onSubmitted: (_) => _applyFilters(),
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            FilledButton(
-              onPressed: _applyFilters,
-              child: const Text('Aplicar filtros'),
-            ),
-            OutlinedButton(
-              onPressed: _clearFilters,
-              child: const Text('Limpiar filtros'),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildOpportunities(List<Opportunity> opportunities) {
-    if (opportunities.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 32),
-        child: Center(
-          child: Text(
-            _filters.hasFilters
-                ? 'No hay anuncios para estos filtros.'
-                : 'No hay anuncios activos.',
-          ),
-        ),
-      );
-    }
-
+  Widget _buildFilters(OpportunityFilterData data) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (var index = 0; index < opportunities.length; index++) ...[
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(opportunities[index].title),
-            subtitle: Text(_subtitle(opportunities[index])),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _openDetail(opportunities[index]),
+        OpportunityQuickTypeFilters(
+          types: data.types,
+          selectedTypeId: _selectedTypeId,
+          onSelected: _applyTypeFilter,
+        ),
+        const SizedBox(height: 12),
+        OpportunityFilterHeader(
+          expanded: _filtersExpanded,
+          onTap: () {
+            setState(() {
+              _filtersExpanded = !_filtersExpanded;
+            });
+          },
+        ),
+        if (_filtersExpanded) ...[
+          const SizedBox(height: 12),
+          OpportunityAdvancedFilters(
+            data: data,
+            selectedTypeId: _selectedTypeId,
+            selectedInstrumentId: _selectedInstrumentId,
+            selectedStyleId: _selectedStyleId,
+            cityController: _cityController,
+            provinceController: _provinceController,
+            dateFromController: _dateFromController,
+            dateToController: _dateToController,
+            minPriceController: _minPriceController,
+            maxPriceController: _maxPriceController,
+            onTypeChanged: (value) {
+              setState(() {
+                _selectedTypeId = value;
+              });
+            },
+            onInstrumentChanged: (value) {
+              setState(() {
+                _selectedInstrumentId = value;
+              });
+            },
+            onStyleChanged: (value) {
+              setState(() {
+                _selectedStyleId = value;
+              });
+            },
+            onApply: _applyFilters,
+            onClear: _clearFilters,
           ),
-          if (index < opportunities.length - 1) const Divider(),
         ],
       ],
     );
   }
-
-  String _subtitle(Opportunity opportunity) {
-    final parts = [
-      opportunity.type.name,
-      opportunity.city,
-      if (opportunity.priceAmount != null) '${opportunity.priceAmount} EUR',
-    ];
-
-    return parts.join(' · ');
-  }
-}
-
-class _FilterSection extends StatelessWidget {
-  const _FilterSection({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [...children, const SizedBox(height: 8), const Divider()],
-    );
-  }
-}
-
-class _FilterLoading extends StatelessWidget {
-  const _FilterLoading();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Row(
-      children: [
-        SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-        SizedBox(width: 12),
-        Text('Cargando filtros...'),
-      ],
-    );
-  }
-}
-
-class _FilterLoadError extends StatelessWidget {
-  const _FilterLoadError({required this.onRetry});
-
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'No se pudieron cargar los filtros.',
-          style: TextStyle(color: Theme.of(context).colorScheme.error),
-        ),
-        const SizedBox(height: 12),
-        FilledButton(onPressed: onRetry, child: const Text('Reintentar')),
-      ],
-    );
-  }
-}
-
-class _OpportunitiesLoadError extends StatelessWidget {
-  const _OpportunitiesLoadError({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              message,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-            const SizedBox(height: 16),
-            FilledButton(onPressed: onRetry, child: const Text('Reintentar')),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _OpportunityFilterData {
-  const _OpportunityFilterData({
-    required this.types,
-    required this.instruments,
-    required this.styles,
-  });
-
-  final List<OpportunityType> types;
-  final List<CatalogItem> instruments;
-  final List<CatalogItem> styles;
 }

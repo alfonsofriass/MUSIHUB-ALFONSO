@@ -3,7 +3,7 @@ import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/features/auth/auth_api.dart';
 import 'package:musihub_front/features/auth/login_screen.dart';
-import 'package:musihub_front/features/home/home_screen.dart';
+import 'package:musihub_front/features/opportunities/opportunities_list_screen.dart';
 
 class SessionGate extends StatefulWidget {
   const SessionGate({super.key});
@@ -40,9 +40,9 @@ class _SessionGateState extends State<SessionGate> {
     }
 
     try {
-      final user = await _authApi.me(token);
+      await _authApi.me(token);
 
-      return HomeScreen(user: user, tokenStore: _tokenStore);
+      return OpportunitiesListScreen(tokenStore: _tokenStore);
     } catch (_) {
       await _tokenStore.clearAccessToken();
 

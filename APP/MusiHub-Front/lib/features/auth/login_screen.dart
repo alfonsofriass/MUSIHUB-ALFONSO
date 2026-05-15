@@ -3,7 +3,7 @@ import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/features/auth/auth_api.dart';
 import 'package:musihub_front/features/auth/register_screen.dart';
-import 'package:musihub_front/features/home/home_screen.dart';
+import 'package:musihub_front/features/opportunities/opportunities_list_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, this.initialMessage});
@@ -54,16 +54,18 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passwordController.text,
       );
       await _tokenStore.saveAccessToken(token);
-      final user = await _authApi.me(token);
+      await _authApi.me(token);
 
       if (!mounted) return;
 
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
-          builder: (_) => HomeScreen(user: user, tokenStore: _tokenStore),
+          builder: (_) => OpportunitiesListScreen(tokenStore: _tokenStore),
         ),
       );
     } catch (_) {
+      await _tokenStore.clearAccessToken();
+
       if (!mounted) return;
 
       setState(() {
@@ -96,50 +98,45 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('MusiHub')),
       body: SafeArea(
-        child: Padding(
+        child: ListView(
           padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(labelText: 'Email'),
+          children: [
+            TextField(
+              controller: _emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(labelText: 'Email'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Contrasena'),
+            ),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: _isLoading ? null : _login,
+              child: Text(_isLoading ? 'Entrando...' : 'Entrar'),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: _isLoading ? null : _openRegister,
+              child: const Text('Crear cuenta'),
+            ),
+            if (_successMessage != null) ...[
+              const SizedBox(height: 16),
+              Text(
+                _successMessage!,
+                style: TextStyle(color: Theme.of(context).colorScheme.primary),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: 'Contrasena'),
-              ),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _isLoading ? null : _login,
-                child: Text(_isLoading ? 'Entrando...' : 'Entrar'),
-              ),
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: _isLoading ? null : _openRegister,
-                child: const Text('Crear cuenta'),
-              ),
-              if (_successMessage != null) ...[
-                const SizedBox(height: 16),
-                Text(
-                  _successMessage!,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-              ],
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 16),
-                Text(
-                  _errorMessage!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              ],
             ],
-          ),
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 16),
+              Text(
+                _errorMessage!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+          ],
         ),
       ),
     );

@@ -52,7 +52,10 @@ class _MyOpportunitiesScreenState extends State<MyOpportunitiesScreen> {
   Future<void> _openDetail(Opportunity opportunity) async {
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
-        builder: (_) => OpportunityDetailScreen(opportunityId: opportunity.id),
+        builder: (_) => OpportunityDetailScreen(
+          opportunityId: opportunity.id,
+          tokenStore: widget.tokenStore,
+        ),
       ),
     );
 

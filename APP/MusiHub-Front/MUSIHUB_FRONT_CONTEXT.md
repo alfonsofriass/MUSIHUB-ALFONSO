@@ -63,6 +63,21 @@ El valor principal del producto es combinar perfiles musicales estructurados, pu
   - perfil y catalogos,
   - anuncios,
   - busqueda/filtros minimos de anuncios.
+- Primer bloque visual desde Figma iniciado:
+  - tema global de MusiHub,
+  - pantalla de publicar/editar anuncio adaptada parcialmente al frame `54:1511 Publicar`.
+- Feed/listado de oportunidades adaptado parcialmente a la captura/frame `99:414 Inicio`:
+  - buscador visual,
+  - chips rapidos de tipo,
+  - filtros avanzados plegables,
+  - tarjetas de anuncio,
+  - bottom navigation.
+- Detalle de anuncio adaptado parcialmente a Figma:
+  - chips de tipo/instrumento/estilo,
+  - datos de localizacion, fecha y precio,
+  - descripcion en bloque visual,
+  - autor provisional como `Usuario #author_user_id`,
+  - boton `Contactar` pintado sin funcionalidad real por ahora.
 - La validacion actual se mantiene con:
   - `flutter analyze`: sin problemas.
   - `flutter test`: test de login y query params de filtros correcto.
@@ -195,7 +210,7 @@ Nota de diseno: existen pantallas creadas en Figma que se replicaran mas adelant
 Validar este flujo:
 
 ```text
-Login Flutter -> POST /auth/login -> guardar token -> GET /auth/me -> Home
+Login Flutter -> POST /auth/login -> guardar token -> GET /auth/me -> Feed
 ```
 
 Por que este flujo primero:
@@ -222,23 +237,26 @@ lib/
       catalog_item.dart
     session/
       token_store.dart
+    theme/
+      musihub_theme.dart
   features/
     auth/
       auth_api.dart
       login_screen.dart
       register_screen.dart
       session_gate.dart
-    home/
-      home_screen.dart
     profile/
       profile_api.dart
       profile_screen.dart
     opportunities/
       opportunities_api.dart
+      opportunity_display.dart
       opportunities_list_screen.dart
       opportunity_detail_screen.dart
       my_opportunities_screen.dart
       opportunity_form_screen.dart
+      widgets/
+        opportunity_feed_widgets.dart
 ```
 
 Significado:
@@ -248,8 +266,8 @@ Significado:
 - `core/api/`: cliente HTTP comun.
 - `core/catalog/`: modelos compartidos de catalogos usados por mas de una feature.
 - `core/session/`: lectura y escritura del token.
+- `core/theme/`: tema visual global de MusiHub basado en Figma.
 - `features/auth/`: pantallas y llamadas de autenticacion.
-- `features/home/`: primera pantalla privada tras iniciar sesion.
 - `features/profile/`: pantalla y API del perfil musical.
 - `features/opportunities/`: pantallas y API de anuncios.
 
@@ -311,14 +329,15 @@ lib/core/config/api_config.dart
 lib/core/api/api_client.dart
 lib/core/catalog/catalog_item.dart
 lib/core/session/token_store.dart
+lib/core/theme/musihub_theme.dart
 lib/features/auth/auth_api.dart
 lib/features/auth/login_screen.dart
 lib/features/auth/register_screen.dart
 lib/features/auth/session_gate.dart
-lib/features/home/home_screen.dart
 lib/features/profile/profile_api.dart
 lib/features/profile/profile_screen.dart
 lib/features/opportunities/opportunities_api.dart
+lib/features/opportunities/opportunity_display.dart
 lib/features/opportunities/opportunities_list_screen.dart
 lib/features/opportunities/opportunity_detail_screen.dart
 lib/features/opportunities/my_opportunities_screen.dart
@@ -337,6 +356,7 @@ android/app/src/main/AndroidManifest.xml
 - `lib/core/api/api_client.dart`: cliente HTTP minimo para construir URLs, enviar `GET`/`POST` en JSON y anadir `Authorization: Bearer <token>` cuando exista token.
 - `lib/core/catalog/catalog_item.dart`: modelo comun para elementos de catalogo con `id` y `name`, usado por perfil y anuncios.
 - `lib/core/session/token_store.dart`: guarda, lee y borra el JWT usando `flutter_secure_storage`.
+- `lib/core/theme/musihub_theme.dart`: tema visual global con colores, tipografias aproximadas, estilos de inputs, botones y chips inspirados en Figma.
 - `lib/features/auth/auth_api.dart`: implementa el contrato real de auth contra FastAPI:
   - `POST /auth/login`
   - `POST /auth/register`
@@ -344,8 +364,7 @@ android/app/src/main/AndroidManifest.xml
   - modelo simple `AuthUser` con `id`, `email`, `fullName` y `role`.
 - `lib/features/auth/login_screen.dart`: pantalla minima de login, sin diseno final, con email, contrasena y boton para validar auth real.
 - `lib/features/auth/register_screen.dart`: pantalla minima de registro, sin diseno final, con email, contrasena, nombre completo y rol.
-- `lib/features/auth/session_gate.dart`: puerta de arranque que lee el token guardado, valida `/auth/me` y decide entre login u home.
-- `lib/features/home/home_screen.dart`: pantalla privada minima que muestra los datos devueltos por `/auth/me` y permite borrar el token.
+- `lib/features/auth/session_gate.dart`: puerta de arranque que lee el token guardado, valida `/auth/me` y decide entre login o feed de anuncios.
 - `lib/features/profile/profile_api.dart`: implementa catalogos y perfil contra FastAPI:
   - `GET /catalogs/instruments`
   - `GET /catalogs/music-styles`
@@ -360,7 +379,9 @@ android/app/src/main/AndroidManifest.xml
   - `POST /opportunities`
   - `PATCH /opportunities/{id}`
   - `PATCH /opportunities/{id}/close`
+- `lib/features/opportunities/opportunity_display.dart`: helpers de presentacion de anuncios para etiquetas de tipos, colores de chips, fechas y precios, compartidos por feed, detalle y formulario.
 - `lib/features/opportunities/opportunities_list_screen.dart`: pantalla minima de listado publico de anuncios activos, con filtros por tipo, ciudad, provincia, instrumento, estilo, fecha y precio.
+- `lib/features/opportunities/widgets/opportunity_feed_widgets.dart`: widgets visuales reutilizables del feed de anuncios: buscador visual, chips rapidos, filtros plegables, cards y barra inferior.
 - `lib/features/opportunities/opportunity_detail_screen.dart`: pantalla minima de detalle publico de un anuncio.
 - `lib/features/opportunities/my_opportunities_screen.dart`: pantalla minima de anuncios del usuario autenticado usando `GET /opportunities/me`.
 - `lib/features/opportunities/opportunity_form_screen.dart`: formulario minimo de creacion/edicion de anuncios usando tipos, instrumentos, estilos, `POST /opportunities` y `PATCH /opportunities/{id}`.
@@ -371,19 +392,67 @@ android/app/src/main/AndroidManifest.xml
 - La app contador generada por Flutter se sustituyo por una pantalla minima de MusiHub.
 - Login real validado contra backend tras corregir el bloqueo CORS en el backend desde su propio contexto.
 - Registro minimo anadido en frontend. Flujo previsto: crear cuenta -> volver a login -> iniciar sesion.
-- Autoentrada anadida: al abrir la app se lee el token guardado; si `/auth/me` responde bien se entra en Home, si falla se borra el token y se vuelve a Login.
-- Perfil/catalogos conectados en frontend: desde Home se puede abrir una pantalla minima de perfil, cargar instrumentos/estilos, leer `GET /profile/me` y guardar con `PUT /profile/me`.
+- Autoentrada anadida: al abrir la app se lee el token guardado; si `/auth/me` responde bien se entra en el feed de anuncios, si falla se borra el token y se vuelve a Login.
+- Perfil/catalogos conectados en frontend: desde la barra inferior del feed se puede abrir una pantalla minima de perfil, cargar instrumentos/estilos, leer `GET /profile/me` y guardar con `PUT /profile/me`.
 - Perfil/catalogos validado contra backend real: los endpoints funcionan correctamente desde el flujo del front.
-- Pantallas de Home/perfil ajustadas para pruebas mas comodas: Home muestra estado/resumen del perfil, perfil se organiza por secciones, usa chips para seleccionar instrumentos/estilos y permite `Guardar y volver`.
+- Pantalla de perfil ajustada como pantalla real: primero muestra el perfil en modo lectura y desde ahi permite editar perfil, abrir `Mis anuncios` o cerrar sesion.
 - Anuncios iniciado en frontend: existe capa API y modelos para tipos, listado, detalle, mis anuncios, crear, editar y cerrar.
-- Lectura publica de anuncios conectada en UI: desde Home se puede abrir `Ver anuncios`, listar activos y entrar al detalle.
-- Mis anuncios conectado en UI: desde Home se puede abrir `Mis anuncios` y listar anuncios propios activos y cerrados.
-- Creacion de anuncios conectada en UI: desde Home o `Mis anuncios` se puede abrir `Crear anuncio`, cargar catalogos, validar reglas basicas por tipo y enviar `POST /opportunities`.
+- Lectura publica de anuncios conectada en UI: el feed es la pantalla principal privada y lista anuncios activos con acceso al detalle.
+- Mis anuncios conectado en UI: desde Perfil se puede abrir `Mis anuncios` y listar anuncios propios activos y cerrados.
+- Creacion de anuncios conectada en UI: desde la barra inferior del feed o desde `Mis anuncios` se puede abrir `Crear anuncio`, cargar catalogos, validar reglas basicas por tipo y enviar `POST /opportunities`.
 - Edicion y cierre de anuncios conectado en UI: desde `Mis anuncios`, si el anuncio esta activo, se puede editar con `PATCH /opportunities/{id}` o cerrar con `PATCH /opportunities/{id}/close`.
 - Busqueda/filtros minimos de anuncios conectados en UI: el listado publico carga catalogos, permite aplicar/limpiar filtros y construye query params solo para campos rellenados.
+- Diseno Figma iniciado en frontend: `OpportunityFormScreen` usa el tema global y se adapta de forma inicial al frame `54:1511 Publicar`.
+- Feed Figma iniciado en frontend: `OpportunitiesListScreen` usa cards, chips, buscador visual y barra inferior inspirados en `99:414 Inicio`.
+- Detalle Figma iniciado en frontend: `OpportunityDetailScreen` muestra el anuncio con chips, resumen de datos, descripcion, autor provisional y boton de contacto visual.
+- Elementos de Figma sin backend actual se pueden pintar sin funcionalidad real:
+  - buscador por texto,
+  - favoritos/corazon,
+  - guardados,
+  - compartir,
+  - contactar.
+- En detalle de anuncio se muestra solo `event_date`; no se muestra hora porque backend todavia no devuelve hora del evento.
+- En detalle de anuncio se muestra `Usuario #author_user_id` porque backend todavia no devuelve nombre/rol publico del autor.
 - Mensajes de error mantenidos genericos: no se filtran casos concretos todavia.
 - `flutter analyze`: sin problemas.
 - `flutter test`: test de pantalla de login y construccion de query params correcto.
+
+## Referencias Figma detectadas
+Archivo principal:
+
+```text
+https://www.figma.com/design/CElnEU093hpHlotpzsuIHj/Dise%C3%B1o-MusiHub
+```
+
+Nodos ya revisados:
+
+- `51:225` - `Style Guide`: tipografias y colores base.
+- `51:226` - `Frame 1`: detalle de style guide:
+  - H1: Akatab Black 32.
+  - H2: Akatab Bold 22.
+  - H3: Akatab SemiBold 15.
+  - H4: Akatab SemiBold 12.
+  - Color principal validado para MusiHub: lila/azul suave `#737DFF`, el usado por el filtro activo del feed, por ejemplo `Todos`.
+  - Gris observado: `#6B6B6B`.
+- `94:255` - `Screens`: contenedor con pantallas de publicar y alertas.
+- `54:1511` - `Publicar`: referencia principal para `OpportunityFormScreen`.
+- `84:340` - `Alertas`: referencia futura para pantalla de alertas.
+- `84:257` - `Pantalla orig 5`: onboarding/configuracion inicial de alertas.
+- `99:326` - `Feed`: contenedor probable de feed/listado; pendiente de lectura detallada por limite MCP.
+- `99:414` - `Inicio`: pantalla de inicio/feed detectada dentro de `Feed`; se uso captura del usuario como referencia visual.
+- `104:326` / `104:327`: contenedor/pantalla probable de gestion de banda; pendiente de lectura detallada.
+
+Decisiones de diseno actuales:
+
+- No convertir Figma automaticamente a Flutter.
+- Usar Figma como referencia visual principal para colores, posicion, tamanos, jerarquia y estilo, pero no seguirlo a rajatabla si no encaja con la funcionalidad real ya implementada.
+- Se permite adaptar pantallas con sentido comun cuando falten elementos funcionales en Figma, sobren elementos sin backend actual o una composicion no funcione bien en Flutter.
+- Ejemplo validado: si el diseno muestra solo algunos filtros rapidos pero el backend/front soporta mas tipos utiles, se pueden anadir o ajustar esos filtros para que la pantalla sea coherente con MusiHub.
+- Si una adaptacion visual/funcional no es obvia o puede cambiar el criterio de producto, pedir validacion antes de implementarla.
+- Avanzar pantalla por pantalla.
+- Si una pieza de Figma aun no tiene soporte funcional/backend, se puede pintar y dejar sin accion real o con aviso simple de "mas adelante".
+- El color principal de marca en Flutter es `MusiHubColors.primary = #737DFF`; debe usarse en botones principales, chips seleccionados, foco de inputs y estados activos.
+- No anadir todavia librerias de diseno ni `google_fonts`; si se quiere usar Akatab real, mas adelante se anadiran assets de fuente o una decision explicita de dependencia.
 
 ## Siguiente paso recomendado
 Antes del siguiente bloque funcional:

@@ -75,59 +75,55 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Crear cuenta')),
       body: SafeArea(
-        child: Padding(
+        child: ListView(
           padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(labelText: 'Email'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: 'Contrasena'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _fullNameController,
-                decoration: const InputDecoration(labelText: 'Nombre completo'),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedRole,
-                decoration: const InputDecoration(labelText: 'Rol'),
-                items: _roles
-                    .map(
-                      (role) =>
-                          DropdownMenuItem(value: role, child: Text(role)),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value == null) return;
+          children: [
+            TextField(
+              controller: _emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(labelText: 'Email'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Contrasena'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _fullNameController,
+              decoration: const InputDecoration(labelText: 'Nombre completo'),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              initialValue: _selectedRole,
+              decoration: const InputDecoration(labelText: 'Rol'),
+              items: _roles
+                  .map(
+                    (role) => DropdownMenuItem(value: role, child: Text(role)),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                if (value == null) return;
 
-                  setState(() {
-                    _selectedRole = value;
-                  });
-                },
+                setState(() {
+                  _selectedRole = value;
+                });
+              },
+            ),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: _isLoading ? null : _register,
+              child: Text(_isLoading ? 'Creando...' : 'Crear cuenta'),
+            ),
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 16),
+              Text(
+                _errorMessage!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _isLoading ? null : _register,
-                child: Text(_isLoading ? 'Creando...' : 'Crear cuenta'),
-              ),
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 16),
-                Text(
-                  _errorMessage!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              ],
             ],
-          ),
+          ],
         ),
       ),
     );

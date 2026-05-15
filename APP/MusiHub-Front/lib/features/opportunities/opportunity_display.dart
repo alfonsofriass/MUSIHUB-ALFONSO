@@ -1,0 +1,102 @@
+import 'package:flutter/material.dart';
+import 'package:musihub_front/core/theme/musihub_theme.dart';
+import 'package:musihub_front/features/opportunities/opportunities_api.dart';
+
+const opportunityTypeOrder = [
+  'clases',
+  'bolos_sustituciones',
+  'busqueda_miembros',
+  'eventos',
+  'compraventa',
+];
+
+String opportunityTypeFilterLabel(OpportunityType type) {
+  switch (type.code) {
+    case 'bolos_sustituciones':
+      return 'Bolos';
+    case 'busqueda_miembros':
+      return 'Miembros';
+    case 'compraventa':
+      return 'Venta';
+    default:
+      return type.name;
+  }
+}
+
+String opportunityTypeTagLabel(OpportunityType type) {
+  switch (type.code) {
+    case 'bolos_sustituciones':
+      return 'Bolo';
+    case 'busqueda_miembros':
+      return 'Miembros';
+    case 'compraventa':
+      return 'Venta';
+    default:
+      return type.name;
+  }
+}
+
+Color opportunityTypeTagColor(OpportunityType type) {
+  switch (type.code) {
+    case 'eventos':
+      return const Color(0xFFFFD7D7);
+    case 'clases':
+      return const Color(0xFFE4E5FF);
+    case 'bolos_sustituciones':
+      return const Color(0xFFFFFF9D);
+    case 'compraventa':
+      return const Color(0xFFE0F0FF);
+    default:
+      return MusiHubColors.fieldGrey;
+  }
+}
+
+String opportunityPriceLabel(String value) {
+  final parsed = num.tryParse(value.replaceAll(',', '.'));
+
+  if (parsed == null) {
+    return '$value EUR';
+  }
+
+  final amount = parsed % 1 == 0
+      ? parsed.toStringAsFixed(0)
+      : parsed.toStringAsFixed(2);
+
+  return '$amount EUR';
+}
+
+String opportunityShortDateLabel(String value) {
+  final parts = value.split('-');
+
+  if (parts.length != 3) {
+    return value;
+  }
+
+  return '${parts[2]}/${parts[1]}';
+}
+
+String opportunityLongDateLabel(String value) {
+  final parts = value.split('-');
+
+  if (parts.length != 3) {
+    return value;
+  }
+
+  final month = switch (parts[1]) {
+    '01' => 'Ene',
+    '02' => 'Feb',
+    '03' => 'Mar',
+    '04' => 'Abr',
+    '05' => 'May',
+    '06' => 'Jun',
+    '07' => 'Jul',
+    '08' => 'Ago',
+    '09' => 'Sep',
+    '10' => 'Oct',
+    '11' => 'Nov',
+    '12' => 'Dic',
+    _ => parts[1],
+  };
+
+  return '${parts[2]} $month ${parts[0]}';
+}

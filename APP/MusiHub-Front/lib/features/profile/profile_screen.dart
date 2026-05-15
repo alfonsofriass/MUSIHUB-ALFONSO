@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
 import 'package:musihub_front/core/session/token_store.dart';
+import 'package:musihub_front/core/theme/musihub_theme.dart';
+import 'package:musihub_front/features/auth/login_screen.dart';
+import 'package:musihub_front/features/opportunities/my_opportunities_screen.dart';
 import 'package:musihub_front/features/profile/profile_api.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -30,6 +33,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? _token;
   int? _primaryInstrumentId;
   bool _profileExists = false;
+  bool _isEditingProfile = false;
   bool _isSaving = false;
   String? _errorMessage;
   String? _successMessage;
@@ -101,7 +105,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _primaryInstrumentId = primaryInstrumentId;
   }
 
-  Future<void> _saveProfile({bool closeAfterSave = false}) async {
+  Future<void> _saveProfile() async {
     final token = _token;
 
     if (token == null || token.isEmpty) {
@@ -142,12 +146,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _applyProfile(savedProfile.profile);
         _profileExists = savedProfile.exists;
+        _isEditingProfile = false;
         _successMessage = 'Perfil guardado.';
       });
-
-      if (closeAfterSave && mounted) {
-        Navigator.of(context).pop(true);
-      }
     } catch (_) {
       if (!mounted) return;
 
@@ -172,8 +173,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() {
       _errorMessage = null;
       _successMessage = null;
+      _isEditingProfile = false;
       _initialData = _loadInitialData();
     });
+  }
+
+  void _startEditing() {
+    setState(() {
+      _isEditingProfile = true;
+      _errorMessage = null;
+      _successMessage = null;
+    });
+  }
+
+  void _cancelEditing() {
+    setState(() {
+      _isEditingProfile = false;
+      _errorMessage = null;
+      _successMessage = null;
+      _initialData = _loadInitialData();
+    });
+  }
+
+  Future<void> _openMyOpportunities() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => MyOpportunitiesScreen(tokenStore: widget.tokenStore),
+      ),
+    );
+  }
+
+  Future<void> _logout() async {
+    await widget.tokenStore.clearAccessToken();
+
+    if (!mounted) return;
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute<void>(builder: (_) => const LoginScreen()),
+      (_) => false,
+    );
   }
 
   @override
@@ -185,7 +223,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           future: _initialData,
           builder: (context, snapshot) {
             if (snapshot.hasData) {
-              return _buildForm(context, snapshot.data!);
+              return _isEditingProfile
+                  ? _buildForm(context, snapshot.data!)
+                  : _buildProfileView(context, snapshot.data!);
             }
 
             if (snapshot.hasError) {
@@ -196,6 +236,119 @@ class _ProfileScreenState extends State<ProfileScreen> {
           },
         ),
       ),
+    );
+  }
+
+  Widget _buildProfileView(BuildContext context, _ProfileInitialData data) {
+    final primaryInstrument = _selectedCatalogName(
+      data.instruments,
+      _primaryInstrumentId,
+    );
+    final location = _locationText();
+    final headline = _summaryHeadline(primaryInstrument, location);
+    final bio = _textOrNull(_bioController.text);
+    final photoUrl = _textOrNull(_photoUrlController.text);
+    final contactEmail = _textOrNull(_contactEmailController.text);
+    final contactPhone = _textOrNull(_contactPhoneController.text);
+    final selectedInstruments = _selectedCatalogNames(
+      data.instruments,
+      _selectedInstrumentIds,
+      markPrimary: true,
+    );
+    final selectedStyles = _selectedCatalogNames(
+      data.styles,
+      _selectedStyleIds,
+    );
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _ProfileAvatar(photoUrl: photoUrl),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Perfil musical',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(headline, style: Theme.of(context).textTheme.bodyMedium),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        if (!_profileExists)
+          _ProfileEmptyState(onCreate: _startEditing)
+        else ...[
+          if (bio != null) _ProfileSection(title: 'Bio', children: [Text(bio)]),
+          _ProfileSection(
+            title: 'Musica',
+            children: [
+              if (selectedInstruments.isNotEmpty) ...[
+                Text(
+                  'Instrumentos',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 8),
+                _ChipWrap(items: selectedInstruments),
+              ],
+              if (selectedStyles.isNotEmpty) ...[
+                if (selectedInstruments.isNotEmpty) const SizedBox(height: 16),
+                Text('Estilos', style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 8),
+                _ChipWrap(items: selectedStyles),
+              ],
+              if (selectedInstruments.isEmpty && selectedStyles.isEmpty)
+                const Text('Sin instrumentos ni estilos indicados.'),
+            ],
+          ),
+          _ProfileSection(
+            title: 'Contacto',
+            children: [
+              if (contactEmail != null)
+                _InfoRow(icon: Icons.mail_outline, text: contactEmail),
+              if (contactPhone != null) ...[
+                if (contactEmail != null) const SizedBox(height: 8),
+                _InfoRow(icon: Icons.phone_outlined, text: contactPhone),
+              ],
+              if (contactEmail == null && contactPhone == null)
+                const Text('Sin datos de contacto visibles.'),
+            ],
+          ),
+          FilledButton(
+            onPressed: _startEditing,
+            child: const Text('Editar perfil'),
+          ),
+          const SizedBox(height: 12),
+        ],
+        OutlinedButton(
+          onPressed: _openMyOpportunities,
+          child: const Text('Mis anuncios'),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton(onPressed: _logout, child: const Text('Cerrar sesion')),
+        if (_successMessage != null) ...[
+          const SizedBox(height: 16),
+          Text(
+            _successMessage!,
+            style: TextStyle(color: Theme.of(context).colorScheme.primary),
+          ),
+        ],
+        if (_errorMessage != null) ...[
+          const SizedBox(height: 16),
+          Text(
+            _errorMessage!,
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
+        ],
+      ],
     );
   }
 
@@ -291,10 +444,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         const SizedBox(height: 12),
         OutlinedButton(
-          onPressed: _isSaving
-              ? null
-              : () => _saveProfile(closeAfterSave: true),
-          child: const Text('Guardar y volver'),
+          onPressed: _isSaving ? null : _cancelEditing,
+          child: const Text('Cancelar edicion'),
         ),
         if (_successMessage != null) ...[
           const SizedBox(height: 16),
@@ -510,6 +661,75 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 },
         ),
       ),
+    );
+  }
+}
+
+class _ProfileAvatar extends StatelessWidget {
+  const _ProfileAvatar({required this.photoUrl});
+
+  final String? photoUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return CircleAvatar(
+      radius: 38,
+      backgroundColor: MusiHubColors.fieldGrey,
+      backgroundImage: photoUrl == null ? null : NetworkImage(photoUrl!),
+      child: photoUrl == null
+          ? const Icon(Icons.person_outline, size: 38, color: Colors.black54)
+          : null,
+    );
+  }
+}
+
+class _ProfileEmptyState extends StatelessWidget {
+  const _ProfileEmptyState({required this.onCreate});
+
+  final VoidCallback onCreate;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: MusiHubColors.fieldGrey,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Perfil pendiente',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Completa tu perfil para mostrar instrumentos, estilos y contacto.',
+          ),
+          const SizedBox(height: 16),
+          FilledButton(onPressed: onCreate, child: const Text('Crear perfil')),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: MusiHubColors.textGrey),
+        const SizedBox(width: 8),
+        Expanded(child: Text(text)),
+      ],
     );
   }
 }

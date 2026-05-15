@@ -11,10 +11,12 @@ Frontend móvil de MusiHub, app desarrollada en Flutter para el TFG.
 - Perfil musical mínimo conectado:
   - carga de catálogos,
   - lectura de perfil,
-  - creación/edición de perfil.
+  - pantalla de perfil en modo lectura,
+  - creación/edición de perfil,
+  - cierre de sesión desde perfil.
 - Anuncios mínimos conectados:
   - listado público,
-  - detalle,
+  - detalle visual adaptado parcialmente,
   - mis anuncios,
   - creación,
   - edición,
@@ -27,6 +29,21 @@ Frontend móvil de MusiHub, app desarrollada en Flutter para el TFG.
   - estilo,
   - fecha,
   - precio.
+- Primer bloque visual desde Figma iniciado:
+  - tema global de MusiHub,
+  - pantalla de publicar/editar anuncio adaptada parcialmente.
+- Color principal de marca: lila/azul suave `#737DFF`, tomado del filtro activo del feed.
+- Feed/listado de anuncios adaptado parcialmente:
+  - cards de anuncio,
+  - chips,
+  - buscador visual,
+  - bottom navigation.
+- Detalle de anuncio adaptado parcialmente:
+  - fecha sin hora,
+  - autor provisional `Usuario #id`,
+  - contacto/favorito/compartir pintados sin funcionalidad real.
+- El feed es la entrada principal tras login o sesion guardada.
+- Desde Perfil se puede abrir `Mis anuncios` y cerrar sesion.
 - El diseño final queda pendiente porque se replicará desde Figma más adelante.
 
 ## Documentación local

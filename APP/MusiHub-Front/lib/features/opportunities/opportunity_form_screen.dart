@@ -3,6 +3,7 @@ import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
+import 'package:musihub_front/features/opportunities/opportunity_display.dart';
 import 'package:musihub_front/features/profile/profile_api.dart';
 
 class OpportunityFormScreen extends StatefulWidget {
@@ -272,9 +273,7 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditing ? 'Editar anuncio' : 'Crear anuncio'),
-      ),
+      appBar: AppBar(title: Text(_isEditing ? 'Editar anuncio' : 'Publicar')),
       body: SafeArea(
         child: FutureBuilder<_OpportunityFormData>(
           future: _initialData,
@@ -296,71 +295,65 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
 
   Widget _buildForm(_OpportunityFormData data) {
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(28, 16, 28, 24),
       children: [
         _OpportunitySection(
-          title: 'Tipo',
+          title: 'Tipo de anuncio',
+          children: [_buildTypeSelector(data.types)],
+        ),
+        _OpportunitySection(
+          title: 'Informacion basica',
           children: [
-            DropdownButtonFormField<int>(
-              initialValue: _selectedTypeId,
-              decoration: const InputDecoration(labelText: 'Tipo de anuncio'),
-              items: data.types
-                  .map(
-                    (type) => DropdownMenuItem<int>(
-                      value: type.id,
-                      child: Text(type.name),
-                    ),
-                  )
-                  .toList(),
-              onChanged: _isEditing
-                  ? null
-                  : (value) {
-                      if (value == null) return;
-
-                      setState(() {
-                        _selectedTypeId = value;
-                      });
-                    },
+            _buildTextField(
+              label: 'Titulo del anuncio',
+              controller: _titleController,
+              hintText: 'Ej: Clases de guitarra',
+            ),
+            const SizedBox(height: 12),
+            _buildTextField(
+              label: 'Descripcion',
+              controller: _descriptionController,
+              hintText: 'Describe que ofreces o que buscas',
+              maxLines: 3,
+            ),
+            const SizedBox(height: 12),
+            _buildTextField(
+              label: 'Ciudad',
+              controller: _cityController,
+              hintText: 'Ej: Madrid',
+            ),
+            const SizedBox(height: 12),
+            _buildTextField(
+              label: 'Provincia',
+              controller: _provinceController,
+              hintText: 'Ej: Madrid',
+            ),
+            const SizedBox(height: 12),
+            _buildTextField(
+              label: 'Fecha',
+              controller: _eventDateController,
+              helperText: 'Formato: YYYY-MM-DD',
+            ),
+            const SizedBox(height: 12),
+            _buildTextField(
+              label: 'Precio',
+              controller: _priceController,
+              hintText: 'Ej: 55',
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              suffixText: 'EUR',
             ),
           ],
         ),
         _OpportunitySection(
-          title: 'Datos basicos',
+          title: 'Estilo musical',
+          children: [_buildCatalogChips(data.styles, _selectedStyleIds)],
+        ),
+        _OpportunitySection(
+          title: 'Instrumentos',
           children: [
-            TextField(
-              controller: _titleController,
-              decoration: const InputDecoration(labelText: 'Titulo'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _descriptionController,
-              maxLines: 3,
-              decoration: const InputDecoration(labelText: 'Descripcion'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _cityController,
-              decoration: const InputDecoration(labelText: 'Ciudad'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _provinceController,
-              decoration: const InputDecoration(labelText: 'Provincia'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _eventDateController,
-              decoration: const InputDecoration(
-                labelText: 'Fecha',
-                helperText: 'Formato: YYYY-MM-DD',
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _priceController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Precio'),
-            ),
+            _buildCatalogChips(data.instruments, _selectedInstrumentIds),
           ],
         ),
         _OpportunitySection(
@@ -373,7 +366,7 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
                   .map(
                     (method) => DropdownMenuItem<String>(
                       value: method,
-                      child: Text(method),
+                      child: Text(_contactMethodLabel(method)),
                     ),
                   )
                   .toList(),
@@ -386,28 +379,19 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
               },
             ),
             const SizedBox(height: 12),
-            TextField(
+            _buildTextField(
+              label: 'Contacto',
               controller: _contactValueController,
-              decoration: const InputDecoration(labelText: 'Contacto'),
+              hintText: 'Ej: 600000000',
             ),
           ],
-        ),
-        _OpportunitySection(
-          title: 'Instrumentos',
-          children: [
-            _buildCatalogChips(data.instruments, _selectedInstrumentIds),
-          ],
-        ),
-        _OpportunitySection(
-          title: 'Estilos',
-          children: [_buildCatalogChips(data.styles, _selectedStyleIds)],
         ),
         FilledButton(
           onPressed: _isSaving ? null : () => _save(data),
           child: Text(
             _isSaving
                 ? (_isEditing ? 'Guardando...' : 'Creando...')
-                : (_isEditing ? 'Guardar cambios' : 'Crear anuncio'),
+                : (_isEditing ? 'Guardar cambios' : 'Publicar'),
           ),
         ),
         if (_errorMessage != null) ...[
@@ -418,6 +402,52 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
           ),
         ],
       ],
+    );
+  }
+
+  Widget _buildTypeSelector(List<OpportunityType> types) {
+    if (types.isEmpty) {
+      return const Text('No hay tipos de anuncio disponibles.');
+    }
+
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: types.map((type) {
+        return ChoiceChip(
+          label: Text(opportunityTypeFilterLabel(type)),
+          selected: _selectedTypeId == type.id,
+          onSelected: _isEditing
+              ? null
+              : (_) {
+                  setState(() {
+                    _selectedTypeId = type.id;
+                  });
+                },
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildTextField({
+    required String label,
+    required TextEditingController controller,
+    String? hintText,
+    String? helperText,
+    String? suffixText,
+    int maxLines = 1,
+    TextInputType? keyboardType,
+  }) {
+    return TextField(
+      controller: controller,
+      maxLines: maxLines,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hintText,
+        helperText: helperText,
+        suffixText: suffixText,
+      ),
     );
   }
 
@@ -448,6 +478,19 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
       }).toList(),
     );
   }
+
+  String _contactMethodLabel(String method) {
+    switch (method) {
+      case 'whatsapp':
+        return 'WhatsApp';
+      case 'email':
+        return 'Email';
+      case 'phone':
+        return 'Telefono';
+      default:
+        return 'Otro';
+    }
+  }
 }
 
 class _OpportunitySection extends StatelessWidget {
@@ -459,15 +502,13 @@ class _OpportunitySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.only(bottom: 26),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: Theme.of(context).textTheme.titleMedium),
+          Text(title, style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 12),
           ...children,
-          const SizedBox(height: 8),
-          const Divider(),
         ],
       ),
     );
