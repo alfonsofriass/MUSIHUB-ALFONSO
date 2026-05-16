@@ -37,6 +37,10 @@ class User(Base):
     opportunities: Mapped[list["Opportunity"]] = relationship(
         back_populates="author",
     )
+    favorites: Mapped[list["Favorite"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
 
 class Role(Base):
@@ -251,6 +255,10 @@ class Opportunity(Base):
         back_populates="opportunity",
         cascade="all, delete-orphan",
     )
+    favorites: Mapped[list["Favorite"]] = relationship(
+        back_populates="opportunity",
+        cascade="all, delete-orphan",
+    )
 
 
 class OpportunityStyle(Base):
@@ -287,3 +295,19 @@ class OpportunityInstrument(Base):
     instrument: Mapped["Instrument"] = relationship(
         back_populates="opportunity_instruments"
     )
+
+
+class Favorite(Base):
+    __tablename__ = "favorites"
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"),
+        primary_key=True,
+    )
+    opportunity_id: Mapped[int] = mapped_column(
+        ForeignKey("opportunities.id"),
+        primary_key=True,
+    )
+
+    user: Mapped["User"] = relationship(back_populates="favorites")
+    opportunity: Mapped["Opportunity"] = relationship(back_populates="favorites")

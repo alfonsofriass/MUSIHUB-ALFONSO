@@ -154,6 +154,10 @@ Table alert_preference_types {
 Table favorites {
   user_id integer [not null]
   opportunity_id integer [not null]
+
+  indexes {
+    (user_id, opportunity_id) [pk]
+  }
 }
 
 //Relaciones
@@ -187,4 +191,3 @@ Ref: alert_preference_types.opportunity_type_id > opportunity_types.id
 
 Ref: favorites.user_id > users.id
 Ref: favorites.opportunity_id > opportunities.id
-
