@@ -229,6 +229,7 @@ class Opportunity(Base):
         ForeignKey("users.id"),
         nullable=False,
     )
+    author_band_id: Mapped[int | None] = mapped_column(ForeignKey("bands.id"))
     title: Mapped[str] = mapped_column(String(160), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     city: Mapped[str] = mapped_column(String(120), nullable=False)
@@ -257,6 +258,7 @@ class Opportunity(Base):
 
     type: Mapped["OpportunityType"] = relationship(back_populates="opportunities")
     author: Mapped["User"] = relationship(back_populates="opportunities")
+    author_band: Mapped["Band | None"] = relationship(back_populates="opportunities")
     opportunity_instruments: Mapped[list["OpportunityInstrument"]] = relationship(
         back_populates="opportunity",
         cascade="all, delete-orphan",
@@ -350,6 +352,9 @@ class Band(Base):
     band_styles: Mapped[list["BandStyle"]] = relationship(
         back_populates="band",
         cascade="all, delete-orphan",
+    )
+    opportunities: Mapped[list["Opportunity"]] = relationship(
+        back_populates="author_band",
     )
 
 

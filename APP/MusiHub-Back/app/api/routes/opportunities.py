@@ -9,6 +9,8 @@ from sqlalchemy.orm import Session
 from app.api.routes.auth import get_current_user
 from app.db import get_db
 from app.models import (
+    Band,
+    BandMember,
     Instrument,
     MusicStyle,
     Opportunity,
@@ -44,6 +46,7 @@ class OpportunityCreateRequest(BaseModel):
     )
 
     type_id: int
+    author_band_id: int | None = Field(default=None, gt=0)
     title: str = Field(min_length=1, max_length=160)
     description: str = Field(min_length=1)
     city: str = Field(min_length=1, max_length=120)
@@ -67,6 +70,7 @@ class OpportunityUpdateRequest(BaseModel):
         str_strip_whitespace=True,
     )
 
+    author_band_id: int | None = Field(default=None, gt=0)
     title: str | None = Field(default=None, min_length=1, max_length=160)
     description: str | None = Field(default=None, min_length=1)
     city: str | None = Field(default=None, min_length=1, max_length=120)
@@ -88,6 +92,7 @@ class OpportunityResponse(BaseModel):
     id: int
     type: OpportunityTypeResponse
     author_user_id: int
+    author_band: CatalogItemResponse | None
     title: str
     description: str
     city: str
@@ -166,6 +171,34 @@ def _load_styles(db: Session, style_ids: list[int]) -> list[MusicStyle]:
     return styles
 
 
+def _load_author_band_for_user(
+    db: Session,
+    author_band_id: int,
+    current_user: User,
+) -> Band:
+    band = db.scalar(select(Band).where(Band.id == author_band_id))
+    if band is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid author_band_id",
+        )
+
+    membership = db.scalar(
+        select(BandMember).where(
+            BandMember.band_id == author_band_id,
+            BandMember.user_id == current_user.id,
+            BandMember.membership_status == "accepted",
+        )
+    )
+    if membership is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User is not an accepted member of this band",
+        )
+
+    return band
+
+
 def _build_opportunity_response(
     opportunity: Opportunity,
     db: Session,
@@ -192,6 +225,14 @@ def _build_opportunity_response(
             name=opportunity.type.name,
         ),
         author_user_id=opportunity.author_user_id,
+        author_band=(
+            CatalogItemResponse(
+                id=opportunity.author_band.id,
+                name=opportunity.author_band.name,
+            )
+            if opportunity.author_band is not None
+            else None
+        ),
         title=opportunity.title,
         description=opportunity.description,
         city=opportunity.city,
@@ -260,10 +301,17 @@ def create_opportunity(
 
     instruments = _load_instruments(db=db, instrument_ids=payload.instrument_ids)
     styles = _load_styles(db=db, style_ids=payload.style_ids)
+    if payload.author_band_id is not None:
+        _load_author_band_for_user(
+            db=db,
+            author_band_id=payload.author_band_id,
+            current_user=current_user,
+        )
 
     opportunity = Opportunity(
         type_id=opportunity_type.id,
         author_user_id=current_user.id,
+        author_band_id=payload.author_band_id,
         title=payload.title,
         description=payload.description,
         city=payload.city,
@@ -474,6 +522,13 @@ def update_opportunity(
                 detail="Invalid contact_method",
             )
 
+    if "author_band_id" in updates and updates["author_band_id"] is not None:
+        _load_author_band_for_user(
+            db=db,
+            author_band_id=updates["author_band_id"],
+            current_user=current_user,
+        )
+
     if payload.instrument_ids is not None:
         _validate_unique_positive_ids("instrument_ids", payload.instrument_ids)
         _load_instruments(db=db, instrument_ids=payload.instrument_ids)
@@ -520,6 +575,7 @@ def update_opportunity(
         "price_amount",
         "contact_method",
         "contact_value",
+        "author_band_id",
     ):
         if field_name in updates:
             setattr(opportunity, field_name, updates[field_name])
