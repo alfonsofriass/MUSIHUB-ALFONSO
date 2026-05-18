@@ -66,6 +66,7 @@ Table bands {
   name varchar [not null]
   bio text
   city varchar
+  province varchar
   photo_url varchar
   created_by_user_id integer [not null]
   created_at timestamp [not null]
@@ -79,7 +80,9 @@ Table band_members {
   is_visible_in_profile boolean [not null, default: true]// si quiere mostrar la banda en el perfil
   joined_at timestamp
 
-  indexes { (band_id,user_id,role_in_band) [pk] }
+  indexes {
+    (band_id, user_id) [pk]
+  }
 }
 Table band_styles {
   band_id integer [not null]

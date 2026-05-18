@@ -14,6 +14,8 @@ Backend FastAPI del TFG MusiHub.
 - Perfil de usuario y catálogos musicales.
 - Anuncios V1 para usuario individual.
 - Búsqueda y filtros básicos sobre anuncios activos.
+- Favoritos de anuncios.
+- Bandas V1.
 
 ## Endpoints principales
 - `POST /api/v1/auth/register`
@@ -30,6 +32,15 @@ Backend FastAPI del TFG MusiHub.
 - `GET /api/v1/opportunities/{id}`
 - `PATCH /api/v1/opportunities/{id}`
 - `PATCH /api/v1/opportunities/{id}/close`
+- `POST /api/v1/opportunities/{id}/favorite`
+- `DELETE /api/v1/opportunities/{id}/favorite`
+- `GET /api/v1/favorites/me`
+- `POST /api/v1/bands`
+- `GET /api/v1/bands/me`
+- `GET /api/v1/bands/{id}`
+- `PUT /api/v1/bands/{id}`
+- `POST /api/v1/bands/{id}/members`
+- `DELETE /api/v1/bands/{id}/members/{user_id}`
 
 ## Filtros de anuncios
 `GET /api/v1/opportunities` acepta filtros opcionales combinables:
@@ -46,11 +57,19 @@ Backend FastAPI del TFG MusiHub.
 
 Las fechas usan formato `YYYY-MM-DD`. El listado público devuelve solo anuncios `active`.
 
+## Bandas V1
+- La banda no tiene login propio.
+- El usuario creador queda como `created_by_user_id`.
+- El creador se añade automáticamente como miembro `accepted`.
+- Solo el creador puede editar la banda y gestionar miembros.
+- Los estilos de banda usan el catálogo `music_styles`.
+- No incluye todavía publicación de anuncios como banda.
+
 ## Migraciones
 Head esperado:
 
 ```text
-b1c2d3e4f5a6
+d2e3f4a5b6c7
 ```
 
 ## Ejecución local

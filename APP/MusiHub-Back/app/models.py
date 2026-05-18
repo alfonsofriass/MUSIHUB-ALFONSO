@@ -41,6 +41,13 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    created_bands: Mapped[list["Band"]] = relationship(
+        back_populates="creator",
+    )
+    band_memberships: Mapped[list["BandMember"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
 
 class Role(Base):
@@ -148,6 +155,9 @@ class MusicStyle(Base):
         back_populates="style",
     )
     opportunity_styles: Mapped[list["OpportunityStyle"]] = relationship(
+        back_populates="style",
+    )
+    band_styles: Mapped[list["BandStyle"]] = relationship(
         back_populates="style",
     )
 
@@ -311,3 +321,79 @@ class Favorite(Base):
 
     user: Mapped["User"] = relationship(back_populates="favorites")
     opportunity: Mapped["Opportunity"] = relationship(back_populates="favorites")
+
+
+class Band(Base):
+    __tablename__ = "bands"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    bio: Mapped[str | None] = mapped_column(Text)
+    city: Mapped[str | None] = mapped_column(String(120))
+    province: Mapped[str | None] = mapped_column(String(120))
+    photo_url: Mapped[str | None] = mapped_column(String(500))
+    created_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+    creator: Mapped["User"] = relationship(back_populates="created_bands")
+    members: Mapped[list["BandMember"]] = relationship(
+        back_populates="band",
+        cascade="all, delete-orphan",
+    )
+    band_styles: Mapped[list["BandStyle"]] = relationship(
+        back_populates="band",
+        cascade="all, delete-orphan",
+    )
+
+
+class BandMember(Base):
+    __tablename__ = "band_members"
+
+    band_id: Mapped[int] = mapped_column(
+        ForeignKey("bands.id"),
+        primary_key=True,
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"),
+        primary_key=True,
+    )
+    role_in_band: Mapped[str] = mapped_column(String(120), nullable=False)
+    membership_status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="pending",
+        server_default=text("'pending'"),
+    )
+    is_visible_in_profile: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default=text("true"),
+    )
+    joined_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    band: Mapped["Band"] = relationship(back_populates="members")
+    user: Mapped["User"] = relationship(back_populates="band_memberships")
+
+
+class BandStyle(Base):
+    __tablename__ = "band_styles"
+
+    band_id: Mapped[int] = mapped_column(
+        ForeignKey("bands.id"),
+        primary_key=True,
+    )
+    style_id: Mapped[int] = mapped_column(
+        ForeignKey("music_styles.id"),
+        primary_key=True,
+    )
+
+    band: Mapped["Band"] = relationship(back_populates="band_styles")
+    style: Mapped["MusicStyle"] = relationship(back_populates="band_styles")
