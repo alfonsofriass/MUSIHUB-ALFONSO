@@ -387,15 +387,19 @@ class OpportunityFeedResults extends StatelessWidget {
   const OpportunityFeedResults({
     super.key,
     required this.opportunities,
+    required this.favoriteIds,
     required this.hasFilters,
     required this.onOpen,
     required this.onFavoriteTap,
+    this.emptyMessage,
   });
 
   final List<Opportunity> opportunities;
+  final Set<int> favoriteIds;
   final bool hasFilters;
   final ValueChanged<Opportunity> onOpen;
-  final VoidCallback onFavoriteTap;
+  final ValueChanged<Opportunity> onFavoriteTap;
+  final String? emptyMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -411,13 +415,20 @@ class OpportunityFeedResults extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         if (opportunities.isEmpty)
-          _EmptyResults(hasFilters: hasFilters)
+          _EmptyResults(
+            message:
+                emptyMessage ??
+                (hasFilters
+                    ? 'No hay anuncios para estos filtros.'
+                    : 'No hay anuncios activos.'),
+          )
         else
           for (var index = 0; index < opportunities.length; index++) ...[
             _OpportunityCard(
               opportunity: opportunities[index],
+              isFavorite: favoriteIds.contains(opportunities[index].id),
               onTap: () => onOpen(opportunities[index]),
-              onFavoriteTap: onFavoriteTap,
+              onFavoriteTap: () => onFavoriteTap(opportunities[index]),
             ),
             if (index < opportunities.length - 1) const SizedBox(height: 14),
           ],
@@ -437,11 +448,13 @@ class OpportunityFeedResults extends StatelessWidget {
 class _OpportunityCard extends StatelessWidget {
   const _OpportunityCard({
     required this.opportunity,
+    required this.isFavorite,
     required this.onTap,
     required this.onFavoriteTap,
   });
 
   final Opportunity opportunity;
+  final bool isFavorite;
   final VoidCallback onTap;
   final VoidCallback onFavoriteTap;
 
@@ -466,7 +479,10 @@ class _OpportunityCard extends StatelessWidget {
                   Expanded(child: _OpportunityTags(opportunity: opportunity)),
                   IconButton(
                     onPressed: onFavoriteTap,
-                    icon: const Icon(Icons.favorite_border),
+                    icon: Icon(
+                      isFavorite ? Icons.favorite : Icons.favorite_border,
+                      color: isFavorite ? MusiHubColors.primary : null,
+                    ),
                     iconSize: 22,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(
@@ -521,9 +537,9 @@ class _OpportunityCard extends StatelessWidget {
 }
 
 class _EmptyResults extends StatelessWidget {
-  const _EmptyResults({required this.hasFilters});
+  const _EmptyResults({required this.message});
 
-  final bool hasFilters;
+  final String message;
 
   @override
   Widget build(BuildContext context) {
@@ -539,9 +555,7 @@ class _EmptyResults extends StatelessWidget {
           const Icon(Icons.search_off, color: MusiHubColors.textGrey),
           const SizedBox(height: 8),
           Text(
-            hasFilters
-                ? 'No hay anuncios para estos filtros.'
-                : 'No hay anuncios activos.',
+            message,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
@@ -642,12 +656,14 @@ class _MetaItem extends StatelessWidget {
 class OpportunityFeedBottomNav extends StatelessWidget {
   const OpportunityFeedBottomNav({
     super.key,
+    this.selectedIndex = 0,
     required this.onHome,
     required this.onPublish,
     required this.onSaved,
     required this.onProfile,
   });
 
+  final int selectedIndex;
   final VoidCallback onHome;
   final VoidCallback onPublish;
   final VoidCallback onSaved;
@@ -656,7 +672,7 @@ class OpportunityFeedBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return NavigationBar(
-      selectedIndex: 0,
+      selectedIndex: selectedIndex,
       onDestinationSelected: (index) {
         switch (index) {
           case 0:

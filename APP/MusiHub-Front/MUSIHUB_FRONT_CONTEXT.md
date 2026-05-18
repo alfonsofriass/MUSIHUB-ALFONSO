@@ -191,11 +191,11 @@ Ya esta implementado de forma minima:
 - auth,
 - perfil y catalogos,
 - anuncios,
-- busqueda/filtros minimos de anuncios.
+- busqueda/filtros minimos de anuncios,
+- favoritos/guardados.
 
 No se implementa todavia:
 
-- favoritos,
 - bandas,
 - alertas,
 - FCM,
@@ -254,6 +254,7 @@ lib/
       opportunities_list_screen.dart
       opportunity_detail_screen.dart
       my_opportunities_screen.dart
+      favorite_opportunities_screen.dart
       opportunity_form_screen.dart
       widgets/
         opportunity_feed_widgets.dart
@@ -341,6 +342,7 @@ lib/features/opportunities/opportunity_display.dart
 lib/features/opportunities/opportunities_list_screen.dart
 lib/features/opportunities/opportunity_detail_screen.dart
 lib/features/opportunities/my_opportunities_screen.dart
+lib/features/opportunities/favorite_opportunities_screen.dart
 lib/features/opportunities/opportunity_form_screen.dart
 test/widget_test.dart
 ```
@@ -376,14 +378,18 @@ android/app/src/main/AndroidManifest.xml
   - `GET /opportunities`, con filtros opcionales por query params
   - `GET /opportunities/{id}`
   - `GET /opportunities/me`
+  - `GET /favorites/me`
   - `POST /opportunities`
+  - `POST /opportunities/{id}/favorite`
   - `PATCH /opportunities/{id}`
   - `PATCH /opportunities/{id}/close`
+  - `DELETE /opportunities/{id}/favorite`
 - `lib/features/opportunities/opportunity_display.dart`: helpers de presentacion de anuncios para etiquetas de tipos, colores de chips, fechas y precios, compartidos por feed, detalle y formulario.
 - `lib/features/opportunities/opportunities_list_screen.dart`: pantalla minima de listado publico de anuncios activos, con filtros por tipo, ciudad, provincia, instrumento, estilo, fecha y precio.
 - `lib/features/opportunities/widgets/opportunity_feed_widgets.dart`: widgets visuales reutilizables del feed de anuncios: buscador visual, chips rapidos, filtros plegables, cards y barra inferior.
 - `lib/features/opportunities/opportunity_detail_screen.dart`: pantalla minima de detalle publico de un anuncio.
 - `lib/features/opportunities/my_opportunities_screen.dart`: pantalla minima de anuncios del usuario autenticado usando `GET /opportunities/me`.
+- `lib/features/opportunities/favorite_opportunities_screen.dart`: pantalla de anuncios guardados usando `GET /favorites/me`, con opcion de quitar favoritos.
 - `lib/features/opportunities/opportunity_form_screen.dart`: formulario minimo de creacion/edicion de anuncios usando tipos, instrumentos, estilos, `POST /opportunities` y `PATCH /opportunities/{id}`.
 - `WINDOWS_SETUP.md`: pasos para preparar backend, frontend y pruebas en Windows.
 - `CODEX_WINDOWS_FRONT_PROMPT.md`: prompt exacto para continuar el front en un nuevo chat de Codex desde Windows.
@@ -402,13 +408,12 @@ android/app/src/main/AndroidManifest.xml
 - Creacion de anuncios conectada en UI: desde la barra inferior del feed o desde `Mis anuncios` se puede abrir `Crear anuncio`, cargar catalogos, validar reglas basicas por tipo y enviar `POST /opportunities`.
 - Edicion y cierre de anuncios conectado en UI: desde `Mis anuncios`, si el anuncio esta activo, se puede editar con `PATCH /opportunities/{id}` o cerrar con `PATCH /opportunities/{id}/close`.
 - Busqueda/filtros minimos de anuncios conectados en UI: el listado publico carga catalogos, permite aplicar/limpiar filtros y construye query params solo para campos rellenados.
+- Favoritos/guardados conectados en UI: desde feed y detalle se puede guardar/quitar favorito con `POST /opportunities/{id}/favorite` y `DELETE /opportunities/{id}/favorite`; desde la barra inferior se abre `Guardados` con `GET /favorites/me`.
 - Diseno Figma iniciado en frontend: `OpportunityFormScreen` usa el tema global y se adapta de forma inicial al frame `54:1511 Publicar`.
 - Feed Figma iniciado en frontend: `OpportunitiesListScreen` usa cards, chips, buscador visual y barra inferior inspirados en `99:414 Inicio`.
 - Detalle Figma iniciado en frontend: `OpportunityDetailScreen` muestra el anuncio con chips, resumen de datos, descripcion, autor provisional y boton de contacto visual.
 - Elementos de Figma sin backend actual se pueden pintar sin funcionalidad real:
   - buscador por texto,
-  - favoritos/corazon,
-  - guardados,
   - compartir,
   - contactar.
 - En detalle de anuncio se muestra solo `event_date`; no se muestra hora porque backend todavia no devuelve hora del evento.
@@ -460,4 +465,4 @@ Antes del siguiente bloque funcional:
 1. Cerrar commit limpio del frontend actual.
 2. Mantener fuera del commit los cambios no relacionados de backend o raiz del repo.
 3. Validar manualmente filtros principales contra backend real.
-4. No empezar todavia FCM, bandas, favoritos ni diseno final de Figma.
+4. No empezar todavia FCM, bandas, alertas ni diseno final de Figma.

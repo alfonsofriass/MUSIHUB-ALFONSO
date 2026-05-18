@@ -56,6 +56,10 @@ class ApiClient {
     );
   }
 
+  Future<http.Response> delete(String path, {String? token}) {
+    return _httpClient.delete(_uri(path), headers: _headers(token));
+  }
+
   Uri _uri(String path, {Map<String, String>? queryParameters}) {
     final normalizedPath = path.startsWith('/') ? path : '/$path';
     final uri = Uri.parse('${ApiConfig.baseUrl}$normalizedPath');

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
+import 'package:musihub_front/features/opportunities/favorite_opportunities_screen.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
 import 'package:musihub_front/features/opportunities/opportunity_display.dart';
 import 'package:musihub_front/features/opportunities/opportunity_form_screen.dart';
@@ -13,10 +14,12 @@ class OpportunityDetailScreen extends StatefulWidget {
     super.key,
     required this.opportunityId,
     required this.tokenStore,
+    this.initialOpportunity,
   });
 
   final int opportunityId;
   final TokenStore tokenStore;
+  final Opportunity? initialOpportunity;
 
   @override
   State<OpportunityDetailScreen> createState() =>
@@ -27,13 +30,13 @@ class _OpportunityDetailScreenState extends State<OpportunityDetailScreen> {
   final _apiClient = ApiClient();
 
   late final OpportunitiesApi _opportunitiesApi;
-  late Future<Opportunity> _opportunityFuture;
+  late Future<_OpportunityDetailData> _detailFuture;
 
   @override
   void initState() {
     super.initState();
     _opportunitiesApi = OpportunitiesApi(apiClient: _apiClient);
-    _opportunityFuture = _loadOpportunity();
+    _detailFuture = _loadDetailData();
   }
 
   @override
@@ -42,13 +45,30 @@ class _OpportunityDetailScreenState extends State<OpportunityDetailScreen> {
     super.dispose();
   }
 
-  Future<Opportunity> _loadOpportunity() {
-    return _opportunitiesApi.getOpportunity(widget.opportunityId);
+  Future<_OpportunityDetailData> _loadDetailData() async {
+    final token = await widget.tokenStore.readAccessToken();
+
+    if (token == null || token.isEmpty) {
+      throw Exception('No hay sesion activa.');
+    }
+
+    final opportunityFuture = widget.initialOpportunity == null
+        ? _opportunitiesApi.getOpportunity(widget.opportunityId)
+        : Future.value(widget.initialOpportunity!);
+    final favoritesFuture = _opportunitiesApi.listFavoriteOpportunities(token);
+
+    final opportunity = await opportunityFuture;
+    final favorites = await favoritesFuture;
+
+    return _OpportunityDetailData(
+      opportunity: opportunity,
+      isFavorite: favorites.any((favorite) => favorite.id == opportunity.id),
+    );
   }
 
   void _refresh() {
     setState(() {
-      _opportunityFuture = _loadOpportunity();
+      _detailFuture = _loadDetailData();
     });
   }
 
@@ -66,6 +86,53 @@ class _OpportunityDetailScreenState extends State<OpportunityDetailScreen> {
         builder: (_) => ProfileScreen(tokenStore: widget.tokenStore),
       ),
     );
+  }
+
+  Future<void> _openFavorites() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            FavoriteOpportunitiesScreen(tokenStore: widget.tokenStore),
+      ),
+    );
+
+    if (!mounted) return;
+
+    _refresh();
+  }
+
+  Future<void> _toggleFavorite(_OpportunityDetailData data) async {
+    final token = await widget.tokenStore.readAccessToken();
+
+    if (token == null || token.isEmpty) {
+      return;
+    }
+
+    try {
+      final favoriteStatus = data.isFavorite
+          ? await _opportunitiesApi.removeFavorite(
+              token: token,
+              opportunityId: data.opportunity.id,
+            )
+          : await _opportunitiesApi.saveFavorite(
+              token: token,
+              opportunityId: data.opportunity.id,
+            );
+
+      if (!mounted) return;
+
+      setState(() {
+        _detailFuture = Future.value(
+          data.copyWith(isFavorite: favoriteStatus.isFavorite),
+        );
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo actualizar el favorito.')),
+      );
+    }
   }
 
   void _showFutureFeature(String label) {
@@ -86,20 +153,36 @@ class _OpportunityDetailScreenState extends State<OpportunityDetailScreen> {
             icon: const Icon(Icons.share_outlined),
             tooltip: 'Compartir',
           ),
-          IconButton(
-            onPressed: () => _showFutureFeature('Favoritos'),
-            icon: const Icon(Icons.favorite_border),
-            tooltip: 'Guardar',
+          FutureBuilder<_OpportunityDetailData>(
+            future: _detailFuture,
+            builder: (context, snapshot) {
+              final data = snapshot.data;
+
+              return IconButton(
+                onPressed: data == null ? null : () => _toggleFavorite(data),
+                icon: Icon(
+                  data != null && data.isFavorite
+                      ? Icons.favorite
+                      : Icons.favorite_border,
+                  color: data != null && data.isFavorite
+                      ? MusiHubColors.primary
+                      : null,
+                ),
+                tooltip: data != null && data.isFavorite
+                    ? 'Quitar de guardados'
+                    : 'Guardar',
+              );
+            },
           ),
         ],
       ),
       body: SafeArea(
-        child: FutureBuilder<Opportunity>(
-          future: _opportunityFuture,
+        child: FutureBuilder<_OpportunityDetailData>(
+          future: _detailFuture,
           builder: (context, snapshot) {
             if (snapshot.hasData) {
               return _OpportunityDetail(
-                opportunity: snapshot.data!,
+                opportunity: snapshot.data!.opportunity,
                 onContactTap: () => _showFutureFeature('Contacto'),
               );
             }
@@ -115,9 +198,26 @@ class _OpportunityDetailScreenState extends State<OpportunityDetailScreen> {
       bottomNavigationBar: OpportunityFeedBottomNav(
         onHome: () => Navigator.of(context).pop(),
         onPublish: _openCreateOpportunity,
-        onSaved: () => _showFutureFeature('Guardados'),
+        onSaved: _openFavorites,
         onProfile: _openProfile,
       ),
+    );
+  }
+}
+
+class _OpportunityDetailData {
+  const _OpportunityDetailData({
+    required this.opportunity,
+    required this.isFavorite,
+  });
+
+  final Opportunity opportunity;
+  final bool isFavorite;
+
+  _OpportunityDetailData copyWith({bool? isFavorite}) {
+    return _OpportunityDetailData(
+      opportunity: opportunity,
+      isFavorite: isFavorite ?? this.isFavorite,
     );
   }
 }

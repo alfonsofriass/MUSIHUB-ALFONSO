@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
+import 'package:musihub_front/features/opportunities/favorite_opportunities_screen.dart';
 import 'package:musihub_front/features/opportunities/opportunity_detail_screen.dart';
 import 'package:musihub_front/features/opportunities/opportunity_form_screen.dart';
 import 'package:musihub_front/features/opportunities/widgets/opportunity_feed_widgets.dart';
@@ -30,7 +31,7 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
   late final OpportunitiesApi _opportunitiesApi;
   late final ProfileApi _profileApi;
   late Future<OpportunityFilterData> _filterDataFuture;
-  late Future<List<Opportunity>> _opportunitiesFuture;
+  late Future<_OpportunityFeedData> _feedDataFuture;
 
   OpportunityFilters _filters = const OpportunityFilters();
   int? _selectedTypeId;
@@ -44,7 +45,7 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
     _opportunitiesApi = OpportunitiesApi(apiClient: _apiClient);
     _profileApi = ProfileApi(apiClient: _apiClient);
     _filterDataFuture = _loadFilterData();
-    _opportunitiesFuture = _loadOpportunities();
+    _feedDataFuture = _loadFeedData();
   }
 
   @override
@@ -75,13 +76,30 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
     );
   }
 
-  Future<List<Opportunity>> _loadOpportunities() {
-    return _opportunitiesApi.listOpportunities(filters: _filters);
+  Future<_OpportunityFeedData> _loadFeedData() async {
+    final token = await widget.tokenStore.readAccessToken();
+
+    if (token == null || token.isEmpty) {
+      throw Exception('No hay sesion activa.');
+    }
+
+    final opportunitiesFuture = _opportunitiesApi.listOpportunities(
+      filters: _filters,
+    );
+    final favoritesFuture = _opportunitiesApi.listFavoriteOpportunities(token);
+
+    final opportunities = await opportunitiesFuture;
+    final favorites = await favoritesFuture;
+
+    return _OpportunityFeedData(
+      opportunities: opportunities,
+      favoriteIds: favorites.map((opportunity) => opportunity.id).toSet(),
+    );
   }
 
   void _refresh() {
     setState(() {
-      _opportunitiesFuture = _loadOpportunities();
+      _feedDataFuture = _loadFeedData();
     });
   }
 
@@ -90,10 +108,15 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
       MaterialPageRoute<void>(
         builder: (_) => OpportunityDetailScreen(
           opportunityId: opportunity.id,
+          initialOpportunity: opportunity,
           tokenStore: widget.tokenStore,
         ),
       ),
     );
+
+    if (!mounted) return;
+
+    _refresh();
   }
 
   Future<void> _openCreateOpportunity() async {
@@ -116,6 +139,51 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
     );
   }
 
+  Future<void> _openFavorites() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            FavoriteOpportunitiesScreen(tokenStore: widget.tokenStore),
+      ),
+    );
+
+    if (!mounted) return;
+
+    _refresh();
+  }
+
+  Future<void> _toggleFavorite(Opportunity opportunity, bool isFavorite) async {
+    final token = await widget.tokenStore.readAccessToken();
+
+    if (token == null || token.isEmpty) {
+      return;
+    }
+
+    try {
+      if (isFavorite) {
+        await _opportunitiesApi.removeFavorite(
+          token: token,
+          opportunityId: opportunity.id,
+        );
+      } else {
+        await _opportunitiesApi.saveFavorite(
+          token: token,
+          opportunityId: opportunity.id,
+        );
+      }
+
+      if (!mounted) return;
+
+      _refresh();
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo actualizar el favorito.')),
+      );
+    }
+  }
+
   void _showFutureFeature(String label) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('$label estara disponible mas adelante.')),
@@ -131,7 +199,7 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
   void _applyFilters() {
     setState(() {
       _filters = _currentFilters();
-      _opportunitiesFuture = _loadOpportunities();
+      _feedDataFuture = _loadFeedData();
     });
   }
 
@@ -139,7 +207,7 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
     setState(() {
       _selectedTypeId = typeId;
       _filters = _currentFilters();
-      _opportunitiesFuture = _loadOpportunities();
+      _feedDataFuture = _loadFeedData();
     });
   }
 
@@ -155,7 +223,7 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
       _minPriceController.clear();
       _maxPriceController.clear();
       _filters = const OpportunityFilters();
-      _opportunitiesFuture = _loadOpportunities();
+      _feedDataFuture = _loadFeedData();
     });
   }
 
@@ -219,15 +287,21 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
               },
             ),
             const SizedBox(height: 10),
-            FutureBuilder<List<Opportunity>>(
-              future: _opportunitiesFuture,
+            FutureBuilder<_OpportunityFeedData>(
+              future: _feedDataFuture,
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
+                  final data = snapshot.data!;
+
                   return OpportunityFeedResults(
-                    opportunities: snapshot.data!,
+                    opportunities: data.opportunities,
+                    favoriteIds: data.favoriteIds,
                     hasFilters: _filters.hasFilters,
                     onOpen: _openDetail,
-                    onFavoriteTap: () => _showFutureFeature('Favoritos'),
+                    onFavoriteTap: (opportunity) => _toggleFavorite(
+                      opportunity,
+                      data.favoriteIds.contains(opportunity.id),
+                    ),
                   );
                 }
 
@@ -255,7 +329,7 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
       bottomNavigationBar: OpportunityFeedBottomNav(
         onHome: () {},
         onPublish: _openCreateOpportunity,
-        onSaved: () => _showFutureFeature('Guardados'),
+        onSaved: _openFavorites,
         onProfile: _openProfile,
       ),
     );
@@ -314,4 +388,14 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
       ],
     );
   }
+}
+
+class _OpportunityFeedData {
+  const _OpportunityFeedData({
+    required this.opportunities,
+    required this.favoriteIds,
+  });
+
+  final List<Opportunity> opportunities;
+  final Set<int> favoriteIds;
 }

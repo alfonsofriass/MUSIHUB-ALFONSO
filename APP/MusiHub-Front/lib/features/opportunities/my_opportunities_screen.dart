@@ -54,6 +54,7 @@ class _MyOpportunitiesScreenState extends State<MyOpportunitiesScreen> {
       MaterialPageRoute<void>(
         builder: (_) => OpportunityDetailScreen(
           opportunityId: opportunity.id,
+          initialOpportunity: opportunity,
           tokenStore: widget.tokenStore,
         ),
       ),

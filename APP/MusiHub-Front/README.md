@@ -18,6 +18,7 @@ Frontend móvil de MusiHub, app desarrollada en Flutter para el TFG.
   - listado público,
   - detalle visual adaptado parcialmente,
   - mis anuncios,
+  - favoritos/guardados,
   - creación,
   - edición,
   - cierre.
@@ -41,7 +42,12 @@ Frontend móvil de MusiHub, app desarrollada en Flutter para el TFG.
 - Detalle de anuncio adaptado parcialmente:
   - fecha sin hora,
   - autor provisional `Usuario #id`,
-  - contacto/favorito/compartir pintados sin funcionalidad real.
+  - favorito real,
+  - contacto/compartir pintados sin funcionalidad real.
+- Guardados conectado:
+  - guardar favorito,
+  - quitar favorito,
+  - listar favoritos del usuario.
 - El feed es la entrada principal tras login o sesion guardada.
 - Desde Perfil se puede abrir `Mis anuncios` y cerrar sesion.
 - El diseño final queda pendiente porque se replicará desde Figma más adelante.
@@ -58,7 +64,7 @@ Frontend móvil de MusiHub, app desarrollada en Flutter para el TFG.
 - Consolidar el flujo actual antes de pasar al siguiente bloque funcional.
 - Preparar el siguiente bloque funcional cuando backend esté listo.
 
-Quedan fuera por ahora favoritos, bandas, alertas, FCM, paginación, búsqueda por texto libre, orden avanzado y diseño final.
+Quedan fuera por ahora bandas, alertas, FCM, paginación, búsqueda por texto libre, orden avanzado y diseño final.
 
 ## Comandos útiles
 Desde `APP/MusiHub-Front`:

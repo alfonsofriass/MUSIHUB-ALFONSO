@@ -63,6 +63,50 @@ class OpportunitiesApi {
     return _decodeOpportunityList(response.body);
   }
 
+  Future<OpportunityFavoriteStatus> saveFavorite({
+    required String token,
+    required int opportunityId,
+  }) async {
+    final response = await _apiClient.post(
+      '/opportunities/$opportunityId/favorite',
+      token: token,
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('No se pudo guardar el favorito.');
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    return OpportunityFavoriteStatus.fromJson(json);
+  }
+
+  Future<OpportunityFavoriteStatus> removeFavorite({
+    required String token,
+    required int opportunityId,
+  }) async {
+    final response = await _apiClient.delete(
+      '/opportunities/$opportunityId/favorite',
+      token: token,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('No se pudo quitar el favorito.');
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    return OpportunityFavoriteStatus.fromJson(json);
+  }
+
+  Future<List<Opportunity>> listFavoriteOpportunities(String token) async {
+    final response = await _apiClient.get('/favorites/me', token: token);
+
+    if (response.statusCode != 200) {
+      throw Exception('No se pudieron cargar tus favoritos.');
+    }
+
+    return _decodeOpportunityList(response.body);
+  }
+
   Future<Opportunity> createOpportunity({
     required String token,
     required OpportunitySaveRequest request,
@@ -201,6 +245,26 @@ class OpportunityType {
   final int id;
   final String code;
   final String name;
+}
+
+class OpportunityFavoriteStatus {
+  const OpportunityFavoriteStatus({
+    required this.opportunityId,
+    required this.isFavorite,
+    required this.message,
+  });
+
+  factory OpportunityFavoriteStatus.fromJson(Map<String, dynamic> json) {
+    return OpportunityFavoriteStatus(
+      opportunityId: json['opportunity_id'] as int,
+      isFavorite: json['is_favorite'] as bool,
+      message: json['message'] as String,
+    );
+  }
+
+  final int opportunityId;
+  final bool isFavorite;
+  final String message;
 }
 
 class Opportunity {
