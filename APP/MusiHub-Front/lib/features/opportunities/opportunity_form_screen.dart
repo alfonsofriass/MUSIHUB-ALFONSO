@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
 import 'package:musihub_front/core/session/token_store.dart';
+import 'package:musihub_front/features/bands/bands_api.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
 import 'package:musihub_front/features/opportunities/opportunity_display.dart';
 import 'package:musihub_front/features/profile/profile_api.dart';
@@ -21,6 +22,7 @@ class OpportunityFormScreen extends StatefulWidget {
 }
 
 class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
+  static const _publishAsMeValue = -1;
   static const _contactMethods = ['whatsapp', 'email', 'phone', 'other'];
 
   final _titleController = TextEditingController();
@@ -36,10 +38,12 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
 
   late final OpportunitiesApi _opportunitiesApi;
   late final ProfileApi _profileApi;
+  late final BandsApi _bandsApi;
   late Future<_OpportunityFormData> _initialData;
 
   String? _token;
   int? _selectedTypeId;
+  int? _selectedAuthorBandId;
   String _selectedContactMethod = _contactMethods.first;
   bool _isSaving = false;
   String? _errorMessage;
@@ -51,6 +55,7 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
     super.initState();
     _opportunitiesApi = OpportunitiesApi(apiClient: _apiClient);
     _profileApi = ProfileApi(apiClient: _apiClient);
+    _bandsApi = BandsApi(apiClient: _apiClient);
     _applyOpportunity(widget.opportunity);
     _initialData = _loadInitialData();
   }
@@ -74,6 +79,7 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
     }
 
     _selectedTypeId = opportunity.type.id;
+    _selectedAuthorBandId = opportunity.authorBand?.id;
     _titleController.text = opportunity.title;
     _descriptionController.text = opportunity.description;
     _cityController.text = opportunity.city;
@@ -102,10 +108,12 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
     final typesFuture = _opportunitiesApi.listOpportunityTypes();
     final instrumentsFuture = _profileApi.listInstruments();
     final stylesFuture = _profileApi.listMusicStyles();
+    final bandsFuture = _bandsApi.listMyBands(token);
 
     final types = await typesFuture;
     final instruments = await instrumentsFuture;
     final styles = await stylesFuture;
+    final bands = await bandsFuture;
 
     if (types.isNotEmpty) {
       _selectedTypeId ??= types.first.id;
@@ -115,6 +123,7 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
       types: types,
       instruments: instruments,
       styles: styles,
+      bands: bands,
     );
   }
 
@@ -148,6 +157,8 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
           token: token,
           id: widget.opportunity!.id,
           request: OpportunityUpdateRequest(
+            authorBandId: _selectedAuthorBandId,
+            includeAuthorBandId: true,
             title: _titleController.text.trim(),
             description: _descriptionController.text.trim(),
             city: _cityController.text.trim(),
@@ -166,6 +177,7 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
           token: token,
           request: OpportunitySaveRequest(
             typeId: type!.id,
+            authorBandId: _selectedAuthorBandId,
             title: _titleController.text.trim(),
             description: _descriptionController.text.trim(),
             city: _cityController.text.trim(),
@@ -302,6 +314,10 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
           children: [_buildTypeSelector(data.types)],
         ),
         _OpportunitySection(
+          title: 'Publicar como',
+          children: [_buildAuthorSelector(data.bands)],
+        ),
+        _OpportunitySection(
           title: 'Informacion basica',
           children: [
             _buildTextField(
@@ -429,6 +445,41 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
     );
   }
 
+  Widget _buildAuthorSelector(List<Band> bands) {
+    final currentAuthorBand = widget.opportunity?.authorBand;
+    final bandOptions = bands
+        .map((band) => _AuthorBandOption(id: band.id, name: band.name))
+        .toList();
+
+    if (currentAuthorBand != null &&
+        !bandOptions.any((band) => band.id == currentAuthorBand.id)) {
+      bandOptions.add(
+        _AuthorBandOption(
+          id: currentAuthorBand.id,
+          name: currentAuthorBand.name,
+        ),
+      );
+    }
+
+    return DropdownButtonFormField<int>(
+      initialValue: _selectedAuthorBandId ?? _publishAsMeValue,
+      decoration: const InputDecoration(labelText: 'Publicar como'),
+      items: [
+        const DropdownMenuItem<int>(
+          value: _publishAsMeValue,
+          child: Text('Yo'),
+        ),
+        for (final band in bandOptions)
+          DropdownMenuItem<int>(value: band.id, child: Text(band.name)),
+      ],
+      onChanged: (value) {
+        setState(() {
+          _selectedAuthorBandId = value == _publishAsMeValue ? null : value;
+        });
+      },
+    );
+  }
+
   Widget _buildTextField({
     required String label,
     required TextEditingController controller,
@@ -493,6 +544,13 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
   }
 }
 
+class _AuthorBandOption {
+  const _AuthorBandOption({required this.id, required this.name});
+
+  final int id;
+  final String name;
+}
+
 class _OpportunitySection extends StatelessWidget {
   const _OpportunitySection({required this.title, required this.children});
 
@@ -546,9 +604,11 @@ class _OpportunityFormData {
     required this.types,
     required this.instruments,
     required this.styles,
+    required this.bands,
   });
 
   final List<OpportunityType> types;
   final List<CatalogItem> instruments;
   final List<CatalogItem> styles;
+  final List<Band> bands;
 }

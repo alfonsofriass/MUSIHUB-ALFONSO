@@ -199,6 +199,7 @@ class _MyOpportunitiesScreenState extends State<MyOpportunitiesScreen> {
   String _subtitle(Opportunity opportunity) {
     final parts = [
       opportunity.type.name,
+      if (opportunity.authorBand != null) opportunity.authorBand!.name,
       opportunity.city,
       opportunity.status,
       if (opportunity.priceAmount != null) '${opportunity.priceAmount} EUR',

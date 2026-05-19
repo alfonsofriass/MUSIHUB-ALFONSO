@@ -62,7 +62,9 @@ El valor principal del producto es combinar perfiles musicales estructurados, pu
   - auth,
   - perfil y catalogos,
   - anuncios,
-  - busqueda/filtros minimos de anuncios.
+  - busqueda/filtros minimos de anuncios,
+  - favoritos,
+  - primer bloque de bandas en modo lectura.
 - Primer bloque visual desde Figma iniciado:
   - tema global de MusiHub,
   - pantalla de publicar/editar anuncio adaptada parcialmente al frame `54:1511 Publicar`.
@@ -192,11 +194,27 @@ Ya esta implementado de forma minima:
 - perfil y catalogos,
 - anuncios,
 - busqueda/filtros minimos de anuncios,
-- favoritos/guardados.
+- favoritos/guardados,
+- bandas en modo lectura:
+  - `GET /bands/me`,
+  - `GET /bands/{band_id}`,
+  - acceso desde perfil,
+  - pantalla de mis bandas,
+  - detalle visual de banda,
+  - creacion de banda con `POST /bands`,
+  - en crear banda, los instrumentos se eligen desde `GET /catalogs/instruments` y se envian al backend como texto separado por comas en `role_in_band`,
+  - edicion basica de banda con `PUT /bands/{band_id}` para nombre, bio, ciudad, provincia y estilos,
+  - gestion provisional de miembros desde `Gestionar banda`:
+    - anadir miembro por `user_id`,
+    - seleccionar instrumentos desde catalogo y enviarlos en `role_in_band`,
+    - eliminar miembros que no sean el creador,
+  - selector `Publicar como` en crear/editar anuncio,
+  - envio de `author_band_id` opcional en anuncios.
 
 No se implementa todavia:
 
-- bandas,
+- buscador de usuarios para anadir miembros sin conocer el `user_id`,
+- solicitudes de banda,
 - alertas,
 - FCM,
 - paginacion,

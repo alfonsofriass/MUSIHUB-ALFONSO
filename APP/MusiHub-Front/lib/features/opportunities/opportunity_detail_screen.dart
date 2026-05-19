@@ -251,7 +251,7 @@ class _OpportunityDetail extends StatelessWidget {
         const SizedBox(height: 20),
         Text('Publicado por', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
-        _AuthorTile(authorUserId: opportunity.authorUserId),
+        _AuthorTile(opportunity: opportunity),
         const SizedBox(height: 16),
         FilledButton(onPressed: onContactTap, child: const Text('Contactar')),
       ],
@@ -441,12 +441,18 @@ class _DescriptionBox extends StatelessWidget {
 }
 
 class _AuthorTile extends StatelessWidget {
-  const _AuthorTile({required this.authorUserId});
+  const _AuthorTile({required this.opportunity});
 
-  final int authorUserId;
+  final Opportunity opportunity;
 
   @override
   Widget build(BuildContext context) {
+    final authorBand = opportunity.authorBand;
+    final authorLabel = authorBand == null
+        ? 'Usuario #${opportunity.authorUserId}'
+        : authorBand.name;
+    final authorType = authorBand == null ? 'Perfil' : 'Banda';
+
     return Container(
       height: 44,
       padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -464,11 +470,23 @@ class _AuthorTile extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              'Usuario #$authorUserId',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.white),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  authorLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white),
+                ),
+                Text(
+                  authorType,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white, fontSize: 11),
+                ),
+              ],
             ),
           ),
           const Icon(Icons.chevron_right, color: Colors.white),

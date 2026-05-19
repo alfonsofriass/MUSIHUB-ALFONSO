@@ -272,6 +272,7 @@ class Opportunity {
     required this.id,
     required this.type,
     required this.authorUserId,
+    required this.authorBand,
     required this.title,
     required this.description,
     required this.city,
@@ -296,6 +297,11 @@ class Opportunity {
       id: json['id'] as int,
       type: OpportunityType.fromJson(json['type'] as Map<String, dynamic>),
       authorUserId: json['author_user_id'] as int,
+      authorBand: json['author_band'] == null
+          ? null
+          : OpportunityAuthorBand.fromJson(
+              json['author_band'] as Map<String, dynamic>,
+            ),
       title: json['title'] as String,
       description: json['description'] as String,
       city: json['city'] as String,
@@ -320,6 +326,7 @@ class Opportunity {
   final int id;
   final OpportunityType type;
   final int authorUserId;
+  final OpportunityAuthorBand? authorBand;
   final String title;
   final String description;
   final String city;
@@ -338,9 +345,24 @@ class Opportunity {
   bool get isActive => status == 'active';
 }
 
+class OpportunityAuthorBand {
+  const OpportunityAuthorBand({required this.id, required this.name});
+
+  factory OpportunityAuthorBand.fromJson(Map<String, dynamic> json) {
+    return OpportunityAuthorBand(
+      id: json['id'] as int,
+      name: json['name'] as String,
+    );
+  }
+
+  final int id;
+  final String name;
+}
+
 class OpportunitySaveRequest {
   const OpportunitySaveRequest({
     required this.typeId,
+    this.authorBandId,
     required this.title,
     required this.description,
     required this.city,
@@ -354,6 +376,7 @@ class OpportunitySaveRequest {
   });
 
   final int typeId;
+  final int? authorBandId;
   final String title;
   final String description;
   final String city;
@@ -368,6 +391,7 @@ class OpportunitySaveRequest {
   Map<String, dynamic> toJson() {
     return {
       'type_id': typeId,
+      if (authorBandId != null) 'author_band_id': authorBandId,
       'title': title,
       'description': description,
       'city': city,
@@ -384,6 +408,8 @@ class OpportunitySaveRequest {
 
 class OpportunityUpdateRequest {
   const OpportunityUpdateRequest({
+    this.authorBandId,
+    this.includeAuthorBandId = false,
     this.title,
     this.description,
     this.city,
@@ -397,6 +423,8 @@ class OpportunityUpdateRequest {
     this.includeNullValues = false,
   });
 
+  final int? authorBandId;
+  final bool includeAuthorBandId;
   final String? title;
   final String? description;
   final String? city;
@@ -411,6 +439,8 @@ class OpportunityUpdateRequest {
 
   Map<String, dynamic> toJson() {
     return {
+      if (authorBandId != null || includeAuthorBandId)
+        'author_band_id': authorBandId,
       if (title != null || includeNullValues) 'title': title,
       if (description != null || includeNullValues) 'description': description,
       if (city != null || includeNullValues) 'city': city,

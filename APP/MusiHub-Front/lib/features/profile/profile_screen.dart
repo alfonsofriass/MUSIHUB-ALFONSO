@@ -4,6 +4,8 @@ import 'package:musihub_front/core/catalog/catalog_item.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/features/auth/login_screen.dart';
+import 'package:musihub_front/features/bands/bands_api.dart';
+import 'package:musihub_front/features/bands/my_bands_screen.dart';
 import 'package:musihub_front/features/opportunities/my_opportunities_screen.dart';
 import 'package:musihub_front/features/profile/profile_api.dart';
 
@@ -28,6 +30,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _selectedStyleIds = <int>{};
 
   late final ProfileApi _profileApi;
+  late final BandsApi _bandsApi;
   late Future<_ProfileInitialData> _initialData;
 
   String? _token;
@@ -42,6 +45,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _profileApi = ProfileApi(apiClient: _apiClient);
+    _bandsApi = BandsApi(apiClient: _apiClient);
     _initialData = _loadInitialData();
   }
 
@@ -69,15 +73,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final instrumentsFuture = _profileApi.listInstruments();
     final stylesFuture = _profileApi.listMusicStyles();
     final profileFuture = _profileApi.getMyProfile(token);
+    final bandsFuture = _bandsApi.listMyBands(token);
 
     final instruments = await instrumentsFuture;
     final styles = await stylesFuture;
     final profileMe = await profileFuture;
+    final bands = await bandsFuture;
 
     _applyProfile(profileMe.profile);
     _profileExists = profileMe.exists;
 
-    return _ProfileInitialData(instruments: instruments, styles: styles);
+    return _ProfileInitialData(
+      instruments: instruments,
+      styles: styles,
+      bands: bands,
+    );
   }
 
   void _applyProfile(UserProfile? profile) {
@@ -203,6 +213,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _openMyBands() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => MyBandsScreen(tokenStore: widget.tokenStore),
+      ),
+    );
+
+    if (!mounted) return;
+
+    _retryLoad();
+  }
+
   Future<void> _logout() async {
     await widget.tokenStore.clearAccessToken();
 
@@ -289,6 +311,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
         else ...[
           if (bio != null) _ProfileSection(title: 'Bio', children: [Text(bio)]),
           _ProfileSection(
+            title: 'Mis bandas',
+            children: [
+              if (data.bands.isEmpty)
+                const Text('Todavia no perteneces a ninguna banda.')
+              else
+                for (final band in data.bands.take(3)) ...[
+                  _ProfileBandTile(band: band, onTap: _openMyBands),
+                  const SizedBox(height: 8),
+                ],
+              OutlinedButton(
+                onPressed: _openMyBands,
+                child: const Text('Ver mis bandas'),
+              ),
+            ],
+          ),
+          _ProfileSection(
             title: 'Musica',
             children: [
               if (selectedInstruments.isNotEmpty) ...[
@@ -332,6 +370,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           onPressed: _openMyOpportunities,
           child: const Text('Mis anuncios'),
         ),
+        if (!_profileExists) ...[
+          const SizedBox(height: 12),
+          OutlinedButton(
+            onPressed: _openMyBands,
+            child: const Text('Mis bandas'),
+          ),
+        ],
         const SizedBox(height: 12),
         OutlinedButton(onPressed: _logout, child: const Text('Cerrar sesion')),
         if (_successMessage != null) ...[
@@ -734,6 +779,78 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
+class _ProfileBandTile extends StatelessWidget {
+  const _ProfileBandTile({required this.band, required this.onTap});
+
+  final Band band;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final location = _locationLabel();
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: MusiHubColors.primary.withValues(alpha: 0.72),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Row(
+          children: [
+            const CircleAvatar(
+              radius: 13,
+              backgroundColor: Colors.white,
+              child: Icon(
+                Icons.groups_outlined,
+                size: 16,
+                color: MusiHubColors.primary,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    band.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (location != null)
+                    Text(
+                      location,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white, fontSize: 11),
+                    ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.white),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String? _locationLabel() {
+    final parts = [
+      band.city,
+      band.province,
+    ].where((part) => part != null && part.trim().isNotEmpty).cast<String>();
+    final label = parts.join(', ');
+
+    return label.isEmpty ? null : label;
+  }
+}
+
 class _ProfileSection extends StatelessWidget {
   const _ProfileSection({required this.title, required this.children});
 
@@ -768,14 +885,30 @@ class _ChipWrap extends StatelessWidget {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: items.map((item) => Chip(label: Text(item))).toList(),
+      children: items
+          .map(
+            (item) => Chip(
+              label: Text(item),
+              backgroundColor: MusiHubColors.primary.withValues(alpha: 0.75),
+              labelStyle: const TextStyle(color: Colors.white),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(5),
+              ),
+            ),
+          )
+          .toList(),
     );
   }
 }
 
 class _ProfileInitialData {
-  const _ProfileInitialData({required this.instruments, required this.styles});
+  const _ProfileInitialData({
+    required this.instruments,
+    required this.styles,
+    required this.bands,
+  });
 
   final List<CatalogItem> instruments;
   final List<CatalogItem> styles;
+  final List<Band> bands;
 }
