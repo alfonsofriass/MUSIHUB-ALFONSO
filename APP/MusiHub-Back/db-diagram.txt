@@ -152,6 +152,24 @@ Table alert_preferences {
 Table alert_preference_types {
   alert_preference_id integer [not null]
   opportunity_type_id integer [not null]
+
+  indexes {
+    (alert_preference_id, opportunity_type_id) [pk]
+  }
+}
+
+//Alertas generadas por matching; en V1 se consultan en app, FCM queda para despues
+Table alerts {
+  id integer [primary key, increment]
+  user_id integer [not null]
+  opportunity_id integer [not null]
+  score integer [not null] // puntuacion explicable del matching
+  reason text [not null] // resumen de por que se genero la alerta
+  created_at timestamp [not null]
+
+  indexes {
+    (user_id, opportunity_id) [unique] // evita duplicar la misma alerta
+  }
 }
 
 //Favoritos: Relacion entre usuario y oportunidad: segunda relacion
@@ -193,6 +211,8 @@ Ref: opportunity_instruments.instrument_id > instruments.id
 Ref: alert_preferences.user_id > users.id
 Ref: alert_preference_types.alert_preference_id > alert_preferences.id
 Ref: alert_preference_types.opportunity_type_id > opportunity_types.id
+Ref: alerts.user_id > users.id
+Ref: alerts.opportunity_id > opportunities.id
 
 Ref: favorites.user_id > users.id
 Ref: favorites.opportunity_id > opportunities.id

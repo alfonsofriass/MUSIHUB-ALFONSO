@@ -1,7 +1,18 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text, func, text
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -45,6 +56,15 @@ class User(Base):
         back_populates="creator",
     )
     band_memberships: Mapped[list["BandMember"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    alert_preference: Mapped["AlertPreference | None"] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
+    alerts: Mapped[list["Alert"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
     )
@@ -215,6 +235,9 @@ class OpportunityType(Base):
     opportunities: Mapped[list["Opportunity"]] = relationship(
         back_populates="type",
     )
+    alert_preference_types: Mapped[list["AlertPreferenceType"]] = relationship(
+        back_populates="opportunity_type",
+    )
 
 
 class Opportunity(Base):
@@ -271,6 +294,10 @@ class Opportunity(Base):
         back_populates="opportunity",
         cascade="all, delete-orphan",
     )
+    alerts: Mapped[list["Alert"]] = relationship(
+        back_populates="opportunity",
+        cascade="all, delete-orphan",
+    )
 
 
 class OpportunityStyle(Base):
@@ -307,6 +334,83 @@ class OpportunityInstrument(Base):
     instrument: Mapped["Instrument"] = relationship(
         back_populates="opportunity_instruments"
     )
+
+
+class AlertPreference(Base):
+    __tablename__ = "alert_preferences"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"),
+        unique=True,
+        nullable=False,
+    )
+    frequency: Mapped[str] = mapped_column(String(20), nullable=False)
+    preferred_city: Mapped[str | None] = mapped_column(String(120))
+    preferred_province: Mapped[str | None] = mapped_column(String(120))
+    notifications_enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default=text("true"),
+    )
+
+    user: Mapped["User"] = relationship(back_populates="alert_preference")
+    alert_preference_types: Mapped[list["AlertPreferenceType"]] = relationship(
+        back_populates="alert_preference",
+        cascade="all, delete-orphan",
+    )
+
+
+class AlertPreferenceType(Base):
+    __tablename__ = "alert_preference_types"
+
+    alert_preference_id: Mapped[int] = mapped_column(
+        ForeignKey("alert_preferences.id"),
+        primary_key=True,
+    )
+    opportunity_type_id: Mapped[int] = mapped_column(
+        ForeignKey("opportunity_types.id"),
+        primary_key=True,
+    )
+
+    alert_preference: Mapped["AlertPreference"] = relationship(
+        back_populates="alert_preference_types"
+    )
+    opportunity_type: Mapped["OpportunityType"] = relationship(
+        back_populates="alert_preference_types"
+    )
+
+
+class Alert(Base):
+    __tablename__ = "alerts"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "opportunity_id",
+            name="uq_alerts_user_id_opportunity_id",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=False,
+    )
+    opportunity_id: Mapped[int] = mapped_column(
+        ForeignKey("opportunities.id"),
+        nullable=False,
+    )
+    score: Mapped[int] = mapped_column(Integer, nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+    user: Mapped["User"] = relationship(back_populates="alerts")
+    opportunity: Mapped["Opportunity"] = relationship(back_populates="alerts")
 
 
 class Favorite(Base):

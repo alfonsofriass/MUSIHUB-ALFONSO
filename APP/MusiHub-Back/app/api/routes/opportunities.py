@@ -9,6 +9,9 @@ from sqlalchemy.orm import Session
 from app.api.routes.auth import get_current_user
 from app.db import get_db
 from app.models import (
+    Alert,
+    AlertPreference,
+    AlertPreferenceType,
     Band,
     BandMember,
     Instrument,
@@ -17,6 +20,9 @@ from app.models import (
     OpportunityInstrument,
     OpportunityStyle,
     OpportunityType,
+    Profile,
+    ProfileInstrument,
+    ProfileStyle,
     User,
 )
 
@@ -26,6 +32,12 @@ CONTACT_METHODS = {"whatsapp", "email", "phone", "other"}
 EVENT_DATE_REQUIRED_TYPES = {"bolos_sustituciones", "eventos"}
 INSTRUMENT_REQUIRED_TYPES = {"bolos_sustituciones", "busqueda_miembros"}
 PRICE_REQUIRED_TYPES = {"compraventa"}
+ALERT_TYPE_SCORE = 50
+ALERT_CITY_SCORE = 20
+ALERT_PROVINCE_SCORE = 10
+ALERT_INSTRUMENT_SCORE = 20
+ALERT_STYLE_SCORE = 20
+ALERT_MIN_SCORE = 50
 
 
 class CatalogItemResponse(BaseModel):
@@ -199,6 +211,108 @@ def _load_author_band_for_user(
     return band
 
 
+def _matches_optional_text(expected: str | None, actual: str) -> bool:
+    if expected is None:
+        return True
+    return expected.casefold() == actual.casefold()
+
+
+def _generate_alerts_for_opportunity(
+    db: Session,
+    opportunity: Opportunity,
+    opportunity_type: OpportunityType,
+    current_user: User,
+    instrument_ids: list[int],
+    style_ids: list[int],
+) -> None:
+    alert_preferences = db.scalars(
+        select(AlertPreference)
+        .join(
+            AlertPreferenceType,
+            AlertPreferenceType.alert_preference_id == AlertPreference.id,
+        )
+        .where(
+            AlertPreference.notifications_enabled.is_(True),
+            AlertPreference.user_id != current_user.id,
+            AlertPreferenceType.opportunity_type_id == opportunity_type.id,
+        )
+    ).all()
+
+    opportunity_instrument_ids = set(instrument_ids)
+    opportunity_style_ids = set(style_ids)
+
+    for alert_preference in alert_preferences:
+        if not _matches_optional_text(alert_preference.preferred_city, opportunity.city):
+            continue
+        if not _matches_optional_text(
+            alert_preference.preferred_province,
+            opportunity.province,
+        ):
+            continue
+
+        profile = db.scalar(
+            select(Profile).where(Profile.user_id == alert_preference.user_id)
+        )
+        profile_instrument_ids: set[int] = set()
+        profile_style_ids: set[int] = set()
+        if profile is not None:
+            profile_instrument_ids = set(
+                db.scalars(
+                    select(ProfileInstrument.instrument_id).where(
+                        ProfileInstrument.profile_id == profile.id
+                    )
+                ).all()
+            )
+            profile_style_ids = set(
+                db.scalars(
+                    select(ProfileStyle.style_id).where(
+                        ProfileStyle.profile_id == profile.id
+                    )
+                ).all()
+            )
+
+        score = ALERT_TYPE_SCORE
+        reasons = [f"Tipo: {opportunity_type.name}"]
+
+        if alert_preference.preferred_city is not None:
+            score += ALERT_CITY_SCORE
+            reasons.append(f"Ciudad: {opportunity.city}")
+
+        if alert_preference.preferred_province is not None:
+            score += ALERT_PROVINCE_SCORE
+            reasons.append(f"Provincia: {opportunity.province}")
+
+        if opportunity_instrument_ids & profile_instrument_ids:
+            score += ALERT_INSTRUMENT_SCORE
+            reasons.append("Instrumento compatible")
+
+        if opportunity_style_ids & profile_style_ids:
+            score += ALERT_STYLE_SCORE
+            reasons.append("Estilo compatible")
+
+        score = min(score, 100)
+        if score < ALERT_MIN_SCORE:
+            continue
+
+        existing_alert = db.scalar(
+            select(Alert).where(
+                Alert.user_id == alert_preference.user_id,
+                Alert.opportunity_id == opportunity.id,
+            )
+        )
+        if existing_alert is not None:
+            continue
+
+        db.add(
+            Alert(
+                user_id=alert_preference.user_id,
+                opportunity_id=opportunity.id,
+                score=score,
+                reason=", ".join(reasons),
+            )
+        )
+
+
 def _build_opportunity_response(
     opportunity: Opportunity,
     db: Session,
@@ -345,6 +459,15 @@ def create_opportunity(
                 style_id=style_id,
             )
         )
+
+    _generate_alerts_for_opportunity(
+        db=db,
+        opportunity=opportunity,
+        opportunity_type=opportunity_type,
+        current_user=current_user,
+        instrument_ids=payload.instrument_ids,
+        style_ids=payload.style_ids,
+    )
 
     db.commit()
 

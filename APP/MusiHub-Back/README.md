@@ -16,6 +16,8 @@ Backend FastAPI del TFG MusiHub.
 - Búsqueda y filtros básicos sobre anuncios activos.
 - Favoritos de anuncios.
 - Bandas V1.
+- Publicación de anuncios en nombre de banda.
+- Alertas V1 sin push real: preferencias, matching básico, trazabilidad y anti-duplicados.
 
 ## Endpoints principales
 - `POST /api/v1/auth/register`
@@ -41,6 +43,9 @@ Backend FastAPI del TFG MusiHub.
 - `PUT /api/v1/bands/{id}`
 - `POST /api/v1/bands/{id}/members`
 - `DELETE /api/v1/bands/{id}/members/{user_id}`
+- `GET /api/v1/alerts/preferences`
+- `PUT /api/v1/alerts/preferences`
+- `GET /api/v1/alerts/me`
 
 ## Filtros de anuncios
 `GET /api/v1/opportunities` acepta filtros opcionales combinables:
@@ -63,13 +68,25 @@ Las fechas usan formato `YYYY-MM-DD`. El listado público devuelve solo anuncios
 - El creador se añade automáticamente como miembro `accepted`.
 - Solo el creador puede editar la banda y gestionar miembros.
 - Los estilos de banda usan el catálogo `music_styles`.
-- No incluye todavía publicación de anuncios como banda.
+- Los anuncios siguen perteneciendo a un usuario, pero pueden indicar `author_band_id`
+  para mostrarse como publicados en nombre de una banda del usuario.
+
+## Alertas V1
+- El usuario puede guardar preferencias de alertas con frecuencia, ubicación
+  opcional, estado activado/desactivado y tipos de anuncio.
+- `opportunity_type_ids: []` significa que no se generan alertas.
+- Al crear un anuncio, el backend evalúa preferencias de otros usuarios y genera
+  alertas si hay coincidencia.
+- El matching es básico y explicable: tipo, ciudad, provincia, instrumento y estilo.
+- Las alertas se guardan en BD y se evita duplicar la misma alerta para el mismo
+  usuario y anuncio.
+- FCM y envíos programados quedan para una fase posterior.
 
 ## Migraciones
 Head esperado:
 
 ```text
-d2e3f4a5b6c7
+f6a7b8c9d0e1
 ```
 
 ## Ejecución local
