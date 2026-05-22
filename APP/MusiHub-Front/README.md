@@ -54,10 +54,16 @@ Frontend móvil de MusiHub, app desarrollada en Flutter para el TFG.
   - crear banda,
   - editar datos basicos de banda,
   - anadir/eliminar miembros de forma provisional por `user_id`,
+  - acciones separadas desde perfil de banda: `Invitar miembros` y `Configuracion`,
   - publicar/editar anuncios como una banda propia,
   - mostrar autor de banda en anuncios cuando el backend lo envie.
+- Alertas V1 conectado sin push real:
+  - configurar preferencias,
+  - activar/desactivar alertas,
+  - listar alertas generadas,
+  - abrir detalle del anuncio desde una alerta.
 - El feed es la entrada principal tras login o sesion guardada.
-- Desde Perfil se puede abrir `Mis anuncios`, `Mis bandas` y cerrar sesion.
+- Desde Perfil se puede abrir `Mis anuncios`, `Mis bandas`, `Alertas` y cerrar sesion.
 - El diseño final queda pendiente porque se replicará desde Figma más adelante.
 
 ## Documentación local
@@ -72,7 +78,7 @@ Frontend móvil de MusiHub, app desarrollada en Flutter para el TFG.
 - Consolidar el flujo actual antes de pasar al siguiente bloque funcional.
 - Preparar el siguiente bloque funcional cuando backend esté listo.
 
-Quedan fuera por ahora buscador de usuarios para miembros, solicitudes de banda, alertas, FCM, paginación, búsqueda por texto libre, orden avanzado y diseño final.
+Quedan fuera por ahora buscador de usuarios para miembros, visibilidad publica de bandas decidida por el propio miembro, solicitudes de banda, FCM, paginación, búsqueda por texto libre, orden avanzado y diseño final.
 
 ## Comandos útiles
 Desde `APP/MusiHub-Front`:

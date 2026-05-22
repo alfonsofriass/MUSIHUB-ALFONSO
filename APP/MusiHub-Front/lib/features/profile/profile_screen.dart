@@ -3,6 +3,7 @@ import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
+import 'package:musihub_front/features/alerts/alerts_screen.dart';
 import 'package:musihub_front/features/auth/login_screen.dart';
 import 'package:musihub_front/features/bands/bands_api.dart';
 import 'package:musihub_front/features/bands/my_bands_screen.dart';
@@ -225,6 +226,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _retryLoad();
   }
 
+  Future<void> _openAlerts() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => AlertsScreen(tokenStore: widget.tokenStore),
+      ),
+    );
+  }
+
   Future<void> _logout() async {
     await widget.tokenStore.clearAccessToken();
 
@@ -370,6 +379,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           onPressed: _openMyOpportunities,
           child: const Text('Mis anuncios'),
         ),
+        const SizedBox(height: 12),
+        OutlinedButton(onPressed: _openAlerts, child: const Text('Alertas')),
         if (!_profileExists) ...[
           const SizedBox(height: 12),
           OutlinedButton(

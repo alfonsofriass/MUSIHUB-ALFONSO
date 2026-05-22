@@ -57,6 +57,7 @@ El valor principal del producto es combinar perfiles musicales estructurados, pu
   - Dart `3.11.5`.
 - Android toolchain quedo preparado para desarrollo Android.
 - Chrome esta disponible para comprobaciones con Flutter web.
+- La app se ha probado visualmente en un movil Android fisico y el resultado general se ve correctamente.
 - La base generada por Flutter fue sustituida por una app minima de MusiHub.
 - El frontend ya conecta con backend real para:
   - auth,
@@ -64,7 +65,8 @@ El valor principal del producto es combinar perfiles musicales estructurados, pu
   - anuncios,
   - busqueda/filtros minimos de anuncios,
   - favoritos,
-  - primer bloque de bandas en modo lectura.
+  - primer bloque de bandas,
+  - alertas V1 sin push real.
 - Primer bloque visual desde Figma iniciado:
   - tema global de MusiHub,
   - pantalla de publicar/editar anuncio adaptada parcialmente al frame `54:1511 Publicar`.
@@ -95,6 +97,7 @@ Backend local:
 
 - Web/escritorio/local: `http://127.0.0.1:8000/api/v1`
 - Emulador Android: `http://10.0.2.2:8000/api/v1`
+- Movil Android fisico: usar la IP local del PC, por ejemplo `http://192.168.1.X:8000/api/v1`, con el backend escuchando en `0.0.0.0`.
 
 Motivo: dentro del emulador Android, `127.0.0.1` apunta al propio emulador, no al PC donde corre FastAPI.
 
@@ -195,7 +198,7 @@ Ya esta implementado de forma minima:
 - anuncios,
 - busqueda/filtros minimos de anuncios,
 - favoritos/guardados,
-- bandas en modo lectura:
+- bandas:
   - `GET /bands/me`,
   - `GET /bands/{band_id}`,
   - acceso desde perfil,
@@ -208,14 +211,26 @@ Ya esta implementado de forma minima:
     - anadir miembro por `user_id`,
     - seleccionar instrumentos desde catalogo y enviarlos en `role_in_band`,
     - eliminar miembros que no sean el creador,
+    - el admin no decide si la banda aparece en el perfil publico del miembro; esa decision debe ser del miembro cuando backend exponga endpoint para actualizar su visibilidad,
+  - acciones de banda separadas en el perfil de banda:
+    - `Invitar miembros` abre el flujo de miembros,
+    - `Configuracion` abre la edicion de datos basicos,
   - selector `Publicar como` en crear/editar anuncio,
-  - envio de `author_band_id` opcional en anuncios.
+  - envio de `author_band_id` opcional en anuncios,
+- alertas V1 sin FCM:
+  - lectura y guardado de preferencias con `/alerts/preferences`,
+  - activacion/desactivacion,
+  - frecuencia `immediate`, `daily`, `weekly`,
+  - ciudad/provincia opcional,
+  - tipos de anuncio de interes,
+  - listado de alertas generadas con `/alerts/me`,
+  - apertura del detalle de anuncio desde una alerta.
 
 No se implementa todavia:
 
 - buscador de usuarios para anadir miembros sin conocer el `user_id`,
+- endpoint para que un miembro active/desactive `is_visible_in_profile` de su pertenencia a una banda,
 - solicitudes de banda,
-- alertas,
 - FCM,
 - paginacion,
 - busqueda por texto libre,

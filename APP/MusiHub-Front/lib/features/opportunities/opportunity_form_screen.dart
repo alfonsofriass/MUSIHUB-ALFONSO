@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
 import 'package:musihub_front/core/session/token_store.dart';
+import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/features/bands/bands_api.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
 import 'package:musihub_front/features/opportunities/opportunity_display.dart';
@@ -151,6 +152,19 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
       _errorMessage = null;
     });
 
+    final selectedType = type!;
+    final template = _OpportunityFormTemplate.fromTypeCode(selectedType.code);
+    final eventDate = template.showEventDate
+        ? _textOrNull(_eventDateController.text)
+        : null;
+    final priceAmount = template.showPrice
+        ? _priceOrNull(_priceController.text)
+        : null;
+    final instrumentIds = template.showInstruments
+        ? _selectedInstrumentIds.toList()
+        : <int>[];
+    final styleIds = template.showStyles ? _selectedStyleIds.toList() : <int>[];
+
     try {
       if (_isEditing) {
         await _opportunitiesApi.updateOpportunity(
@@ -163,12 +177,12 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
             description: _descriptionController.text.trim(),
             city: _cityController.text.trim(),
             province: _textOrNull(_provinceController.text),
-            eventDate: _textOrNull(_eventDateController.text),
-            priceAmount: _priceOrNull(_priceController.text),
+            eventDate: eventDate,
+            priceAmount: priceAmount,
             contactMethod: _selectedContactMethod,
             contactValue: _contactValueController.text.trim(),
-            instrumentIds: _selectedInstrumentIds.toList(),
-            styleIds: _selectedStyleIds.toList(),
+            instrumentIds: instrumentIds,
+            styleIds: styleIds,
             includeNullValues: true,
           ),
         );
@@ -176,18 +190,18 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
         await _opportunitiesApi.createOpportunity(
           token: token,
           request: OpportunitySaveRequest(
-            typeId: type!.id,
+            typeId: selectedType.id,
             authorBandId: _selectedAuthorBandId,
             title: _titleController.text.trim(),
             description: _descriptionController.text.trim(),
             city: _cityController.text.trim(),
             province: _textOrNull(_provinceController.text),
-            eventDate: _textOrNull(_eventDateController.text),
-            priceAmount: _priceOrNull(_priceController.text),
+            eventDate: eventDate,
+            priceAmount: priceAmount,
             contactMethod: _selectedContactMethod,
             contactValue: _contactValueController.text.trim(),
-            instrumentIds: _selectedInstrumentIds.toList(),
-            styleIds: _selectedStyleIds.toList(),
+            instrumentIds: instrumentIds,
+            styleIds: styleIds,
           ),
         );
       }
@@ -306,6 +320,9 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
   }
 
   Widget _buildForm(_OpportunityFormData data) {
+    final selectedType = _selectedType(data.types);
+    final template = _OpportunityFormTemplate.fromTypeCode(selectedType?.code);
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(28, 16, 28, 24),
       children: [
@@ -344,34 +361,50 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
               controller: _provinceController,
               hintText: 'Ej: Madrid',
             ),
-            const SizedBox(height: 12),
-            _buildTextField(
-              label: 'Fecha',
-              controller: _eventDateController,
-              helperText: 'Formato: YYYY-MM-DD',
-            ),
-            const SizedBox(height: 12),
-            _buildTextField(
-              label: 'Precio',
-              controller: _priceController,
-              hintText: 'Ej: 55',
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
+            if (template.showEventDate) ...[
+              const SizedBox(height: 12),
+              _buildTextField(
+                label: 'Fecha',
+                controller: _eventDateController,
+                helperText: 'Formato: YYYY-MM-DD',
               ),
-              suffixText: 'EUR',
-            ),
+            ],
+            if (template.showPrice) ...[
+              const SizedBox(height: 12),
+              _buildTextField(
+                label: 'Precio',
+                controller: _priceController,
+                hintText: 'Ej: 55',
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                suffixText: 'EUR',
+              ),
+            ],
           ],
         ),
-        _OpportunitySection(
-          title: 'Estilo musical',
-          children: [_buildCatalogChips(data.styles, _selectedStyleIds)],
-        ),
-        _OpportunitySection(
-          title: 'Instrumentos',
-          children: [
-            _buildCatalogChips(data.instruments, _selectedInstrumentIds),
-          ],
-        ),
+        if (template.showStyles)
+          _OpportunitySection(
+            title: 'Estilo musical',
+            children: [
+              _buildCatalogDropdown(
+                label: 'Selecciona estilo',
+                items: data.styles,
+                selectedIds: _selectedStyleIds,
+              ),
+            ],
+          ),
+        if (template.showInstruments)
+          _OpportunitySection(
+            title: 'Instrumentos',
+            children: [
+              _buildCatalogDropdown(
+                label: 'Selecciona instrumentos',
+                items: data.instruments,
+                selectedIds: _selectedInstrumentIds,
+              ),
+            ],
+          ),
         _OpportunitySection(
           title: 'Contacto',
           children: [
@@ -426,22 +459,21 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
       return const Text('No hay tipos de anuncio disponibles.');
     }
 
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: types.map((type) {
-        return ChoiceChip(
-          label: Text(opportunityTypeFilterLabel(type)),
-          selected: _selectedTypeId == type.id,
-          onSelected: _isEditing
-              ? null
-              : (_) {
-                  setState(() {
-                    _selectedTypeId = type.id;
-                  });
-                },
-        );
-      }).toList(),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (var index = 0; index < types.length; index++) ...[
+            _OpportunityTypePill(
+              label: opportunityTypeFilterLabel(types[index]),
+              selected: _selectedTypeId == types[index].id,
+              enabled: !_isEditing,
+              onTap: () => _selectType(types[index]),
+            ),
+            if (index < types.length - 1) const SizedBox(width: 14),
+          ],
+        ],
+      ),
     );
   }
 
@@ -502,32 +534,121 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
     );
   }
 
-  Widget _buildCatalogChips(List<CatalogItem> items, Set<int> selectedIds) {
+  Widget _buildCatalogDropdown({
+    required String label,
+    required List<CatalogItem> items,
+    required Set<int> selectedIds,
+  }) {
     if (items.isEmpty) {
       return const Text('No hay elementos disponibles.');
     }
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: items.map((item) {
-        final isSelected = selectedIds.contains(item.id);
+    final selectedLabel = _selectedCatalogLabel(items, selectedIds);
 
-        return FilterChip(
-          label: Text(item.name),
-          selected: isSelected,
-          onSelected: (value) {
-            setState(() {
-              if (value) {
-                selectedIds.add(item.id);
-              } else {
-                selectedIds.remove(item.id);
-              }
-            });
+    return InkWell(
+      onTap: () => _openCatalogSelector(
+        title: label,
+        items: items,
+        selectedIds: selectedIds,
+      ),
+      borderRadius: BorderRadius.circular(8),
+      child: InputDecorator(
+        decoration: InputDecoration(labelText: label),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                selectedLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: selectedIds.isEmpty ? MusiHubColors.textGrey : null,
+                ),
+              ),
+            ),
+            const Icon(Icons.keyboard_arrow_down),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openCatalogSelector({
+    required String title,
+    required List<CatalogItem> items,
+    required Set<int> selectedIds,
+  }) async {
+    final updatedSelection = Set<int>.from(selectedIds);
+
+    final shouldApply = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text(title),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 420),
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: [
+                      for (final item in items)
+                        CheckboxListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(item.name),
+                          value: updatedSelection.contains(item.id),
+                          onChanged: (value) {
+                            setDialogState(() {
+                              if (value == true) {
+                                updatedSelection.add(item.id);
+                              } else {
+                                updatedSelection.remove(item.id);
+                              }
+                            });
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Cancelar'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('Aplicar'),
+                ),
+              ],
+            );
           },
         );
-      }).toList(),
+      },
     );
+
+    if (shouldApply != true) {
+      return;
+    }
+
+    setState(() {
+      selectedIds
+        ..clear()
+        ..addAll(updatedSelection);
+    });
+  }
+
+  String _selectedCatalogLabel(List<CatalogItem> items, Set<int> selectedIds) {
+    if (selectedIds.isEmpty) {
+      return 'Sin seleccionar';
+    }
+
+    return items
+        .where((item) => selectedIds.contains(item.id))
+        .map((item) => item.name)
+        .join(', ');
   }
 
   String _contactMethodLabel(String method) {
@@ -542,6 +663,76 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
         return 'Otro';
     }
   }
+
+  void _selectType(OpportunityType type) {
+    final template = _OpportunityFormTemplate.fromTypeCode(type.code);
+
+    setState(() {
+      _selectedTypeId = type.id;
+
+      if (!template.showEventDate) {
+        _eventDateController.clear();
+      }
+      if (!template.showPrice) {
+        _priceController.clear();
+      }
+      if (!template.showInstruments) {
+        _selectedInstrumentIds.clear();
+      }
+      if (!template.showStyles) {
+        _selectedStyleIds.clear();
+      }
+    });
+  }
+}
+
+class _OpportunityTypePill extends StatelessWidget {
+  const _OpportunityTypePill({
+    required this.label,
+    required this.selected,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = selected ? MusiHubColors.primary : Colors.transparent;
+
+    return Material(
+      color: Colors.white,
+      elevation: enabled ? 4 : 1,
+      shadowColor: Colors.black.withValues(alpha: 0.18),
+      borderRadius: BorderRadius.circular(11),
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        borderRadius: BorderRadius.circular(11),
+        child: Container(
+          constraints: const BoxConstraints(minWidth: 84),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            border: Border.all(color: borderColor, width: selected ? 2 : 1),
+            borderRadius: BorderRadius.circular(11),
+          ),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _AuthorBandOption {
@@ -549,6 +740,61 @@ class _AuthorBandOption {
 
   final int id;
   final String name;
+}
+
+class _OpportunityFormTemplate {
+  const _OpportunityFormTemplate({
+    required this.showEventDate,
+    required this.showPrice,
+    required this.showInstruments,
+    required this.showStyles,
+  });
+
+  final bool showEventDate;
+  final bool showPrice;
+  final bool showInstruments;
+  final bool showStyles;
+
+  factory _OpportunityFormTemplate.fromTypeCode(String? code) {
+    switch (code) {
+      case 'bolos_sustituciones':
+        return const _OpportunityFormTemplate(
+          showEventDate: true,
+          showPrice: true,
+          showInstruments: true,
+          showStyles: true,
+        );
+      case 'busqueda_miembros':
+        return const _OpportunityFormTemplate(
+          showEventDate: false,
+          showPrice: false,
+          showInstruments: true,
+          showStyles: true,
+        );
+      case 'eventos':
+        return const _OpportunityFormTemplate(
+          showEventDate: true,
+          showPrice: true,
+          showInstruments: false,
+          showStyles: true,
+        );
+      case 'compraventa':
+        return const _OpportunityFormTemplate(
+          showEventDate: false,
+          showPrice: true,
+          showInstruments: true,
+          showStyles: false,
+        );
+      case 'clases':
+      default:
+        return const _OpportunityFormTemplate(
+          showEventDate: false,
+          showPrice: true,
+          showInstruments: true,
+          showStyles: true,
+        );
+    }
+  }
 }
 
 class _OpportunitySection extends StatelessWidget {

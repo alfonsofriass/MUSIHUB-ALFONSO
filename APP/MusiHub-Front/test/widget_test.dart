@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:musihub_front/features/alerts/alerts_api.dart';
 import 'package:musihub_front/features/auth/login_screen.dart';
 import 'package:musihub_front/features/bands/bands_api.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
@@ -96,6 +97,24 @@ void main() {
       'user_id': 8,
       'role_in_band': 'Bateria, Voz',
       'is_visible_in_profile': true,
+    });
+  });
+
+  test('builds alert preferences payload', () {
+    const request = AlertPreferencesSaveRequest(
+      frequency: 'immediate',
+      preferredCity: 'Granada',
+      preferredProvince: null,
+      notificationsEnabled: true,
+      opportunityTypeIds: [1, 2],
+    );
+
+    expect(request.toJson(), {
+      'frequency': 'immediate',
+      'preferred_city': 'Granada',
+      'preferred_province': null,
+      'notifications_enabled': true,
+      'opportunity_type_ids': [1, 2],
     });
   });
 }

@@ -3,6 +3,7 @@ import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/features/auth/auth_api.dart';
+import 'package:musihub_front/features/bands/band_invite_member_screen.dart';
 import 'package:musihub_front/features/bands/band_manage_screen.dart';
 import 'package:musihub_front/features/bands/bands_api.dart';
 import 'package:musihub_front/features/opportunities/favorite_opportunities_screen.dart';
@@ -82,6 +83,19 @@ class _BandDetailScreenState extends State<BandDetailScreen> {
     _refresh();
   }
 
+  Future<void> _openInviteMembers(Band band) async {
+    final wasUpdated = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) =>
+            BandInviteMemberScreen(tokenStore: widget.tokenStore, band: band),
+      ),
+    );
+
+    if (wasUpdated != true || !mounted) return;
+
+    _refresh();
+  }
+
   Future<void> _openCreateOpportunity() async {
     await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
@@ -123,11 +137,10 @@ class _BandDetailScreenState extends State<BandDetailScreen> {
               return _BandDetail(
                 band: data.band,
                 canManage: data.canManage,
-                onManageTap: () => _openManageBand(data.band),
-                onInviteTap: () => _showFutureFeature('Invitar miembros'),
+                onInviteTap: () => _openInviteMembers(data.band),
                 onRequestsTap: () =>
                     _showFutureFeature('Solicitudes pendientes'),
-                onSettingsTap: () => _showFutureFeature('Configuracion'),
+                onSettingsTap: () => _openManageBand(data.band),
               );
             }
 
@@ -161,7 +174,6 @@ class _BandDetail extends StatelessWidget {
   const _BandDetail({
     required this.band,
     required this.canManage,
-    required this.onManageTap,
     required this.onInviteTap,
     required this.onRequestsTap,
     required this.onSettingsTap,
@@ -169,7 +181,6 @@ class _BandDetail extends StatelessWidget {
 
   final Band band;
   final bool canManage;
-  final VoidCallback onManageTap;
   final VoidCallback onInviteTap;
   final VoidCallback onRequestsTap;
   final VoidCallback onSettingsTap;
@@ -250,11 +261,6 @@ class _BandDetail extends StatelessWidget {
                 icon: Icons.menu_outlined,
                 label: 'Configuracion',
                 onTap: onSettingsTap,
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton(
-                onPressed: onManageTap,
-                child: const Text('Gestionar banda'),
               ),
             ],
           ),
