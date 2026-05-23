@@ -28,7 +28,6 @@ class _BandFormScreenState extends State<BandFormScreen> {
   late Future<_BandFormData> _initialDataFuture;
 
   String? _token;
-  bool _isVisibleInProfile = true;
   bool _isSaving = false;
   String? _errorMessage;
 
@@ -101,7 +100,7 @@ class _BandFormScreenState extends State<BandFormScreen> {
           province: _provinceController.text.trim(),
           photoUrl: null,
           roleInBand: _selectedInstrumentNames(data.instruments).join(', '),
-          isVisibleInProfile: _isVisibleInProfile,
+          isVisibleInProfile: true,
           styleIds: _selectedStyleIds.toList(),
         ),
       );
@@ -222,20 +221,7 @@ class _BandFormScreenState extends State<BandFormScreen> {
         ),
         _BandFormSection(
           title: 'Tu papel en la banda',
-          children: [
-            _buildInstrumentChips(data.instruments),
-            const SizedBox(height: 12),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Mostrar esta banda en mi perfil'),
-              value: _isVisibleInProfile,
-              onChanged: (value) {
-                setState(() {
-                  _isVisibleInProfile = value;
-                });
-              },
-            ),
-          ],
+          children: [_buildInstrumentChips(data.instruments)],
         ),
         _BandFormSection(
           title: 'Estilo musical',

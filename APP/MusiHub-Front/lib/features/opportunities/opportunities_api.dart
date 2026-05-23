@@ -16,7 +16,7 @@ class OpportunitiesApi {
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
-    final items = json['items'] as List<dynamic>;
+    final items = json['items'] as List<dynamic>? ?? const <dynamic>[];
 
     return items
         .map((item) => OpportunityType.fromJson(item as Map<String, dynamic>))
@@ -171,7 +171,7 @@ class OpportunitiesApi {
     }
 
     final map = json as Map<String, dynamic>;
-    final items = map['items'] as List<dynamic>;
+    final items = map['items'] as List<dynamic>? ?? const <dynamic>[];
 
     return items
         .map((item) => Opportunity.fromJson(item as Map<String, dynamic>))
@@ -290,8 +290,9 @@ class Opportunity {
   });
 
   factory Opportunity.fromJson(Map<String, dynamic> json) {
-    final instruments = json['instruments'] as List<dynamic>;
-    final styles = json['styles'] as List<dynamic>;
+    final instruments =
+        json['instruments'] as List<dynamic>? ?? const <dynamic>[];
+    final styles = json['styles'] as List<dynamic>? ?? const <dynamic>[];
 
     return Opportunity(
       id: json['id'] as int,

@@ -6,9 +6,6 @@ import 'package:musihub_front/features/auth/auth_api.dart';
 import 'package:musihub_front/features/bands/band_invite_member_screen.dart';
 import 'package:musihub_front/features/bands/band_manage_screen.dart';
 import 'package:musihub_front/features/bands/bands_api.dart';
-import 'package:musihub_front/features/opportunities/favorite_opportunities_screen.dart';
-import 'package:musihub_front/features/opportunities/opportunity_form_screen.dart';
-import 'package:musihub_front/features/opportunities/widgets/opportunity_feed_widgets.dart';
 
 class BandDetailScreen extends StatefulWidget {
   const BandDetailScreen({
@@ -96,27 +93,6 @@ class _BandDetailScreenState extends State<BandDetailScreen> {
     _refresh();
   }
 
-  Future<void> _openCreateOpportunity() async {
-    await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(
-        builder: (_) => OpportunityFormScreen(tokenStore: widget.tokenStore),
-      ),
-    );
-  }
-
-  Future<void> _openFavorites() async {
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(
-        builder: (_) =>
-            FavoriteOpportunitiesScreen(tokenStore: widget.tokenStore),
-      ),
-    );
-  }
-
-  void _goHome() {
-    Navigator.of(context).popUntil((route) => route.isFirst);
-  }
-
   void _showFutureFeature(String label) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('$label estara disponible mas adelante.')),
@@ -151,13 +127,6 @@ class _BandDetailScreenState extends State<BandDetailScreen> {
             return const Center(child: CircularProgressIndicator());
           },
         ),
-      ),
-      bottomNavigationBar: OpportunityFeedBottomNav(
-        selectedIndex: 3,
-        onHome: _goHome,
-        onPublish: _openCreateOpportunity,
-        onSaved: _openFavorites,
-        onProfile: () => Navigator.of(context).pop(),
       ),
     );
   }

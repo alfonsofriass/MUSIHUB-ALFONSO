@@ -7,7 +7,10 @@ import 'package:musihub_front/features/alerts/alerts_screen.dart';
 import 'package:musihub_front/features/auth/login_screen.dart';
 import 'package:musihub_front/features/bands/bands_api.dart';
 import 'package:musihub_front/features/bands/my_bands_screen.dart';
+import 'package:musihub_front/features/opportunities/favorite_opportunities_screen.dart';
 import 'package:musihub_front/features/opportunities/my_opportunities_screen.dart';
+import 'package:musihub_front/features/opportunities/opportunity_form_screen.dart';
+import 'package:musihub_front/features/opportunities/widgets/opportunity_feed_widgets.dart';
 import 'package:musihub_front/features/profile/profile_api.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -214,6 +217,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _openCreateOpportunity() async {
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => OpportunityFormScreen(tokenStore: widget.tokenStore),
+      ),
+    );
+  }
+
+  Future<void> _openFavorites() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            FavoriteOpportunitiesScreen(tokenStore: widget.tokenStore),
+      ),
+    );
+  }
+
+  void _goHome() {
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
   Future<void> _openMyBands() async {
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
@@ -226,10 +250,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _retryLoad();
   }
 
-  Future<void> _openAlerts() async {
+  Future<void> _openMyAlerts() async {
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
-        builder: (_) => AlertsScreen(tokenStore: widget.tokenStore),
+        builder: (_) => AlertsScreen(
+          tokenStore: widget.tokenStore,
+          mode: AlertsScreenMode.generated,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openAlertSettings() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => AlertsScreen(
+          tokenStore: widget.tokenStore,
+          mode: AlertsScreenMode.settings,
+        ),
       ),
     );
   }
@@ -245,10 +283,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _showProfileSettings() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('Ajustes', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 12),
+                _ProfileSettingsAction(
+                  icon: Icons.edit_outlined,
+                  title: 'Editar perfil',
+                  subtitle: 'Actualiza tu informacion musical',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _startEditing();
+                  },
+                ),
+                _ProfileSettingsAction(
+                  icon: Icons.notifications_outlined,
+                  title: 'Configurar alertas',
+                  subtitle: 'Ajusta tipos, frecuencia y ubicacion',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _openAlertSettings();
+                  },
+                ),
+                _ProfileSettingsAction(
+                  icon: Icons.logout,
+                  title: 'Cerrar sesion',
+                  subtitle: 'Salir de esta cuenta',
+                  danger: true,
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _logout();
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Perfil musical')),
+      appBar: AppBar(
+        title: const Text('Mi Perfil'),
+        actions: [
+          if (!_isEditingProfile)
+            IconButton(
+              onPressed: _showProfileSettings,
+              icon: const Icon(Icons.settings_outlined),
+              tooltip: 'Ajustes',
+            ),
+        ],
+      ),
       body: SafeArea(
         child: FutureBuilder<_ProfileInitialData>(
           future: _initialData,
@@ -267,6 +365,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           },
         ),
       ),
+      bottomNavigationBar: _isEditingProfile
+          ? null
+          : OpportunityFeedBottomNav(
+              selectedIndex: 3,
+              onHome: _goHome,
+              onPublish: _openCreateOpportunity,
+              onSaved: _openFavorites,
+              onProfile: () {},
+            ),
     );
   }
 
@@ -292,7 +399,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 96),
       children: [
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -369,27 +476,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const Text('Sin datos de contacto visibles.'),
             ],
           ),
-          FilledButton(
-            onPressed: _startEditing,
-            child: const Text('Editar perfil'),
-          ),
-          const SizedBox(height: 12),
         ],
-        OutlinedButton(
-          onPressed: _openMyOpportunities,
-          child: const Text('Mis anuncios'),
+        _ProfileSection(
+          title: 'Mi actividad',
+          children: [
+            _ActivityActionTile(
+              icon: Icons.campaign_outlined,
+              title: 'Mis anuncios',
+              subtitle: 'Edita, revisa o cierra tus publicaciones',
+              onTap: _openMyOpportunities,
+            ),
+            const SizedBox(height: 10),
+            _ActivityActionTile(
+              icon: Icons.notifications_outlined,
+              title: 'Mis alertas',
+              subtitle: 'Consulta oportunidades recomendadas para ti',
+              onTap: _openMyAlerts,
+            ),
+          ],
         ),
-        const SizedBox(height: 12),
-        OutlinedButton(onPressed: _openAlerts, child: const Text('Alertas')),
         if (!_profileExists) ...[
-          const SizedBox(height: 12),
-          OutlinedButton(
-            onPressed: _openMyBands,
-            child: const Text('Mis bandas'),
+          _ActivityActionTile(
+            icon: Icons.groups_outlined,
+            title: 'Mis bandas',
+            subtitle: 'Crea o gestiona tus proyectos musicales',
+            onTap: _openMyBands,
           ),
+          const SizedBox(height: 24),
         ],
-        const SizedBox(height: 12),
-        OutlinedButton(onPressed: _logout, child: const Text('Cerrar sesion')),
         if (_successMessage != null) ...[
           const SizedBox(height: 16),
           Text(
@@ -786,6 +900,100 @@ class _InfoRow extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(child: Text(text)),
       ],
+    );
+  }
+}
+
+class _ActivityActionTile extends StatelessWidget {
+  const _ActivityActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      elevation: 3,
+      shadowColor: Colors.black.withValues(alpha: 0.14),
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: MusiHubColors.primary.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: MusiHubColors.primary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: MusiHubColors.textGrey),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileSettingsAction extends StatelessWidget {
+  const _ProfileSettingsAction({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.danger = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = danger ? Colors.redAccent : MusiHubColors.primary;
+
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: CircleAvatar(
+        backgroundColor: color.withValues(alpha: 0.12),
+        child: Icon(icon, color: color),
+      ),
+      title: Text(title),
+      subtitle: Text(subtitle),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: onTap,
     );
   }
 }

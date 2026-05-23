@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
 import 'package:musihub_front/core/session/token_store.dart';
@@ -231,11 +232,24 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
       return 'No hay tipos de anuncio disponibles.';
     }
 
+    final template = _OpportunityFormTemplate.fromTypeCode(type.code);
+
     if (_textOrNull(_titleController.text) == null ||
         _textOrNull(_descriptionController.text) == null ||
         _textOrNull(_cityController.text) == null ||
         _textOrNull(_contactValueController.text) == null) {
       return 'Completa titulo, descripcion, ciudad y contacto.';
+    }
+
+    if (template.showPrice &&
+        _textOrNull(_priceController.text) != null &&
+        _priceOrNull(_priceController.text) == null) {
+      return 'El precio debe ser un numero valido.';
+    }
+
+    final contactError = _validateContactValue();
+    if (contactError != null) {
+      return contactError;
     }
 
     if (type.code == 'bolos_sustituciones') {
@@ -287,6 +301,67 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
     }
 
     return num.tryParse(trimmed);
+  }
+
+  String? _validateContactValue() {
+    final contactValue = _contactValueController.text.trim();
+
+    switch (_selectedContactMethod) {
+      case 'whatsapp':
+      case 'phone':
+        return _isValidPhoneLikeValue(contactValue)
+            ? null
+            : 'Introduce un telefono valido.';
+      case 'email':
+        return _isValidEmailValue(contactValue)
+            ? null
+            : 'Introduce un email valido.';
+      default:
+        return null;
+    }
+  }
+
+  bool _isValidPhoneLikeValue(String value) {
+    final phonePattern = RegExp(r'^\+?[0-9][0-9\s-]{7,18}$');
+    return phonePattern.hasMatch(value);
+  }
+
+  bool _isValidEmailValue(String value) {
+    final emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+    return emailPattern.hasMatch(value);
+  }
+
+  String _contactHintText() {
+    switch (_selectedContactMethod) {
+      case 'email':
+        return 'Ej: contacto@email.com';
+      case 'other':
+        return 'Ej: Instagram @musihub';
+      default:
+        return 'Ej: 600000000';
+    }
+  }
+
+  TextInputType _contactKeyboardType() {
+    switch (_selectedContactMethod) {
+      case 'email':
+        return TextInputType.emailAddress;
+      case 'whatsapp':
+      case 'phone':
+        return TextInputType.phone;
+      default:
+        return TextInputType.text;
+    }
+  }
+
+  List<TextInputFormatter>? _contactInputFormatters() {
+    switch (_selectedContactMethod) {
+      case 'whatsapp':
+      case 'phone':
+        return [FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s-]'))];
+      default:
+        return null;
+    }
   }
 
   void _retryLoad() {
@@ -378,6 +453,9 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]')),
+                ],
                 suffixText: 'EUR',
               ),
             ],
@@ -392,6 +470,8 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
                 items: data.styles,
                 selectedIds: _selectedStyleIds,
               ),
+              const SizedBox(height: 6),
+              const _SelectionOrderHint(),
             ],
           ),
         if (template.showInstruments)
@@ -403,6 +483,8 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
                 items: data.instruments,
                 selectedIds: _selectedInstrumentIds,
               ),
+              const SizedBox(height: 6),
+              const _SelectionOrderHint(),
             ],
           ),
         _OpportunitySection(
@@ -431,7 +513,9 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
             _buildTextField(
               label: 'Contacto',
               controller: _contactValueController,
-              hintText: 'Ej: 600000000',
+              hintText: _contactHintText(),
+              keyboardType: _contactKeyboardType(),
+              inputFormatters: _contactInputFormatters(),
             ),
           ],
         ),
@@ -520,11 +604,13 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
     String? suffixText,
     int maxLines = 1,
     TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
       keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
       decoration: InputDecoration(
         labelText: label,
         hintText: hintText,
@@ -794,6 +880,18 @@ class _OpportunityFormTemplate {
           showStyles: true,
         );
     }
+  }
+}
+
+class _SelectionOrderHint extends StatelessWidget {
+  const _SelectionOrderHint();
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      'La primera seleccion aparecera en la portada del anuncio.',
+      style: Theme.of(context).textTheme.bodySmall,
+    );
   }
 }
 

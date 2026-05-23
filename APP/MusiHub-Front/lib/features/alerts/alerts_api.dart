@@ -55,7 +55,7 @@ class AlertsApi {
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
-    final items = json['items'] as List<dynamic>;
+    final items = json['items'] as List<dynamic>? ?? const <dynamic>[];
 
     return items
         .map((item) => GeneratedAlert.fromJson(item as Map<String, dynamic>))
@@ -95,7 +95,8 @@ class AlertPreferences {
   });
 
   factory AlertPreferences.fromJson(Map<String, dynamic> json) {
-    final opportunityTypes = json['opportunity_types'] as List<dynamic>;
+    final opportunityTypes =
+        json['opportunity_types'] as List<dynamic>? ?? const <dynamic>[];
 
     return AlertPreferences(
       id: json['id'] as int,

@@ -2,12 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
-import 'package:musihub_front/features/opportunities/favorite_opportunities_screen.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
 import 'package:musihub_front/features/opportunities/opportunity_display.dart';
-import 'package:musihub_front/features/opportunities/opportunity_form_screen.dart';
-import 'package:musihub_front/features/opportunities/widgets/opportunity_feed_widgets.dart';
-import 'package:musihub_front/features/profile/profile_screen.dart';
 
 class OpportunityDetailScreen extends StatefulWidget {
   const OpportunityDetailScreen({
@@ -52,9 +48,9 @@ class _OpportunityDetailScreenState extends State<OpportunityDetailScreen> {
       throw Exception('No hay sesion activa.');
     }
 
-    final opportunityFuture = widget.initialOpportunity == null
-        ? _opportunitiesApi.getOpportunity(widget.opportunityId)
-        : Future.value(widget.initialOpportunity!);
+    final opportunityFuture = _opportunitiesApi.getOpportunity(
+      widget.opportunityId,
+    );
     final favoritesFuture = _opportunitiesApi.listFavoriteOpportunities(token);
 
     final opportunity = await opportunityFuture;
@@ -70,35 +66,6 @@ class _OpportunityDetailScreenState extends State<OpportunityDetailScreen> {
     setState(() {
       _detailFuture = _loadDetailData();
     });
-  }
-
-  Future<void> _openCreateOpportunity() async {
-    await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(
-        builder: (_) => OpportunityFormScreen(tokenStore: widget.tokenStore),
-      ),
-    );
-  }
-
-  Future<void> _openProfile() async {
-    await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(
-        builder: (_) => ProfileScreen(tokenStore: widget.tokenStore),
-      ),
-    );
-  }
-
-  Future<void> _openFavorites() async {
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(
-        builder: (_) =>
-            FavoriteOpportunitiesScreen(tokenStore: widget.tokenStore),
-      ),
-    );
-
-    if (!mounted) return;
-
-    _refresh();
   }
 
   Future<void> _toggleFavorite(_OpportunityDetailData data) async {
@@ -195,12 +162,6 @@ class _OpportunityDetailScreenState extends State<OpportunityDetailScreen> {
           },
         ),
       ),
-      bottomNavigationBar: OpportunityFeedBottomNav(
-        onHome: () => Navigator.of(context).pop(),
-        onPublish: _openCreateOpportunity,
-        onSaved: _openFavorites,
-        onProfile: _openProfile,
-      ),
     );
   }
 }
@@ -271,10 +232,9 @@ class _OpportunityTags extends StatelessWidget {
         label: opportunityTypeTagLabel(opportunity.type),
         color: opportunityTypeTagColor(opportunity.type),
       ),
-      if (opportunity.instruments.isNotEmpty)
-        _TagData(label: opportunity.instruments.first.name),
-      if (opportunity.styles.isNotEmpty)
-        _TagData(label: opportunity.styles.first.name),
+      for (final instrument in opportunity.instruments)
+        _TagData(label: instrument.name),
+      for (final style in opportunity.styles) _TagData(label: style.name),
     ];
 
     return Wrap(

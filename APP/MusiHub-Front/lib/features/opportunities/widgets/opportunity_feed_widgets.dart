@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
@@ -281,6 +282,9 @@ class OpportunityAdvancedFilters extends StatelessWidget {
             const SizedBox(height: 12),
             TextField(
               controller: dateFromController,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9-]')),
+              ],
               textInputAction: TextInputAction.search,
               decoration: const InputDecoration(
                 labelText: 'Fecha desde',
@@ -291,6 +295,9 @@ class OpportunityAdvancedFilters extends StatelessWidget {
             const SizedBox(height: 12),
             TextField(
               controller: dateToController,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9-]')),
+              ],
               textInputAction: TextInputAction.search,
               decoration: const InputDecoration(
                 labelText: 'Fecha hasta',
@@ -301,6 +308,9 @@ class OpportunityAdvancedFilters extends StatelessWidget {
             const SizedBox(height: 12),
             TextField(
               controller: minPriceController,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]')),
+              ],
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
@@ -311,6 +321,9 @@ class OpportunityAdvancedFilters extends StatelessWidget {
             const SizedBox(height: 12),
             TextField(
               controller: maxPriceController,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]')),
+              ],
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),

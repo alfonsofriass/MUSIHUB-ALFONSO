@@ -6,14 +6,19 @@ import 'package:musihub_front/features/alerts/alerts_api.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
 import 'package:musihub_front/features/opportunities/opportunity_detail_screen.dart';
 import 'package:musihub_front/features/opportunities/opportunity_display.dart';
-import 'package:musihub_front/features/opportunities/opportunity_form_screen.dart';
-import 'package:musihub_front/features/opportunities/widgets/opportunity_feed_widgets.dart';
 import 'package:musihub_front/features/profile/profile_screen.dart';
 
+enum AlertsScreenMode { generated, settings }
+
 class AlertsScreen extends StatefulWidget {
-  const AlertsScreen({super.key, required this.tokenStore});
+  const AlertsScreen({
+    super.key,
+    required this.tokenStore,
+    this.mode = AlertsScreenMode.generated,
+  });
 
   final TokenStore tokenStore;
+  final AlertsScreenMode mode;
 
   @override
   State<AlertsScreen> createState() => _AlertsScreenState();
@@ -63,17 +68,21 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
     _token = token;
 
+    if (widget.mode == AlertsScreenMode.generated) {
+      final alerts = await _alertsApi.listMyAlerts(token);
+
+      return _AlertsData(types: const [], alerts: alerts);
+    }
+
     final typesFuture = _opportunitiesApi.listOpportunityTypes();
     final preferencesFuture = _alertsApi.getPreferences(token);
-    final alertsFuture = _alertsApi.listMyAlerts(token);
 
     final types = await typesFuture;
     final preferencesResponse = await preferencesFuture;
-    final alerts = await alertsFuture;
 
     _applyPreferences(preferencesResponse.preferences);
 
-    return _AlertsData(types: types, alerts: alerts);
+    return _AlertsData(types: types, alerts: const []);
   }
 
   void _applyPreferences(AlertPreferences? preferences) {
@@ -123,8 +132,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
         _applyPreferences(preferences);
         _successMessage = 'Preferencias guardadas.';
       });
-
-      _refreshAlerts(data);
     } catch (_) {
       if (!mounted) return;
 
@@ -137,29 +144,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
           _isSaving = false;
         });
       }
-    }
-  }
-
-  Future<void> _refreshAlerts(_AlertsData data) async {
-    final token = _token;
-
-    if (token == null || token.isEmpty) {
-      return;
-    }
-
-    try {
-      final alerts = await _alertsApi.listMyAlerts(token);
-
-      if (!mounted) return;
-
-      setState(() {
-        _initialDataFuture = Future.value(
-          _AlertsData(types: data.types, alerts: alerts),
-        );
-      });
-    } catch (_) {
-      // Guardar preferencias y refrescar alertas son operaciones distintas.
-      // Si el refresco falla, no debe mostrarse como error de guardado.
     }
   }
 
@@ -192,14 +176,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
     _retryLoad();
   }
 
-  Future<void> _openCreateOpportunity() async {
-    await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(
-        builder: (_) => OpportunityFormScreen(tokenStore: widget.tokenStore),
-      ),
-    );
-  }
-
   Future<void> _openProfile() async {
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
@@ -208,13 +184,10 @@ class _AlertsScreenState extends State<AlertsScreen> {
     );
   }
 
-  void _goHome() {
-    Navigator.of(context).popUntil((route) => route.isFirst);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(),
       body: SafeArea(
         child: FutureBuilder<_AlertsData>(
           future: _initialDataFuture,
@@ -231,21 +204,25 @@ class _AlertsScreenState extends State<AlertsScreen> {
           },
         ),
       ),
-      bottomNavigationBar: OpportunityFeedBottomNav(
-        selectedIndex: 3,
-        onHome: _goHome,
-        onPublish: _openCreateOpportunity,
-        onSaved: () {},
-        onProfile: _openProfile,
-      ),
     );
   }
 
   Widget _buildContent(_AlertsData data) {
+    if (widget.mode == AlertsScreenMode.generated) {
+      return _buildGeneratedAlertsContent(data);
+    }
+
+    return _buildSettingsContent(data);
+  }
+
+  Widget _buildSettingsContent(_AlertsData data) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(26, 24, 26, 96),
       children: [
-        Text('Alertas', style: Theme.of(context).textTheme.headlineLarge),
+        Text(
+          'Configurar alertas',
+          style: Theme.of(context).textTheme.headlineLarge,
+        ),
         const SizedBox(height: 18),
         _ActivationCard(
           enabled: _notificationsEnabled,
@@ -319,23 +296,32 @@ class _AlertsScreenState extends State<AlertsScreen> {
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
         ],
-        const SizedBox(height: 26),
-        _AlertsSection(
-          title: 'Alertas generadas',
-          children: data.alerts.isEmpty
-              ? [const _EmptyAlerts()]
-              : data.alerts
-                    .map(
-                      (alert) => Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
-                        child: _GeneratedAlertCard(
-                          alert: alert,
-                          onTap: () => _openOpportunity(alert),
-                        ),
-                      ),
-                    )
-                    .toList(),
+      ],
+    );
+  }
+
+  Widget _buildGeneratedAlertsContent(_AlertsData data) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(26, 24, 26, 96),
+      children: [
+        Text('Mis alertas', style: Theme.of(context).textTheme.headlineLarge),
+        const SizedBox(height: 6),
+        Text(
+          'Oportunidades que encajan con tu perfil y preferencias.',
+          style: Theme.of(context).textTheme.bodySmall,
         ),
+        const SizedBox(height: 22),
+        if (data.alerts.isEmpty)
+          const _EmptyAlerts()
+        else
+          for (final alert in data.alerts)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: _GeneratedAlertCard(
+                alert: alert,
+                onTap: () => _openOpportunity(alert),
+              ),
+            ),
       ],
     );
   }
@@ -396,28 +382,6 @@ class _AlertsData {
 
   final List<OpportunityType> types;
   final List<GeneratedAlert> alerts;
-}
-
-class _AlertsSection extends StatelessWidget {
-  const _AlertsSection({required this.title, required this.children});
-
-  final String title;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 12),
-          ...children,
-        ],
-      ),
-    );
-  }
 }
 
 class _ActivationCard extends StatelessWidget {

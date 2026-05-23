@@ -197,6 +197,12 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
   }
 
   void _applyFilters() {
+    final validationError = _filterValidationError();
+    if (validationError != null) {
+      _showFilterError(validationError);
+      return;
+    }
+
     setState(() {
       _filters = _currentFilters();
       _feedDataFuture = _loadFeedData();
@@ -204,8 +210,17 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
   }
 
   void _applyTypeFilter(int? typeId) {
+    final previousTypeId = _selectedTypeId;
+    _selectedTypeId = typeId;
+
+    final validationError = _filterValidationError();
+    if (validationError != null) {
+      _selectedTypeId = previousTypeId;
+      _showFilterError(validationError);
+      return;
+    }
+
     setState(() {
-      _selectedTypeId = typeId;
       _filters = _currentFilters();
       _feedDataFuture = _loadFeedData();
     });
@@ -254,6 +269,70 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
     }
 
     return num.tryParse(trimmed);
+  }
+
+  DateTime? _dateOrNull(String value) {
+    final trimmed = value.trim();
+
+    if (trimmed.isEmpty) {
+      return null;
+    }
+
+    final match = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(trimmed);
+    if (match == null) {
+      return null;
+    }
+
+    final year = int.parse(match.group(1)!);
+    final month = int.parse(match.group(2)!);
+    final day = int.parse(match.group(3)!);
+    final parsed = DateTime.tryParse(trimmed);
+
+    if (parsed == null ||
+        parsed.year != year ||
+        parsed.month != month ||
+        parsed.day != day) {
+      return null;
+    }
+
+    return parsed;
+  }
+
+  String? _filterValidationError() {
+    final dateFromText = _textOrNull(_dateFromController.text);
+    final dateToText = _textOrNull(_dateToController.text);
+    final minPriceText = _textOrNull(_minPriceController.text);
+    final maxPriceText = _textOrNull(_maxPriceController.text);
+    final dateFrom = _dateOrNull(_dateFromController.text);
+    final dateTo = _dateOrNull(_dateToController.text);
+    final minPrice = _priceOrNull(_minPriceController.text);
+    final maxPrice = _priceOrNull(_maxPriceController.text);
+
+    if ((dateFromText != null && dateFrom == null) ||
+        (dateToText != null && dateTo == null)) {
+      return 'Usa fechas con formato YYYY-MM-DD.';
+    }
+
+    if (dateFrom != null && dateTo != null && dateFrom.isAfter(dateTo)) {
+      return 'La fecha desde no puede ser posterior a la fecha hasta.';
+    }
+
+    if ((minPriceText != null && minPrice == null) ||
+        (maxPriceText != null && maxPrice == null)) {
+      return 'El precio debe ser un numero valido.';
+    }
+
+    if (minPrice != null && maxPrice != null && minPrice > maxPrice) {
+      return 'El precio minimo no puede superar al precio maximo.';
+    }
+
+    return null;
+  }
+
+  void _showFilterError(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override

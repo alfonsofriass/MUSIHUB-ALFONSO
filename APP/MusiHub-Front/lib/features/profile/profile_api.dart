@@ -16,7 +16,7 @@ class ProfileApi {
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
-    final items = json['items'] as List<dynamic>;
+    final items = json['items'] as List<dynamic>? ?? const <dynamic>[];
 
     return items
         .map((item) => CatalogItem.fromJson(item as Map<String, dynamic>))
@@ -31,7 +31,7 @@ class ProfileApi {
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
-    final items = json['items'] as List<dynamic>;
+    final items = json['items'] as List<dynamic>? ?? const <dynamic>[];
 
     return items
         .map((item) => CatalogItem.fromJson(item as Map<String, dynamic>))
@@ -100,8 +100,9 @@ class UserProfile {
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
-    final instruments = json['instruments'] as List<dynamic>;
-    final styles = json['styles'] as List<dynamic>;
+    final instruments =
+        json['instruments'] as List<dynamic>? ?? const <dynamic>[];
+    final styles = json['styles'] as List<dynamic>? ?? const <dynamic>[];
 
     return UserProfile(
       id: json['id'] as int,

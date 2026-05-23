@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/session/token_store.dart';
+import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
+import 'package:musihub_front/features/opportunities/opportunity_display.dart';
 import 'package:musihub_front/features/opportunities/opportunity_detail_screen.dart';
 import 'package:musihub_front/features/opportunities/opportunity_form_screen.dart';
 
@@ -146,42 +148,23 @@ class _MyOpportunitiesScreenState extends State<MyOpportunitiesScreen> {
                 return const Center(child: Text('Todavia no tienes anuncios.'));
               }
 
-              return ListView.separated(
-                padding: const EdgeInsets.all(16),
-                itemCount: opportunities.length,
-                separatorBuilder: (_, _) => const Divider(),
-                itemBuilder: (context, index) {
-                  final opportunity = opportunities[index];
-
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(opportunity.title),
-                    subtitle: Text(_subtitle(opportunity)),
-                    trailing: Wrap(
-                      spacing: 4,
-                      children: [
-                        IconButton(
-                          onPressed: () => _openDetail(opportunity),
-                          icon: const Icon(Icons.visibility),
-                          tooltip: 'Ver anuncio',
-                        ),
-                        if (opportunity.isActive)
-                          IconButton(
-                            onPressed: () => _openEditOpportunity(opportunity),
-                            icon: const Icon(Icons.edit),
-                            tooltip: 'Editar anuncio',
-                          ),
-                        if (opportunity.isActive)
-                          IconButton(
-                            onPressed: () => _closeOpportunity(opportunity),
-                            icon: const Icon(Icons.lock),
-                            tooltip: 'Cerrar anuncio',
-                          ),
-                      ],
+              return ListView(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                children: [
+                  for (final opportunity in opportunities) ...[
+                    _MyOpportunityCard(
+                      opportunity: opportunity,
+                      onOpen: () => _openDetail(opportunity),
+                      onEdit: opportunity.isActive
+                          ? () => _openEditOpportunity(opportunity)
+                          : null,
+                      onClose: opportunity.isActive
+                          ? () => _closeOpportunity(opportunity)
+                          : null,
                     ),
-                    onTap: () => _openDetail(opportunity),
-                  );
-                },
+                    const SizedBox(height: 14),
+                  ],
+                ],
               );
             }
 
@@ -195,17 +178,215 @@ class _MyOpportunitiesScreenState extends State<MyOpportunitiesScreen> {
       ),
     );
   }
+}
 
-  String _subtitle(Opportunity opportunity) {
-    final parts = [
-      opportunity.type.name,
-      if (opportunity.authorBand != null) opportunity.authorBand!.name,
-      opportunity.city,
-      opportunity.status,
-      if (opportunity.priceAmount != null) '${opportunity.priceAmount} EUR',
+class _MyOpportunityCard extends StatelessWidget {
+  const _MyOpportunityCard({
+    required this.opportunity,
+    required this.onOpen,
+    required this.onEdit,
+    required this.onClose,
+  });
+
+  final Opportunity opportunity;
+  final VoidCallback onOpen;
+  final VoidCallback? onEdit;
+  final VoidCallback? onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      elevation: 3,
+      shadowColor: Colors.black.withValues(alpha: 0.14),
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onOpen,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: _MyOpportunityTags(opportunity: opportunity)),
+                  _StatusBadge(isActive: opportunity.isActive),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                opportunity.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              if (opportunity.authorBand != null) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.groups_outlined,
+                      size: 14,
+                      color: MusiHubColors.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        opportunity.authorBand!.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: MusiHubColors.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 14,
+                runSpacing: 6,
+                children: [
+                  _MetaText(
+                    icon: Icons.location_on_outlined,
+                    text: opportunity.city,
+                  ),
+                  if (opportunity.eventDate != null)
+                    _MetaText(
+                      icon: Icons.calendar_month_outlined,
+                      text: opportunityShortDateLabel(opportunity.eventDate!),
+                    ),
+                  if (opportunity.priceAmount != null)
+                    _MetaText(
+                      icon: Icons.euro,
+                      text: opportunityPriceLabel(opportunity.priceAmount!),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  TextButton.icon(
+                    onPressed: onOpen,
+                    icon: const Icon(Icons.visibility_outlined, size: 18),
+                    label: const Text('Ver'),
+                  ),
+                  const Spacer(),
+                  if (onEdit != null)
+                    IconButton(
+                      onPressed: onEdit,
+                      icon: const Icon(Icons.edit_outlined),
+                      tooltip: 'Editar anuncio',
+                    ),
+                  if (onClose != null)
+                    IconButton(
+                      onPressed: onClose,
+                      icon: const Icon(Icons.lock_outline),
+                      tooltip: 'Cerrar anuncio',
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MyOpportunityTags extends StatelessWidget {
+  const _MyOpportunityTags({required this.opportunity});
+
+  final Opportunity opportunity;
+
+  @override
+  Widget build(BuildContext context) {
+    final labels = [
+      opportunityTypeTagLabel(opportunity.type),
+      if (opportunity.instruments.isNotEmpty)
+        opportunity.instruments.first.name,
+      if (opportunity.styles.isNotEmpty) opportunity.styles.first.name,
     ];
 
-    return parts.join(' · ');
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: labels.map((label) => _SmallBadge(label: label)).toList(),
+    );
+  }
+}
+
+class _SmallBadge extends StatelessWidget {
+  const _SmallBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 116),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: MusiHubColors.fieldGrey,
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: MusiHubColors.borderGrey),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.isActive});
+
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: isActive
+            ? MusiHubColors.primary.withValues(alpha: 0.16)
+            : MusiHubColors.fieldGrey,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        isActive ? 'Activo' : 'Cerrado',
+        style: TextStyle(
+          color: isActive ? MusiHubColors.primary : MusiHubColors.textGrey,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _MetaText extends StatelessWidget {
+  const _MetaText({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: MusiHubColors.textGrey),
+        const SizedBox(width: 3),
+        Text(text, style: Theme.of(context).textTheme.titleSmall),
+      ],
+    );
   }
 }
 

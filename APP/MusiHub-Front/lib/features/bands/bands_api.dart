@@ -16,7 +16,7 @@ class BandsApi {
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
-    final items = json['items'] as List<dynamic>;
+    final items = json['items'] as List<dynamic>? ?? const <dynamic>[];
 
     return items
         .map((item) => Band.fromJson(item as Map<String, dynamic>))
@@ -121,8 +121,8 @@ class Band {
   });
 
   factory Band.fromJson(Map<String, dynamic> json) {
-    final styles = json['styles'] as List<dynamic>;
-    final members = json['members'] as List<dynamic>;
+    final styles = json['styles'] as List<dynamic>? ?? const <dynamic>[];
+    final members = json['members'] as List<dynamic>? ?? const <dynamic>[];
 
     return Band(
       id: json['id'] as int,
