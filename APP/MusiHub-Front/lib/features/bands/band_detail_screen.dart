@@ -28,6 +28,8 @@ class _BandDetailScreenState extends State<BandDetailScreen> {
   late final BandsApi _bandsApi;
   late Future<_BandDetailData> _bandFuture;
 
+  bool _isUpdatingVisibility = false;
+
   @override
   void initState() {
     super.initState();
@@ -58,6 +60,7 @@ class _BandDetailScreenState extends State<BandDetailScreen> {
     return _BandDetailData(
       band: band,
       canManage: band.createdByUserId == user.id,
+      currentUserId: user.id,
     );
   }
 
@@ -93,6 +96,47 @@ class _BandDetailScreenState extends State<BandDetailScreen> {
     _refresh();
   }
 
+  Future<void> _updateMyVisibility({
+    required Band band,
+    required bool isVisible,
+  }) async {
+    final token = await widget.tokenStore.readAccessToken();
+
+    if (token == null || token.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _isUpdatingVisibility = true;
+    });
+
+    try {
+      await _bandsApi.updateMyBandVisibility(
+        token: token,
+        bandId: band.id,
+        isVisibleInProfile: isVisible,
+      );
+
+      if (!mounted) return;
+
+      _refresh();
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo actualizar la visibilidad de la banda.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUpdatingVisibility = false;
+        });
+      }
+    }
+  }
+
   void _showFutureFeature(String label) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('$label estara disponible mas adelante.')),
@@ -113,6 +157,10 @@ class _BandDetailScreenState extends State<BandDetailScreen> {
               return _BandDetail(
                 band: data.band,
                 canManage: data.canManage,
+                currentMember: data.currentMember,
+                isUpdatingVisibility: _isUpdatingVisibility,
+                onVisibilityChanged: (value) =>
+                    _updateMyVisibility(band: data.band, isVisible: value),
                 onInviteTap: () => _openInviteMembers(data.band),
                 onRequestsTap: () =>
                     _showFutureFeature('Solicitudes pendientes'),
@@ -133,16 +181,35 @@ class _BandDetailScreenState extends State<BandDetailScreen> {
 }
 
 class _BandDetailData {
-  const _BandDetailData({required this.band, required this.canManage});
+  const _BandDetailData({
+    required this.band,
+    required this.canManage,
+    required this.currentUserId,
+  });
 
   final Band band;
   final bool canManage;
+  final int currentUserId;
+
+  BandMember? get currentMember {
+    for (final member in band.members) {
+      if (member.userId == currentUserId &&
+          member.membershipStatus == 'accepted') {
+        return member;
+      }
+    }
+
+    return null;
+  }
 }
 
 class _BandDetail extends StatelessWidget {
   const _BandDetail({
     required this.band,
     required this.canManage,
+    required this.currentMember,
+    required this.isUpdatingVisibility,
+    required this.onVisibilityChanged,
     required this.onInviteTap,
     required this.onRequestsTap,
     required this.onSettingsTap,
@@ -150,6 +217,9 @@ class _BandDetail extends StatelessWidget {
 
   final Band band;
   final bool canManage;
+  final BandMember? currentMember;
+  final bool isUpdatingVisibility;
+  final ValueChanged<bool> onVisibilityChanged;
   final VoidCallback onInviteTap;
   final VoidCallback onRequestsTap;
   final VoidCallback onSettingsTap;
@@ -163,6 +233,17 @@ class _BandDetail extends StatelessWidget {
       children: [
         _BandHeader(band: band),
         const SizedBox(height: 18),
+        if (currentMember != null)
+          _BandSection(
+            title: 'Visibilidad',
+            children: [
+              _BandVisibilityTile(
+                isVisible: currentMember!.isVisibleInProfile,
+                isUpdating: isUpdatingVisibility,
+                onChanged: onVisibilityChanged,
+              ),
+            ],
+          ),
         _BandSection(
           title: 'Sobre la Banda',
           children: [
@@ -428,6 +509,65 @@ class _BandMemberTile extends StatelessWidget {
       ),
       subtitle: Text(member.roleInBand),
       trailing: const Icon(Icons.chevron_right),
+    );
+  }
+}
+
+class _BandVisibilityTile extends StatelessWidget {
+  const _BandVisibilityTile({
+    required this.isVisible,
+    required this.isUpdating,
+    required this.onChanged,
+  });
+
+  final bool isVisible;
+  final bool isUpdating;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      elevation: 3,
+      shadowColor: Colors.black.withValues(alpha: 0.14),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: MusiHubColors.primary.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.visibility_outlined,
+                color: MusiHubColors.primary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Mostrar en mi perfil',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Decide si esta banda aparece en tu perfil publico.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+            Switch(value: isVisible, onChanged: isUpdating ? null : onChanged),
+          ],
+        ),
+      ),
     );
   }
 }

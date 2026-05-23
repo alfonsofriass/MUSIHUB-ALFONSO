@@ -7,6 +7,7 @@ import 'package:musihub_front/features/alerts/alerts_screen.dart';
 import 'package:musihub_front/features/auth/login_screen.dart';
 import 'package:musihub_front/features/bands/bands_api.dart';
 import 'package:musihub_front/features/bands/my_bands_screen.dart';
+import 'package:musihub_front/features/contact_requests/contact_requests_screen.dart';
 import 'package:musihub_front/features/opportunities/favorite_opportunities_screen.dart';
 import 'package:musihub_front/features/opportunities/my_opportunities_screen.dart';
 import 'package:musihub_front/features/opportunities/opportunity_form_screen.dart';
@@ -213,6 +214,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (_) => MyOpportunitiesScreen(tokenStore: widget.tokenStore),
+      ),
+    );
+  }
+
+  Future<void> _openReceivedContactRequests() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => ContactRequestsScreen(
+          tokenStore: widget.tokenStore,
+          mode: ContactRequestsScreenMode.received,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openSentContactRequests() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => ContactRequestsScreen(
+          tokenStore: widget.tokenStore,
+          mode: ContactRequestsScreenMode.sent,
+        ),
       ),
     );
   }
@@ -485,6 +508,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title: 'Mis anuncios',
               subtitle: 'Edita, revisa o cierra tus publicaciones',
               onTap: _openMyOpportunities,
+            ),
+            const SizedBox(height: 10),
+            _ActivityActionTile(
+              icon: Icons.inbox_outlined,
+              title: 'Solicitudes recibidas',
+              subtitle: 'Acepta o rechaza solicitudes de tus anuncios',
+              onTap: _openReceivedContactRequests,
+            ),
+            const SizedBox(height: 10),
+            _ActivityActionTile(
+              icon: Icons.send_outlined,
+              title: 'Solicitudes enviadas',
+              subtitle: 'Consulta el estado y contactos aceptados',
+              onTap: _openSentContactRequests,
             ),
             const SizedBox(height: 10),
             _ActivityActionTile(

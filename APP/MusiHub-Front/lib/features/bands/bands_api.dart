@@ -104,6 +104,25 @@ class BandsApi {
       throw Exception('No se pudo eliminar el miembro.');
     }
   }
+
+  Future<BandVisibility> updateMyBandVisibility({
+    required String token,
+    required int bandId,
+    required bool isVisibleInProfile,
+  }) async {
+    final response = await _apiClient.patch(
+      '/bands/$bandId/me/visibility',
+      token: token,
+      body: {'is_visible_in_profile': isVisibleInProfile},
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('No se pudo actualizar la visibilidad de la banda.');
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    return BandVisibility.fromJson(json);
+  }
 }
 
 class Band {
@@ -181,6 +200,26 @@ class BandMember {
   final String membershipStatus;
   final bool isVisibleInProfile;
   final String joinedAt;
+}
+
+class BandVisibility {
+  const BandVisibility({
+    required this.bandId,
+    required this.userId,
+    required this.isVisibleInProfile,
+  });
+
+  factory BandVisibility.fromJson(Map<String, dynamic> json) {
+    return BandVisibility(
+      bandId: json['band_id'] as int,
+      userId: json['user_id'] as int,
+      isVisibleInProfile: json['is_visible_in_profile'] as bool,
+    );
+  }
+
+  final int bandId;
+  final int userId;
+  final bool isVisibleInProfile;
 }
 
 class BandSaveRequest {

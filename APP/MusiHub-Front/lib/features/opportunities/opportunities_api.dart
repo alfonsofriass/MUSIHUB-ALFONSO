@@ -42,8 +42,8 @@ class OpportunitiesApi {
     return _decodeOpportunityList(response.body);
   }
 
-  Future<Opportunity> getOpportunity(int id) async {
-    final response = await _apiClient.get('/opportunities/$id');
+  Future<Opportunity> getOpportunity(int id, {String? token}) async {
+    final response = await _apiClient.get('/opportunities/$id', token: token);
 
     if (response.statusCode != 200) {
       throw Exception('No se pudo cargar el anuncio.');
@@ -310,7 +310,7 @@ class Opportunity {
       eventDate: json['event_date'] as String?,
       priceAmount: json['price_amount'] as String?,
       contactMethod: json['contact_method'] as String,
-      contactValue: json['contact_value'] as String,
+      contactValue: json['contact_value'] as String?,
       status: json['status'] as String,
       createdAt: json['created_at'] as String,
       updatedAt: json['updated_at'] as String,
@@ -335,7 +335,7 @@ class Opportunity {
   final String? eventDate;
   final String? priceAmount;
   final String contactMethod;
-  final String contactValue;
+  final String? contactValue;
   final String status;
   final String createdAt;
   final String updatedAt;

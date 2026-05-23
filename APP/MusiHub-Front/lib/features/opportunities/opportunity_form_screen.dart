@@ -89,7 +89,7 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
     _eventDateController.text = opportunity.eventDate ?? '';
     _priceController.text = opportunity.priceAmount ?? '';
     _selectedContactMethod = opportunity.contactMethod;
-    _contactValueController.text = opportunity.contactValue;
+    _contactValueController.text = opportunity.contactValue ?? '';
     _selectedInstrumentIds
       ..clear()
       ..addAll(opportunity.instruments.map((item) => item.id));

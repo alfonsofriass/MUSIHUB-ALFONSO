@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
+import 'package:musihub_front/features/auth/auth_api.dart';
+import 'package:musihub_front/features/contact_requests/contact_requests_api.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
 import 'package:musihub_front/features/opportunities/opportunity_display.dart';
 
@@ -25,12 +27,18 @@ class OpportunityDetailScreen extends StatefulWidget {
 class _OpportunityDetailScreenState extends State<OpportunityDetailScreen> {
   final _apiClient = ApiClient();
 
+  late final AuthApi _authApi;
+  late final ContactRequestsApi _contactRequestsApi;
   late final OpportunitiesApi _opportunitiesApi;
   late Future<_OpportunityDetailData> _detailFuture;
+
+  bool _isRequestingContact = false;
 
   @override
   void initState() {
     super.initState();
+    _authApi = AuthApi(apiClient: _apiClient);
+    _contactRequestsApi = ContactRequestsApi(apiClient: _apiClient);
     _opportunitiesApi = OpportunitiesApi(apiClient: _apiClient);
     _detailFuture = _loadDetailData();
   }
@@ -50,15 +58,19 @@ class _OpportunityDetailScreenState extends State<OpportunityDetailScreen> {
 
     final opportunityFuture = _opportunitiesApi.getOpportunity(
       widget.opportunityId,
+      token: token,
     );
     final favoritesFuture = _opportunitiesApi.listFavoriteOpportunities(token);
+    final userFuture = _authApi.me(token);
 
     final opportunity = await opportunityFuture;
     final favorites = await favoritesFuture;
+    final user = await userFuture;
 
     return _OpportunityDetailData(
       opportunity: opportunity,
       isFavorite: favorites.any((favorite) => favorite.id == opportunity.id),
+      currentUserId: user.id,
     );
   }
 
@@ -99,6 +111,51 @@ class _OpportunityDetailScreenState extends State<OpportunityDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No se pudo actualizar el favorito.')),
       );
+    }
+  }
+
+  Future<void> _requestContact(_OpportunityDetailData data) async {
+    final token = await widget.tokenStore.readAccessToken();
+
+    if (token == null || token.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _isRequestingContact = true;
+    });
+
+    try {
+      await _contactRequestsApi.createContactRequest(
+        token: token,
+        opportunityId: data.opportunity.id,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Solicitud de contacto enviada.')),
+      );
+      _refresh();
+    } on DuplicateContactRequestException {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ya habias solicitado este contacto.')),
+      );
+      _refresh();
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo solicitar el contacto.')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRequestingContact = false;
+        });
+      }
     }
   }
 
@@ -150,7 +207,9 @@ class _OpportunityDetailScreenState extends State<OpportunityDetailScreen> {
             if (snapshot.hasData) {
               return _OpportunityDetail(
                 opportunity: snapshot.data!.opportunity,
-                onContactTap: () => _showFutureFeature('Contacto'),
+                currentUserId: snapshot.data!.currentUserId,
+                isRequestingContact: _isRequestingContact,
+                onRequestContact: () => _requestContact(snapshot.data!),
               );
             }
 
@@ -170,15 +229,18 @@ class _OpportunityDetailData {
   const _OpportunityDetailData({
     required this.opportunity,
     required this.isFavorite,
+    required this.currentUserId,
   });
 
   final Opportunity opportunity;
   final bool isFavorite;
+  final int currentUserId;
 
   _OpportunityDetailData copyWith({bool? isFavorite}) {
     return _OpportunityDetailData(
       opportunity: opportunity,
       isFavorite: isFavorite ?? this.isFavorite,
+      currentUserId: currentUserId,
     );
   }
 }
@@ -186,14 +248,20 @@ class _OpportunityDetailData {
 class _OpportunityDetail extends StatelessWidget {
   const _OpportunityDetail({
     required this.opportunity,
-    required this.onContactTap,
+    required this.currentUserId,
+    required this.isRequestingContact,
+    required this.onRequestContact,
   });
 
   final Opportunity opportunity;
-  final VoidCallback onContactTap;
+  final int currentUserId;
+  final bool isRequestingContact;
+  final VoidCallback onRequestContact;
 
   @override
   Widget build(BuildContext context) {
+    final isOwnOpportunity = opportunity.authorUserId == currentUserId;
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(28, 24, 28, 32),
       children: [
@@ -214,7 +282,12 @@ class _OpportunityDetail extends StatelessWidget {
         const SizedBox(height: 8),
         _AuthorTile(opportunity: opportunity),
         const SizedBox(height: 16),
-        FilledButton(onPressed: onContactTap, child: const Text('Contactar')),
+        _ContactAction(
+          opportunity: opportunity,
+          isOwnOpportunity: isOwnOpportunity,
+          isRequestingContact: isRequestingContact,
+          onRequestContact: onRequestContact,
+        ),
       ],
     );
   }
@@ -450,6 +523,137 @@ class _AuthorTile extends StatelessWidget {
             ),
           ),
           const Icon(Icons.chevron_right, color: Colors.white),
+        ],
+      ),
+    );
+  }
+}
+
+class _ContactAction extends StatelessWidget {
+  const _ContactAction({
+    required this.opportunity,
+    required this.isOwnOpportunity,
+    required this.isRequestingContact,
+    required this.onRequestContact,
+  });
+
+  final Opportunity opportunity;
+  final bool isOwnOpportunity;
+  final bool isRequestingContact;
+  final VoidCallback onRequestContact;
+
+  @override
+  Widget build(BuildContext context) {
+    final contactValue = opportunity.contactValue;
+
+    if (contactValue != null && contactValue.trim().isNotEmpty) {
+      return _ContactInfoCard(
+        method: _contactMethodLabel(opportunity.contactMethod),
+        value: contactValue,
+      );
+    }
+
+    if (isOwnOpportunity) {
+      return const _ContactNotice(
+        icon: Icons.lock_outline,
+        text: 'Tu dato de contacto no esta visible publicamente.',
+      );
+    }
+
+    return FilledButton.icon(
+      onPressed: isRequestingContact ? null : onRequestContact,
+      icon: const Icon(Icons.mail_outline),
+      label: Text(
+        isRequestingContact ? 'Solicitando...' : 'Solicitar contacto',
+      ),
+    );
+  }
+
+  String _contactMethodLabel(String method) {
+    switch (method) {
+      case 'whatsapp':
+        return 'WhatsApp';
+      case 'email':
+        return 'Email';
+      case 'phone':
+        return 'Telefono';
+      default:
+        return 'Contacto';
+    }
+  }
+}
+
+class _ContactInfoCard extends StatelessWidget {
+  const _ContactInfoCard({required this.method, required this.value});
+
+  final String method;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      elevation: 3,
+      shadowColor: Colors.black.withValues(alpha: 0.14),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: MusiHubColors.primary.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.mark_email_read_outlined,
+                color: MusiHubColors.primary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(method, style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ContactNotice extends StatelessWidget {
+  const _ContactNotice({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: MusiHubColors.fieldGrey,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: MusiHubColors.textGrey),
+          const SizedBox(width: 10),
+          Expanded(child: Text(text)),
         ],
       ),
     );

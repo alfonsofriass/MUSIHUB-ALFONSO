@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/session/token_store.dart';
+import 'package:musihub_front/features/auth/auth_api.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
 import 'package:musihub_front/features/opportunities/favorite_opportunities_screen.dart';
 import 'package:musihub_front/features/opportunities/opportunity_detail_screen.dart';
@@ -28,6 +29,7 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
   final _maxPriceController = TextEditingController();
   final _apiClient = ApiClient();
 
+  late final AuthApi _authApi;
   late final OpportunitiesApi _opportunitiesApi;
   late final ProfileApi _profileApi;
   late Future<OpportunityFilterData> _filterDataFuture;
@@ -42,6 +44,7 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
   @override
   void initState() {
     super.initState();
+    _authApi = AuthApi(apiClient: _apiClient);
     _opportunitiesApi = OpportunitiesApi(apiClient: _apiClient);
     _profileApi = ProfileApi(apiClient: _apiClient);
     _filterDataFuture = _loadFilterData();
@@ -87,12 +90,17 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
       filters: _filters,
     );
     final favoritesFuture = _opportunitiesApi.listFavoriteOpportunities(token);
+    final userFuture = _authApi.me(token);
 
     final opportunities = await opportunitiesFuture;
     final favorites = await favoritesFuture;
+    final user = await userFuture;
+    final visibleOpportunities = opportunities
+        .where((opportunity) => opportunity.authorUserId != user.id)
+        .toList();
 
     return _OpportunityFeedData(
-      opportunities: opportunities,
+      opportunities: visibleOpportunities,
       favoriteIds: favorites.map((opportunity) => opportunity.id).toSet(),
     );
   }
@@ -129,6 +137,11 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
     if (wasCreated != true || !mounted) return;
 
     _refresh();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Anuncio publicado. Puedes verlo en Mis anuncios.'),
+      ),
+    );
   }
 
   Future<void> _openProfile() async {
