@@ -14,6 +14,7 @@ from app.models import (
     AlertPreferenceType,
     Band,
     BandMember,
+    ContactRequest,
     Instrument,
     MusicStyle,
     Opportunity,
@@ -112,7 +113,7 @@ class OpportunityResponse(BaseModel):
     event_date: datetime | None
     price_amount: Decimal | None
     contact_method: str
-    contact_value: str
+    contact_value: str | None
     status: str
     created_at: datetime
     updated_at: datetime
@@ -123,6 +124,16 @@ class OpportunityResponse(BaseModel):
 
 class OpportunityListResponse(BaseModel):
     items: list[OpportunityResponse]
+
+
+class ContactRequestResponse(BaseModel):
+    id: int
+    opportunity_id: int
+    requester_user_id: int
+    owner_user_id: int
+    status: str
+    created_at: datetime
+    responded_at: datetime | None
 
 
 def _validate_unique_positive_ids(field_name: str, ids: list[int]) -> None:
@@ -313,9 +324,32 @@ def _generate_alerts_for_opportunity(
         )
 
 
+def _can_view_opportunity_contact(
+    opportunity: Opportunity,
+    db: Session,
+    current_user: User | None,
+) -> bool:
+    if current_user is None:
+        return False
+
+    if opportunity.author_user_id == current_user.id:
+        return True
+
+    accepted_contact_request = db.scalar(
+        select(ContactRequest).where(
+            ContactRequest.opportunity_id == opportunity.id,
+            ContactRequest.requester_user_id == current_user.id,
+            ContactRequest.status == "accepted",
+        )
+    )
+
+    return accepted_contact_request is not None
+
+
 def _build_opportunity_response(
     opportunity: Opportunity,
     db: Session,
+    current_user: User | None = None,
 ) -> OpportunityResponse:
     instruments = db.scalars(
         select(Instrument)
@@ -354,7 +388,15 @@ def _build_opportunity_response(
         event_date=opportunity.event_date,
         price_amount=opportunity.price_amount,
         contact_method=opportunity.contact_method,
-        contact_value=opportunity.contact_value,
+        contact_value=(
+            opportunity.contact_value
+            if _can_view_opportunity_contact(
+                opportunity=opportunity,
+                db=db,
+                current_user=current_user,
+            )
+            else None
+        ),
         status=opportunity.status,
         created_at=opportunity.created_at,
         updated_at=opportunity.updated_at,
@@ -471,7 +513,74 @@ def create_opportunity(
 
     db.commit()
 
-    return _build_opportunity_response(opportunity=opportunity, db=db)
+    return _build_opportunity_response(
+        opportunity=opportunity,
+        db=db,
+        current_user=current_user,
+    )
+
+
+@router.post(
+    "/{opportunity_id}/contact-requests",
+    response_model=ContactRequestResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_contact_request(
+    opportunity_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ContactRequestResponse:
+    opportunity = db.scalar(
+        select(Opportunity).where(Opportunity.id == opportunity_id)
+    )
+    if opportunity is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Opportunity not found",
+        )
+
+    if opportunity.status != "active":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only active opportunities can receive contact requests",
+        )
+
+    if opportunity.author_user_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot request contact for your own opportunity",
+        )
+
+    existing_contact_request = db.scalar(
+        select(ContactRequest).where(
+            ContactRequest.opportunity_id == opportunity.id,
+            ContactRequest.requester_user_id == current_user.id,
+        )
+    )
+    if existing_contact_request is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Contact request already exists",
+        )
+
+    contact_request = ContactRequest(
+        opportunity_id=opportunity.id,
+        requester_user_id=current_user.id,
+        owner_user_id=opportunity.author_user_id,
+    )
+    db.add(contact_request)
+    db.commit()
+    db.refresh(contact_request)
+
+    return ContactRequestResponse(
+        id=contact_request.id,
+        opportunity_id=contact_request.opportunity_id,
+        requester_user_id=contact_request.requester_user_id,
+        owner_user_id=contact_request.owner_user_id,
+        status=contact_request.status,
+        created_at=contact_request.created_at,
+        responded_at=contact_request.responded_at,
+    )
 
 
 @router.get("", response_model=OpportunityListResponse)
@@ -571,7 +680,11 @@ def list_my_opportunities(
 
     return OpportunityListResponse(
         items=[
-            _build_opportunity_response(opportunity=opportunity, db=db)
+            _build_opportunity_response(
+                opportunity=opportunity,
+                db=db,
+                current_user=current_user,
+            )
             for opportunity in opportunities
         ]
     )
@@ -734,7 +847,11 @@ def update_opportunity(
     opportunity.updated_at = datetime.now(timezone.utc)
     db.commit()
 
-    return _build_opportunity_response(opportunity=opportunity, db=db)
+    return _build_opportunity_response(
+        opportunity=opportunity,
+        db=db,
+        current_user=current_user,
+    )
 
 
 @router.patch("/{opportunity_id}/close", response_model=OpportunityResponse)
@@ -763,7 +880,11 @@ def close_opportunity(
     opportunity.updated_at = datetime.now(timezone.utc)
     db.commit()
 
-    return _build_opportunity_response(opportunity=opportunity, db=db)
+    return _build_opportunity_response(
+        opportunity=opportunity,
+        db=db,
+        current_user=current_user,
+    )
 
 
 @router.get("/{opportunity_id}", response_model=OpportunityResponse)

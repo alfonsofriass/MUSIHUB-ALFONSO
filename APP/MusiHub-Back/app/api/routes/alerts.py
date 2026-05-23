@@ -153,13 +153,18 @@ def _build_alert_response(
     alert: Alert,
     opportunity: Opportunity,
     db: Session,
+    current_user: User,
 ) -> AlertResponse:
     return AlertResponse(
         id=alert.id,
         score=alert.score,
         reason=alert.reason,
         created_at=alert.created_at,
-        opportunity=_build_opportunity_response(opportunity=opportunity, db=db),
+        opportunity=_build_opportunity_response(
+            opportunity=opportunity,
+            db=db,
+            current_user=current_user,
+        ),
     )
 
 
@@ -195,7 +200,12 @@ def list_my_alerts(
 
     return AlertListResponse(
         items=[
-            _build_alert_response(alert=alert, opportunity=opportunity, db=db)
+            _build_alert_response(
+                alert=alert,
+                opportunity=opportunity,
+                db=db,
+                current_user=current_user,
+            )
             for alert, opportunity in alert_rows
         ]
     )

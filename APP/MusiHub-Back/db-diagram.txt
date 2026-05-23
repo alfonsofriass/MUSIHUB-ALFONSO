@@ -114,7 +114,7 @@ Table opportunities {
   event_date timestamp
   price_amount decimal // si hay precio
   contact_method varchar [not null] // whatsapp, email, phone, other
-  contact_value varchar [not null] // dato de contacto del anunciante; no debería exponerse públicamente si se activa flujo de solicitud/aceptación
+  contact_value varchar [not null] // dato privado; solo visible para el autor o si una solicitud de contacto fue aceptada
   status varchar [not null, default: 'active'] // active, closed, expired
   created_at timestamp [not null]
   updated_at timestamp [not null] //nos servirá 
@@ -172,6 +172,21 @@ Table alerts {
   }
 }
 
+//Solicitudes privadas para contactar por un anuncio; no son alertas de matching
+Table contact_requests {
+  id integer [primary key, increment]
+  opportunity_id integer [not null]
+  requester_user_id integer [not null] // usuario interesado en contactar
+  owner_user_id integer [not null] // autor del anuncio en el momento de la solicitud
+  status varchar [not null, default: 'pending'] // pending, accepted, rejected
+  created_at timestamp [not null]
+  responded_at timestamp
+
+  indexes {
+    (opportunity_id, requester_user_id) [unique] // evita solicitudes duplicadas al mismo anuncio
+  }
+}
+
 //Favoritos: Relacion entre usuario y oportunidad: segunda relacion
 Table favorites {
   user_id integer [not null]
@@ -213,6 +228,10 @@ Ref: alert_preference_types.alert_preference_id > alert_preferences.id
 Ref: alert_preference_types.opportunity_type_id > opportunity_types.id
 Ref: alerts.user_id > users.id
 Ref: alerts.opportunity_id > opportunities.id
+
+Ref: contact_requests.opportunity_id > opportunities.id
+Ref: contact_requests.requester_user_id > users.id
+Ref: contact_requests.owner_user_id > users.id
 
 Ref: favorites.user_id > users.id
 Ref: favorites.opportunity_id > opportunities.id

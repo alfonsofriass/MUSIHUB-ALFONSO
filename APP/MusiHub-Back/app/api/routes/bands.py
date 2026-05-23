@@ -84,6 +84,18 @@ class BandMemberCreateRequest(BaseModel):
     is_visible_in_profile: bool = True
 
 
+class BandVisibilityUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    is_visible_in_profile: bool
+
+
+class BandVisibilityResponse(BaseModel):
+    band_id: int
+    user_id: int
+    is_visible_in_profile: bool
+
+
 def _validate_unique_positive_ids(field_name: str, ids: list[int]) -> None:
     if any(item_id <= 0 for item_id in ids):
         raise HTTPException(
@@ -260,6 +272,38 @@ def read_band(
     band = _get_band_or_404(db=db, band_id=band_id)
 
     return _build_band_response(band=band, db=db)
+
+
+@router.patch("/{band_id}/me/visibility", response_model=BandVisibilityResponse)
+def update_my_band_visibility(
+    band_id: int,
+    payload: BandVisibilityUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> BandVisibilityResponse:
+    band = _get_band_or_404(db=db, band_id=band_id)
+
+    member = db.scalar(
+        select(BandMember).where(
+            BandMember.band_id == band.id,
+            BandMember.user_id == current_user.id,
+            BandMember.membership_status == "accepted",
+        )
+    )
+    if member is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User is not an accepted member of this band",
+        )
+
+    member.is_visible_in_profile = payload.is_visible_in_profile
+    db.commit()
+
+    return BandVisibilityResponse(
+        band_id=band.id,
+        user_id=current_user.id,
+        is_visible_in_profile=member.is_visible_in_profile,
+    )
 
 
 @router.put("/{band_id}", response_model=BandResponse)

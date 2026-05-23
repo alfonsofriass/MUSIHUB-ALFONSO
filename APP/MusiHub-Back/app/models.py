@@ -298,6 +298,10 @@ class Opportunity(Base):
         back_populates="opportunity",
         cascade="all, delete-orphan",
     )
+    contact_requests: Mapped[list["ContactRequest"]] = relationship(
+        back_populates="opportunity",
+        cascade="all, delete-orphan",
+    )
 
 
 class OpportunityStyle(Base):
@@ -411,6 +415,49 @@ class Alert(Base):
 
     user: Mapped["User"] = relationship(back_populates="alerts")
     opportunity: Mapped["Opportunity"] = relationship(back_populates="alerts")
+
+
+class ContactRequest(Base):
+    __tablename__ = "contact_requests"
+    __table_args__ = (
+        UniqueConstraint(
+            "opportunity_id",
+            "requester_user_id",
+            name="uq_contact_requests_opportunity_id_requester_user_id",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    opportunity_id: Mapped[int] = mapped_column(
+        ForeignKey("opportunities.id"),
+        nullable=False,
+    )
+    requester_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=False,
+    )
+    owner_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=False,
+    )
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="pending",
+        server_default=text("'pending'"),
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    responded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    opportunity: Mapped["Opportunity"] = relationship(
+        back_populates="contact_requests"
+    )
+    requester: Mapped["User"] = relationship(foreign_keys=[requester_user_id])
+    owner: Mapped["User"] = relationship(foreign_keys=[owner_user_id])
 
 
 class Favorite(Base):

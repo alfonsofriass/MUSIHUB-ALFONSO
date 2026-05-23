@@ -121,7 +121,11 @@ def list_my_favorites(
 
     return OpportunityListResponse(
         items=[
-            _build_opportunity_response(opportunity=opportunity, db=db)
+            _build_opportunity_response(
+                opportunity=opportunity,
+                db=db,
+                current_user=current_user,
+            )
             for opportunity in opportunities
         ]
     )

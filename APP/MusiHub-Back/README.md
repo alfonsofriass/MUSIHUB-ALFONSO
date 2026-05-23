@@ -34,18 +34,24 @@ Backend FastAPI del TFG MusiHub.
 - `GET /api/v1/opportunities/{id}`
 - `PATCH /api/v1/opportunities/{id}`
 - `PATCH /api/v1/opportunities/{id}/close`
+- `POST /api/v1/opportunities/{id}/contact-requests`
 - `POST /api/v1/opportunities/{id}/favorite`
 - `DELETE /api/v1/opportunities/{id}/favorite`
 - `GET /api/v1/favorites/me`
 - `POST /api/v1/bands`
 - `GET /api/v1/bands/me`
 - `GET /api/v1/bands/{id}`
+- `PATCH /api/v1/bands/{id}/me/visibility`
 - `PUT /api/v1/bands/{id}`
 - `POST /api/v1/bands/{id}/members`
 - `DELETE /api/v1/bands/{id}/members/{user_id}`
 - `GET /api/v1/alerts/preferences`
 - `PUT /api/v1/alerts/preferences`
 - `GET /api/v1/alerts/me`
+- `GET /api/v1/contact-requests/received`
+- `GET /api/v1/contact-requests/sent`
+- `PATCH /api/v1/contact-requests/{id}/accept`
+- `PATCH /api/v1/contact-requests/{id}/reject`
 
 ## Filtros de anuncios
 `GET /api/v1/opportunities` acepta filtros opcionales combinables:
@@ -61,6 +67,8 @@ Backend FastAPI del TFG MusiHub.
 - `max_price`
 
 Las fechas usan formato `YYYY-MM-DD`. El listado público devuelve solo anuncios `active`.
+El dato privado de contacto del anuncio no debería mostrarse a otros usuarios
+hasta que exista una solicitud de contacto aceptada.
 
 ## Bandas V1
 - La banda no tiene login propio.
@@ -68,6 +76,7 @@ Las fechas usan formato `YYYY-MM-DD`. El listado público devuelve solo anuncios
 - El creador se añade automáticamente como miembro `accepted`.
 - Solo el creador puede editar la banda y gestionar miembros.
 - Los estilos de banda usan el catálogo `music_styles`.
+- Cada miembro puede decidir si muestra u oculta esa banda en su perfil.
 - Los anuncios siguen perteneciendo a un usuario, pero pueden indicar `author_band_id`
   para mostrarse como publicados en nombre de una banda del usuario.
 
@@ -86,7 +95,7 @@ Las fechas usan formato `YYYY-MM-DD`. El listado público devuelve solo anuncios
 Head esperado:
 
 ```text
-f6a7b8c9d0e1
+a7b8c9d0e1f2
 ```
 
 ## Ejecución local
