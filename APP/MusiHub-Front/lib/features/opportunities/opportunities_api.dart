@@ -185,6 +185,7 @@ class InvalidOpportunityFiltersException implements Exception {
 
 class OpportunityFilters {
   const OpportunityFilters({
+    this.query,
     this.typeId,
     this.city,
     this.province,
@@ -196,6 +197,7 @@ class OpportunityFilters {
     this.maxPrice,
   });
 
+  final String? query;
   final int? typeId;
   final String? city;
   final String? province;
@@ -210,6 +212,7 @@ class OpportunityFilters {
 
   Map<String, String> toQueryParameters() {
     return {
+      if (_hasText(query)) 'q': query!.trim(),
       if (typeId != null) 'type_id': typeId.toString(),
       if (_hasText(city)) 'city': city!.trim(),
       if (_hasText(province)) 'province': province!.trim(),
@@ -272,6 +275,7 @@ class Opportunity {
     required this.id,
     required this.type,
     required this.authorUserId,
+    required this.authorUser,
     required this.authorBand,
     required this.title,
     required this.description,
@@ -298,6 +302,11 @@ class Opportunity {
       id: json['id'] as int,
       type: OpportunityType.fromJson(json['type'] as Map<String, dynamic>),
       authorUserId: json['author_user_id'] as int,
+      authorUser: json['author_user'] == null
+          ? null
+          : OpportunityAuthorUser.fromJson(
+              json['author_user'] as Map<String, dynamic>,
+            ),
       authorBand: json['author_band'] == null
           ? null
           : OpportunityAuthorBand.fromJson(
@@ -327,6 +336,7 @@ class Opportunity {
   final int id;
   final OpportunityType type;
   final int authorUserId;
+  final OpportunityAuthorUser? authorUser;
   final OpportunityAuthorBand? authorBand;
   final String title;
   final String description;
@@ -344,6 +354,20 @@ class Opportunity {
   final List<CatalogItem> styles;
 
   bool get isActive => status == 'active';
+}
+
+class OpportunityAuthorUser {
+  const OpportunityAuthorUser({required this.id, required this.fullName});
+
+  factory OpportunityAuthorUser.fromJson(Map<String, dynamic> json) {
+    return OpportunityAuthorUser(
+      id: json['id'] as int,
+      fullName: json['full_name'] as String,
+    );
+  }
+
+  final int id;
+  final String fullName;
 }
 
 class OpportunityAuthorBand {

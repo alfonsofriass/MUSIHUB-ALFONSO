@@ -3,9 +3,11 @@ import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/features/auth/auth_api.dart';
+import 'package:musihub_front/features/bands/band_detail_screen.dart';
 import 'package:musihub_front/features/contact_requests/contact_requests_api.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
 import 'package:musihub_front/features/opportunities/opportunity_display.dart';
+import 'package:musihub_front/features/profile/public_profile_screen.dart';
 
 class OpportunityDetailScreen extends StatefulWidget {
   const OpportunityDetailScreen({
@@ -159,6 +161,28 @@ class _OpportunityDetailScreenState extends State<OpportunityDetailScreen> {
     }
   }
 
+  Future<void> _openAuthorProfile(Opportunity opportunity) async {
+    final authorUserId = opportunity.authorUser?.id ?? opportunity.authorUserId;
+
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => PublicProfileScreen(
+          tokenStore: widget.tokenStore,
+          userId: authorUserId,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openAuthorBand(OpportunityAuthorBand band) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            BandDetailScreen(tokenStore: widget.tokenStore, bandId: band.id),
+      ),
+    );
+  }
+
   void _showFutureFeature(String label) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('$label estara disponible mas adelante.')),
@@ -210,6 +234,13 @@ class _OpportunityDetailScreenState extends State<OpportunityDetailScreen> {
                 currentUserId: snapshot.data!.currentUserId,
                 isRequestingContact: _isRequestingContact,
                 onRequestContact: () => _requestContact(snapshot.data!),
+                onOpenAuthorProfile: () =>
+                    _openAuthorProfile(snapshot.data!.opportunity),
+                onOpenAuthorBand: snapshot.data!.opportunity.authorBand == null
+                    ? null
+                    : () => _openAuthorBand(
+                        snapshot.data!.opportunity.authorBand!,
+                      ),
               );
             }
 
@@ -251,12 +282,16 @@ class _OpportunityDetail extends StatelessWidget {
     required this.currentUserId,
     required this.isRequestingContact,
     required this.onRequestContact,
+    required this.onOpenAuthorProfile,
+    required this.onOpenAuthorBand,
   });
 
   final Opportunity opportunity;
   final int currentUserId;
   final bool isRequestingContact;
   final VoidCallback onRequestContact;
+  final VoidCallback onOpenAuthorProfile;
+  final VoidCallback? onOpenAuthorBand;
 
   @override
   Widget build(BuildContext context) {
@@ -280,7 +315,11 @@ class _OpportunityDetail extends StatelessWidget {
         const SizedBox(height: 20),
         Text('Publicado por', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
-        _AuthorTile(opportunity: opportunity),
+        _AuthorSection(
+          opportunity: opportunity,
+          onOpenProfile: onOpenAuthorProfile,
+          onOpenBand: onOpenAuthorBand,
+        ),
         const SizedBox(height: 16),
         _ContactAction(
           opportunity: opportunity,
@@ -473,57 +512,106 @@ class _DescriptionBox extends StatelessWidget {
   }
 }
 
-class _AuthorTile extends StatelessWidget {
-  const _AuthorTile({required this.opportunity});
+class _AuthorSection extends StatelessWidget {
+  const _AuthorSection({
+    required this.opportunity,
+    required this.onOpenProfile,
+    required this.onOpenBand,
+  });
 
   final Opportunity opportunity;
+  final VoidCallback onOpenProfile;
+  final VoidCallback? onOpenBand;
 
   @override
   Widget build(BuildContext context) {
     final authorBand = opportunity.authorBand;
-    final authorLabel = authorBand == null
-        ? 'Usuario #${opportunity.authorUserId}'
-        : authorBand.name;
-    final authorType = authorBand == null ? 'Perfil' : 'Banda';
+    final authorUserLabel =
+        opportunity.authorUser?.fullName ??
+        'Usuario #${opportunity.authorUserId}';
 
-    return Container(
-      height: 44,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFD0D0D0),
-        border: Border.all(color: const Color(0xFF9A9A9A)),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Row(
-        children: [
-          const CircleAvatar(
-            radius: 14,
-            backgroundColor: Color(0xFF8F8F8F),
-            child: Icon(Icons.group_outlined, size: 18, color: Colors.white),
+    return Column(
+      children: [
+        _AuthorTile(
+          icon: Icons.person_outline,
+          title: authorUserLabel,
+          subtitle: 'Perfil',
+          onTap: onOpenProfile,
+        ),
+        if (authorBand != null) ...[
+          const SizedBox(height: 8),
+          _AuthorTile(
+            icon: Icons.groups_outlined,
+            title: authorBand.name,
+            subtitle: 'Banda',
+            onTap: onOpenBand,
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  authorLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white),
-                ),
-                Text(
-                  authorType,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white, fontSize: 11),
-                ),
-              ],
-            ),
-          ),
-          const Icon(Icons.chevron_right, color: Colors.white),
         ],
+      ],
+    );
+  }
+}
+
+class _AuthorTile extends StatelessWidget {
+  const _AuthorTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFD0D0D0),
+      borderRadius: BorderRadius.circular(4),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(4),
+        child: Container(
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFF9A9A9A)),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 14,
+                backgroundColor: const Color(0xFF8F8F8F),
+                child: Icon(icon, size: 18, color: Colors.white),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Colors.white),
+            ],
+          ),
+        ),
       ),
     );
   }

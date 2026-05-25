@@ -49,6 +49,20 @@ class ProfileApi {
     return ProfileMe.fromJson(json);
   }
 
+  Future<PublicProfile> getPublicProfile({
+    required String token,
+    required int userId,
+  }) async {
+    final response = await _apiClient.get('/profile/$userId', token: token);
+
+    if (response.statusCode != 200) {
+      throw Exception('No se pudo cargar el perfil publico.');
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    return PublicProfile.fromJson(json);
+  }
+
   Future<ProfileMe> saveMyProfile({
     required String token,
     required ProfileSaveRequest request,
@@ -66,6 +80,85 @@ class ProfileApi {
     final json = jsonDecode(response.body) as Map<String, dynamic>;
     return ProfileMe.fromJson(json);
   }
+}
+
+class PublicProfile {
+  const PublicProfile({
+    required this.user,
+    required this.profile,
+    required this.bands,
+  });
+
+  factory PublicProfile.fromJson(Map<String, dynamic> json) {
+    final profileJson = json['profile'];
+    final bands = json['bands'] as List<dynamic>? ?? const <dynamic>[];
+
+    return PublicProfile(
+      user: PublicProfileUser.fromJson(json['user'] as Map<String, dynamic>),
+      profile: profileJson == null
+          ? null
+          : UserProfile.fromJson(profileJson as Map<String, dynamic>),
+      bands: bands
+          .map(
+            (band) => PublicProfileBand.fromJson(band as Map<String, dynamic>),
+          )
+          .toList(),
+    );
+  }
+
+  final PublicProfileUser user;
+  final UserProfile? profile;
+  final List<PublicProfileBand> bands;
+}
+
+class PublicProfileUser {
+  const PublicProfileUser({required this.id, required this.fullName});
+
+  factory PublicProfileUser.fromJson(Map<String, dynamic> json) {
+    return PublicProfileUser(
+      id: json['id'] as int,
+      fullName: json['full_name'] as String,
+    );
+  }
+
+  final int id;
+  final String fullName;
+}
+
+class PublicProfileBand {
+  const PublicProfileBand({
+    required this.id,
+    required this.name,
+    required this.roleInBand,
+    required this.city,
+    required this.province,
+    required this.photoUrl,
+    required this.styles,
+  });
+
+  factory PublicProfileBand.fromJson(Map<String, dynamic> json) {
+    final styles = json['styles'] as List<dynamic>? ?? const <dynamic>[];
+
+    return PublicProfileBand(
+      id: json['id'] as int,
+      name: json['name'] as String,
+      roleInBand: json['role_in_band'] as String,
+      city: json['city'] as String?,
+      province: json['province'] as String?,
+      photoUrl: json['photo_url'] as String?,
+      styles: styles
+          .map((style) => ProfileStyle.fromJson(style as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+
+  final int id;
+  final String name;
+  final String roleInBand;
+  final String? city;
+  final String? province;
+  final String? photoUrl;
+  final List<ProfileStyle> styles;
 }
 
 class ProfileMe {

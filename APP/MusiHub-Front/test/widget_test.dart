@@ -5,6 +5,8 @@ import 'package:musihub_front/features/alerts/alerts_api.dart';
 import 'package:musihub_front/features/auth/login_screen.dart';
 import 'package:musihub_front/features/bands/bands_api.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
+import 'package:musihub_front/features/profile/profile_api.dart';
+import 'package:musihub_front/features/search/search_api.dart';
 
 void main() {
   testWidgets('shows login screen', (WidgetTester tester) async {
@@ -40,6 +42,107 @@ void main() {
       'min_price': '10',
       'max_price': '30',
     });
+  });
+
+  test('builds opportunity text search query param', () {
+    const filters = OpportunityFilters(query: ' guitarra ');
+
+    expect(filters.toQueryParameters(), {'q': 'guitarra'});
+  });
+
+  test('parses opportunity author user', () {
+    final opportunity = Opportunity.fromJson({
+      'id': 1,
+      'type': {'id': 1, 'code': 'clases', 'name': 'Clases'},
+      'author_user_id': 7,
+      'author_user': {'id': 7, 'full_name': 'Usuario Test'},
+      'author_band': null,
+      'title': 'Clases de guitarra',
+      'description': 'Clases para principiantes',
+      'city': 'Granada',
+      'province': 'Granada',
+      'event_date': null,
+      'price_amount': null,
+      'contact_method': 'whatsapp',
+      'contact_value': null,
+      'status': 'active',
+      'created_at': '2026-05-25T10:00:00Z',
+      'updated_at': '2026-05-25T10:00:00Z',
+      'expires_at': null,
+      'instruments': [],
+      'styles': [],
+    });
+
+    expect(opportunity.authorUser?.id, 7);
+    expect(opportunity.authorUser?.fullName, 'Usuario Test');
+  });
+
+  test('parses public profile without contact data', () {
+    final profile = PublicProfile.fromJson({
+      'user': {'id': 7, 'full_name': 'Usuario Test'},
+      'profile': {
+        'id': 3,
+        'city': 'Granada',
+        'province': 'Granada',
+        'bio': 'Bio publica',
+        'photo_url': null,
+        'instruments': [
+          {'id': 2, 'name': 'Guitarra', 'is_primary': true},
+        ],
+        'styles': [
+          {'id': 1, 'name': 'Rock'},
+        ],
+      },
+      'bands': [
+        {
+          'id': 1,
+          'name': 'Nombre Banda',
+          'role_in_band': 'guitarra',
+          'city': 'Granada',
+          'province': 'Granada',
+          'photo_url': null,
+          'styles': [],
+        },
+      ],
+    });
+
+    expect(profile.user.fullName, 'Usuario Test');
+    expect(profile.profile?.contactEmail, isNull);
+    expect(profile.profile?.contactPhone, isNull);
+    expect(profile.bands.single.name, 'Nombre Banda');
+  });
+
+  test('parses global search profile and band results', () {
+    final profile = ProfileSearchResult.fromJson({
+      'user': {'id': 7, 'full_name': 'Usuario Test'},
+      'profile_id': 3,
+      'city': 'Granada',
+      'province': 'Granada',
+      'bio': 'Bio publica',
+      'photo_url': null,
+      'instruments': [
+        {'id': 2, 'name': 'Guitarra'},
+      ],
+      'styles': [
+        {'id': 1, 'name': 'Rock'},
+      ],
+    });
+    final band = BandSearchResult.fromJson({
+      'id': 1,
+      'name': 'Nombre Banda',
+      'bio': 'Bio de banda',
+      'city': 'Granada',
+      'province': 'Granada',
+      'photo_url': null,
+      'styles': [
+        {'id': 1, 'name': 'Rock'},
+      ],
+    });
+
+    expect(profile.user.fullName, 'Usuario Test');
+    expect(profile.instruments.single.name, 'Guitarra');
+    expect(band.name, 'Nombre Banda');
+    expect(band.styles.single.name, 'Rock');
   });
 
   test('builds band create payload', () {

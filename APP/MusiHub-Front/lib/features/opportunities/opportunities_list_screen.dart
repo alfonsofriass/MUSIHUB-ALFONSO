@@ -9,6 +9,7 @@ import 'package:musihub_front/features/opportunities/opportunity_form_screen.dar
 import 'package:musihub_front/features/opportunities/widgets/opportunity_feed_widgets.dart';
 import 'package:musihub_front/features/profile/profile_api.dart';
 import 'package:musihub_front/features/profile/profile_screen.dart';
+import 'package:musihub_front/features/search/search_screen.dart';
 
 class OpportunitiesListScreen extends StatefulWidget {
   const OpportunitiesListScreen({super.key, required this.tokenStore});
@@ -165,6 +166,14 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
     _refresh();
   }
 
+  Future<void> _openSearch() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => SearchScreen(tokenStore: widget.tokenStore),
+      ),
+    );
+  }
+
   Future<void> _toggleFavorite(Opportunity opportunity, bool isFavorite) async {
     final token = await widget.tokenStore.readAccessToken();
 
@@ -195,12 +204,6 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
         const SnackBar(content: Text('No se pudo actualizar el favorito.')),
       );
     }
-  }
-
-  void _showFutureFeature(String label) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$label estara disponible mas adelante.')),
-    );
   }
 
   void _retryFilters() {
@@ -360,9 +363,7 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
               style: Theme.of(context).textTheme.headlineLarge,
             ),
             const SizedBox(height: 10),
-            OpportunitySearchPlaceholder(
-              onTap: () => _showFutureFeature('La busqueda'),
-            ),
+            OpportunitySearchPlaceholder(onTap: _openSearch),
             const SizedBox(height: 14),
             FutureBuilder<OpportunityFilterData>(
               future: _filterDataFuture,
