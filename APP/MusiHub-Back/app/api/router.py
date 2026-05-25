@@ -8,6 +8,7 @@ from app.api.routes.contact_requests import router as contact_requests_router
 from app.api.routes.favorites import router as favorites_router
 from app.api.routes.opportunities import router as opportunities_router
 from app.api.routes.profile import router as profile_router
+from app.api.routes.search import router as search_router
 from app.api.routes.system import router as system_router
 
 api_router = APIRouter(prefix="/api/v1")
@@ -19,4 +20,5 @@ api_router.include_router(contact_requests_router, tags=["contact-requests"])
 api_router.include_router(favorites_router, tags=["favorites"])
 api_router.include_router(opportunities_router, tags=["opportunities"])
 api_router.include_router(profile_router, tags=["profile"])
+api_router.include_router(search_router, tags=["search"])
 api_router.include_router(system_router, tags=["system"])

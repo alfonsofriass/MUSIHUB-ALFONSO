@@ -6,6 +6,9 @@ from sqlalchemy.orm import Session
 from app.api.routes.auth import get_current_user
 from app.db import get_db
 from app.models import (
+    Band,
+    BandMember,
+    BandStyle,
     Instrument,
     MusicStyle,
     Profile,
@@ -45,6 +48,37 @@ class ProfileMeResponse(BaseModel):
     profile: ProfileResponse | None
 
 
+class PublicUserResponse(BaseModel):
+    id: int
+    full_name: str
+
+
+class PublicProfileResponse(BaseModel):
+    id: int
+    city: str | None
+    province: str | None
+    bio: str | None
+    photo_url: str | None
+    instruments: list[ProfileInstrumentResponse]
+    styles: list[ProfileStyleResponse]
+
+
+class PublicProfileBandResponse(BaseModel):
+    id: int
+    name: str
+    role_in_band: str
+    city: str | None
+    province: str | None
+    photo_url: str | None
+    styles: list[ProfileStyleResponse]
+
+
+class PublicProfileDetailResponse(BaseModel):
+    user: PublicUserResponse
+    profile: PublicProfileResponse | None
+    bands: list[PublicProfileBandResponse]
+
+
 class ProfileUpdateRequest(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -82,10 +116,10 @@ def _validate_unique_positive_ids(field_name: str, ids: list[int]) -> None:
         )
 
 
-def _build_profile_me_response(
+def load_profile_instrument_responses(
     profile: Profile,
     db: Session,
-) -> ProfileMeResponse:
+) -> list[ProfileInstrumentResponse]:
     instrument_rows = db.execute(
         select(Instrument, ProfileInstrument.is_primary)
         .join(ProfileInstrument, ProfileInstrument.instrument_id == Instrument.id)
@@ -93,6 +127,20 @@ def _build_profile_me_response(
         .order_by(ProfileInstrument.is_primary.desc(), Instrument.name)
     ).all()
 
+    return [
+        ProfileInstrumentResponse(
+            id=instrument.id,
+            name=instrument.name,
+            is_primary=is_primary,
+        )
+        for instrument, is_primary in instrument_rows
+    ]
+
+
+def load_profile_style_responses(
+    profile: Profile,
+    db: Session,
+) -> list[ProfileStyleResponse]:
     styles = db.scalars(
         select(MusicStyle)
         .join(ProfileStyle, ProfileStyle.style_id == MusicStyle.id)
@@ -100,6 +148,19 @@ def _build_profile_me_response(
         .order_by(MusicStyle.name)
     ).all()
 
+    return [
+        ProfileStyleResponse(
+            id=style.id,
+            name=style.name,
+        )
+        for style in styles
+    ]
+
+
+def _build_profile_me_response(
+    profile: Profile,
+    db: Session,
+) -> ProfileMeResponse:
     return ProfileMeResponse(
         exists=True,
         profile=ProfileResponse(
@@ -110,22 +171,72 @@ def _build_profile_me_response(
             photo_url=profile.photo_url,
             contact_email=profile.contact_email,
             contact_phone=profile.contact_phone,
-            instruments=[
-                ProfileInstrumentResponse(
-                    id=instrument.id,
-                    name=instrument.name,
-                    is_primary=is_primary,
-                )
-                for instrument, is_primary in instrument_rows
-            ],
-            styles=[
-                ProfileStyleResponse(
-                    id=style.id,
-                    name=style.name,
-                )
-                for style in styles
-            ],
+            instruments=load_profile_instrument_responses(profile=profile, db=db),
+            styles=load_profile_style_responses(profile=profile, db=db),
         ),
+    )
+
+
+def _build_public_profile_response(
+    user: User,
+    profile: Profile | None,
+    db: Session,
+) -> PublicProfileDetailResponse:
+    public_profile = None
+
+    if profile is not None:
+        public_profile = PublicProfileResponse(
+            id=profile.id,
+            city=profile.city,
+            province=profile.province,
+            bio=profile.bio,
+            photo_url=profile.photo_url,
+            instruments=load_profile_instrument_responses(profile=profile, db=db),
+            styles=load_profile_style_responses(profile=profile, db=db),
+        )
+
+    band_rows = db.execute(
+        select(Band, BandMember)
+        .join(BandMember, BandMember.band_id == Band.id)
+        .where(
+            BandMember.user_id == user.id,
+            BandMember.membership_status == "accepted",
+            BandMember.is_visible_in_profile.is_(True),
+        )
+        .order_by(Band.name)
+    ).all()
+
+    bands = []
+    for band, member in band_rows:
+        band_styles = db.scalars(
+            select(MusicStyle)
+            .join(BandStyle, BandStyle.style_id == MusicStyle.id)
+            .where(BandStyle.band_id == band.id)
+            .order_by(MusicStyle.name)
+        ).all()
+
+        bands.append(
+            PublicProfileBandResponse(
+                id=band.id,
+                name=band.name,
+                role_in_band=member.role_in_band,
+                city=band.city,
+                province=band.province,
+                photo_url=band.photo_url,
+                styles=[
+                    ProfileStyleResponse(id=style.id, name=style.name)
+                    for style in band_styles
+                ],
+            )
+        )
+
+    return PublicProfileDetailResponse(
+        user=PublicUserResponse(
+            id=user.id,
+            full_name=user.full_name,
+        ),
+        profile=public_profile,
+        bands=bands,
     )
 
 
@@ -142,6 +253,32 @@ def read_my_profile(
         return ProfileMeResponse(exists=False, profile=None)
 
     return _build_profile_me_response(profile=profile, db=db)
+
+
+@router.get("/{user_id}", response_model=PublicProfileDetailResponse)
+def read_public_profile(
+    user_id: int,
+    _current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> PublicProfileDetailResponse:
+    user = db.scalar(
+        select(User).where(User.id == user_id)
+    )
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    profile = db.scalar(
+        select(Profile).where(Profile.user_id == user.id)
+    )
+
+    return _build_public_profile_response(
+        user=user,
+        profile=profile,
+        db=db,
+    )
 
 
 @router.put("/me", response_model=ProfileMeResponse)

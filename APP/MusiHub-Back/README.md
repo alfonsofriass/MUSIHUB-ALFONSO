@@ -28,6 +28,7 @@ Backend FastAPI del TFG MusiHub.
 - `GET /api/v1/catalogs/opportunity-types`
 - `GET /api/v1/profile/me`
 - `PUT /api/v1/profile/me`
+- `GET /api/v1/profile/{user_id}`
 - `POST /api/v1/opportunities`
 - `GET /api/v1/opportunities`
 - `GET /api/v1/opportunities/me`
@@ -52,11 +53,14 @@ Backend FastAPI del TFG MusiHub.
 - `GET /api/v1/contact-requests/sent`
 - `PATCH /api/v1/contact-requests/{id}/accept`
 - `PATCH /api/v1/contact-requests/{id}/reject`
+- `GET /api/v1/search/profiles`
+- `GET /api/v1/search/bands`
 
 ## Filtros de anuncios
 `GET /api/v1/opportunities` acepta filtros opcionales combinables:
 
 - `type_id`
+- `q`
 - `city`
 - `province`
 - `instrument_id`
@@ -67,8 +71,40 @@ Backend FastAPI del TFG MusiHub.
 - `max_price`
 
 Las fechas usan formato `YYYY-MM-DD`. El listado público devuelve solo anuncios `active`.
+`q` busca texto en título, descripción, ciudad y provincia.
 El dato privado de contacto del anuncio no debería mostrarse a otros usuarios
 hasta que exista una solicitud de contacto aceptada.
+Las respuestas de anuncios incluyen `author_user` para poder navegar al perfil
+público del autor.
+
+## Perfil público
+- `GET /api/v1/profile/{user_id}` permite consultar el perfil público de otro
+  usuario autenticado.
+- No devuelve `contact_email` ni `contact_phone`.
+- Devuelve las bandas visibles del usuario según `band_members.is_visible_in_profile`.
+
+## Búsqueda de perfiles
+`GET /api/v1/search/profiles` requiere token y acepta filtros opcionales
+combinables:
+
+- `q`
+- `city`
+- `province`
+- `instrument_id`
+- `style_id`
+
+`q` busca en nombre del usuario, biografía, ciudad y provincia.
+
+## Búsqueda de bandas
+`GET /api/v1/search/bands` requiere token y acepta filtros opcionales
+combinables:
+
+- `q`
+- `city`
+- `province`
+- `style_id`
+
+`q` busca en nombre de la banda, biografía, ciudad y provincia.
 
 ## Bandas V1
 - La banda no tiene login propio.

@@ -52,6 +52,11 @@ class OpportunityTypeResponse(BaseModel):
     name: str
 
 
+class UserSummaryResponse(BaseModel):
+    id: int
+    full_name: str
+
+
 class OpportunityCreateRequest(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -105,6 +110,7 @@ class OpportunityResponse(BaseModel):
     id: int
     type: OpportunityTypeResponse
     author_user_id: int
+    author_user: UserSummaryResponse
     author_band: CatalogItemResponse | None
     title: str
     description: str
@@ -373,6 +379,10 @@ def _build_opportunity_response(
             name=opportunity.type.name,
         ),
         author_user_id=opportunity.author_user_id,
+        author_user=UserSummaryResponse(
+            id=opportunity.author.id,
+            full_name=opportunity.author.full_name,
+        ),
         author_band=(
             CatalogItemResponse(
                 id=opportunity.author_band.id,
@@ -585,6 +595,7 @@ def create_contact_request(
 
 @router.get("", response_model=OpportunityListResponse)
 def list_opportunities(
+    q: str | None = Query(default=None, min_length=1, max_length=120),
     type_id: int | None = Query(default=None, gt=0),
     city: str | None = Query(default=None, min_length=1, max_length=120),
     province: str | None = Query(default=None, min_length=1, max_length=120),
@@ -609,6 +620,15 @@ def list_opportunities(
         )
 
     query = select(Opportunity).where(Opportunity.status == "active")
+
+    if q is not None:
+        search_text = f"%{q.lower()}%"
+        query = query.where(
+            func.lower(Opportunity.title).like(search_text)
+            | func.lower(Opportunity.description).like(search_text)
+            | func.lower(Opportunity.city).like(search_text)
+            | func.lower(Opportunity.province).like(search_text)
+        )
 
     if type_id is not None:
         query = query.where(Opportunity.type_id == type_id)
