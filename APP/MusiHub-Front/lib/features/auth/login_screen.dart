@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
+import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/features/auth/auth_api.dart';
 import 'package:musihub_front/features/auth/register_screen.dart';
@@ -104,13 +105,21 @@ class _LoginScreenState extends State<LoginScreen> {
             TextField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: 'Email'),
+              maxLength: InputLimits.email,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                counterText: '',
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _passwordController,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'Contrasena'),
+              maxLength: InputLimits.password,
+              decoration: const InputDecoration(
+                labelText: 'Contrasena',
+                counterText: '',
+              ),
             ),
             const SizedBox(height: 24),
             FilledButton(

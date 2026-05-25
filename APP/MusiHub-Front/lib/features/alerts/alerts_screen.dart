@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
+import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/features/alerts/alerts_api.dart';
@@ -258,13 +259,19 @@ class _AlertsScreenState extends State<AlertsScreen> {
           children: [
             TextField(
               controller: _cityController,
-              decoration: const InputDecoration(labelText: 'Ciudad preferida'),
+              maxLength: InputLimits.shortText,
+              decoration: const InputDecoration(
+                labelText: 'Ciudad preferida',
+                counterText: '',
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _provinceController,
+              maxLength: InputLimits.shortText,
               decoration: const InputDecoration(
                 labelText: 'Provincia preferida',
+                counterText: '',
               ),
             ),
           ],

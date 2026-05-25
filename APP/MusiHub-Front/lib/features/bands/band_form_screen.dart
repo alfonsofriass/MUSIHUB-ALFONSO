@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
+import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/features/bands/bands_api.dart';
 import 'package:musihub_front/features/profile/profile_api.dart';
@@ -197,25 +198,30 @@ class _BandFormScreenState extends State<BandFormScreen> {
               label: 'Nombre de la banda',
               controller: _nameController,
               hintText: 'Ej: Green Music',
+              maxLength: InputLimits.shortText,
             ),
             const SizedBox(height: 12),
             _buildTextField(
               label: 'Descripcion',
               controller: _bioController,
               hintText: 'Cuenta que estilo haceis o que buscais',
+              maxLength: InputLimits.bandBio,
               maxLines: 4,
+              showCounter: true,
             ),
             const SizedBox(height: 12),
             _buildTextField(
               label: 'Ciudad',
               controller: _cityController,
               hintText: 'Ej: Granada',
+              maxLength: InputLimits.shortText,
             ),
             const SizedBox(height: 12),
             _buildTextField(
               label: 'Provincia',
               controller: _provinceController,
               hintText: 'Ej: Granada',
+              maxLength: InputLimits.shortText,
             ),
           ],
         ),
@@ -247,11 +253,18 @@ class _BandFormScreenState extends State<BandFormScreen> {
     required TextEditingController controller,
     String? hintText,
     int maxLines = 1,
+    int? maxLength,
+    bool showCounter = false,
   }) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
-      decoration: InputDecoration(labelText: label, hintText: hintText),
+      maxLength: maxLength,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hintText,
+        counterText: maxLength == null || showCounter ? null : '',
+      ),
     );
   }
 

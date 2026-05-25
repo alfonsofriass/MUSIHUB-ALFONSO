@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
+import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/features/bands/bands_api.dart';
 import 'package:musihub_front/features/profile/profile_api.dart';
@@ -188,19 +189,27 @@ class _BandManageScreenState extends State<BandManageScreen> {
             _buildTextField(
               label: 'Nombre de la banda',
               controller: _nameController,
+              maxLength: InputLimits.shortText,
             ),
             const SizedBox(height: 12),
             _buildTextField(
               label: 'Descripcion',
               controller: _bioController,
+              maxLength: InputLimits.bandBio,
               maxLines: 4,
+              showCounter: true,
             ),
             const SizedBox(height: 12),
-            _buildTextField(label: 'Ciudad', controller: _cityController),
+            _buildTextField(
+              label: 'Ciudad',
+              controller: _cityController,
+              maxLength: InputLimits.shortText,
+            ),
             const SizedBox(height: 12),
             _buildTextField(
               label: 'Provincia',
               controller: _provinceController,
+              maxLength: InputLimits.shortText,
             ),
           ],
         ),
@@ -227,11 +236,17 @@ class _BandManageScreenState extends State<BandManageScreen> {
     required String label,
     required TextEditingController controller,
     int maxLines = 1,
+    int? maxLength,
+    bool showCounter = false,
   }) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
-      decoration: InputDecoration(labelText: label),
+      maxLength: maxLength,
+      decoration: InputDecoration(
+        labelText: label,
+        counterText: maxLength == null || showCounter ? null : '',
+      ),
     );
   }
 

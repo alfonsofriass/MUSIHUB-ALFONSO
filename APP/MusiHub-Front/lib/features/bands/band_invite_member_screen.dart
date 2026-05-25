@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
+import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/features/bands/bands_api.dart';
@@ -219,7 +220,12 @@ class _BandInviteMemberScreenState extends State<BandInviteMemberScreen> {
             TextField(
               controller: _memberUserIdController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'ID de usuario'),
+              maxLength: InputLimits.numericId,
+              inputFormatters: InputLimits.digitsOnlyFormatters,
+              decoration: const InputDecoration(
+                labelText: 'ID de usuario',
+                counterText: '',
+              ),
             ),
             const SizedBox(height: 12),
             Text(

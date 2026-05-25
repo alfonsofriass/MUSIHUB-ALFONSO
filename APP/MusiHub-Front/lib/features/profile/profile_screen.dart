@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
+import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/features/alerts/alerts_screen.dart';
@@ -590,18 +591,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
             TextField(
               controller: _cityController,
               onChanged: (_) => setState(() {}),
-              decoration: const InputDecoration(labelText: 'Ciudad'),
+              maxLength: InputLimits.shortText,
+              decoration: const InputDecoration(
+                labelText: 'Ciudad',
+                counterText: '',
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _provinceController,
               onChanged: (_) => setState(() {}),
-              decoration: const InputDecoration(labelText: 'Provincia'),
+              maxLength: InputLimits.shortText,
+              decoration: const InputDecoration(
+                labelText: 'Provincia',
+                counterText: '',
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _bioController,
               onChanged: (_) => setState(() {}),
+              maxLength: InputLimits.profileBio,
               maxLines: 3,
               decoration: const InputDecoration(labelText: 'Bio'),
             ),
@@ -613,21 +623,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
             TextField(
               controller: _contactEmailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: 'Email de contacto'),
+              maxLength: InputLimits.email,
+              decoration: const InputDecoration(
+                labelText: 'Email de contacto',
+                counterText: '',
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _contactPhoneController,
               keyboardType: TextInputType.phone,
+              maxLength: InputLimits.phone,
+              inputFormatters: InputLimits.phoneFormatters,
               decoration: const InputDecoration(
                 labelText: 'Telefono de contacto',
+                counterText: '',
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _photoUrlController,
               keyboardType: TextInputType.url,
-              decoration: const InputDecoration(labelText: 'URL de foto'),
+              maxLength: InputLimits.url,
+              decoration: const InputDecoration(
+                labelText: 'URL de foto',
+                counterText: '',
+              ),
             ),
           ],
         ),

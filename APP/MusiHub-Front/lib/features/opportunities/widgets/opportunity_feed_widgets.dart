@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
+import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
 import 'package:musihub_front/features/opportunities/opportunity_display.dart';
@@ -236,15 +236,23 @@ class OpportunityAdvancedFilters extends StatelessWidget {
             const SizedBox(height: 12),
             TextField(
               controller: cityController,
+              maxLength: InputLimits.shortText,
               textInputAction: TextInputAction.search,
-              decoration: const InputDecoration(labelText: 'Ciudad'),
+              decoration: const InputDecoration(
+                labelText: 'Ciudad',
+                counterText: '',
+              ),
               onSubmitted: (_) => onApply(),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: provinceController,
+              maxLength: InputLimits.shortText,
               textInputAction: TextInputAction.search,
-              decoration: const InputDecoration(labelText: 'Provincia'),
+              decoration: const InputDecoration(
+                labelText: 'Provincia',
+                counterText: '',
+              ),
               onSubmitted: (_) => onApply(),
             ),
             const SizedBox(height: 12),
@@ -282,53 +290,57 @@ class OpportunityAdvancedFilters extends StatelessWidget {
             const SizedBox(height: 12),
             TextField(
               controller: dateFromController,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9-]')),
-              ],
+              maxLength: InputLimits.date,
+              inputFormatters: InputLimits.dateFormatters,
               textInputAction: TextInputAction.search,
               decoration: const InputDecoration(
                 labelText: 'Fecha desde',
                 helperText: 'Formato: YYYY-MM-DD',
+                counterText: '',
               ),
               onSubmitted: (_) => onApply(),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: dateToController,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9-]')),
-              ],
+              maxLength: InputLimits.date,
+              inputFormatters: InputLimits.dateFormatters,
               textInputAction: TextInputAction.search,
               decoration: const InputDecoration(
                 labelText: 'Fecha hasta',
                 helperText: 'Formato: YYYY-MM-DD',
+                counterText: '',
               ),
               onSubmitted: (_) => onApply(),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: minPriceController,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]')),
-              ],
+              maxLength: InputLimits.price,
+              inputFormatters: InputLimits.priceFormatters,
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
               textInputAction: TextInputAction.search,
-              decoration: const InputDecoration(labelText: 'Precio minimo'),
+              decoration: const InputDecoration(
+                labelText: 'Precio minimo',
+                counterText: '',
+              ),
               onSubmitted: (_) => onApply(),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: maxPriceController,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]')),
-              ],
+              maxLength: InputLimits.price,
+              inputFormatters: InputLimits.priceFormatters,
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
               textInputAction: TextInputAction.search,
-              decoration: const InputDecoration(labelText: 'Precio maximo'),
+              decoration: const InputDecoration(
+                labelText: 'Precio maximo',
+                counterText: '',
+              ),
               onSubmitted: (_) => onApply(),
             ),
             const SizedBox(height: 16),

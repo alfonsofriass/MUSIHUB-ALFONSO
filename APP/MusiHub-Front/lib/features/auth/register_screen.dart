@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
+import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/features/auth/auth_api.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -81,18 +82,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
             TextField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: 'Email'),
+              maxLength: InputLimits.email,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                counterText: '',
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _passwordController,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'Contrasena'),
+              maxLength: InputLimits.password,
+              decoration: const InputDecoration(
+                labelText: 'Contrasena',
+                counterText: '',
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _fullNameController,
-              decoration: const InputDecoration(labelText: 'Nombre completo'),
+              maxLength: InputLimits.fullName,
+              decoration: const InputDecoration(
+                labelText: 'Nombre completo',
+                counterText: '',
+              ),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
+import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/features/bands/bands_api.dart';
@@ -358,9 +359,21 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
     switch (_selectedContactMethod) {
       case 'whatsapp':
       case 'phone':
-        return [FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s-]'))];
+        return InputLimits.phoneFormatters;
       default:
         return null;
+    }
+  }
+
+  int _contactMaxLength() {
+    switch (_selectedContactMethod) {
+      case 'email':
+        return InputLimits.email;
+      case 'whatsapp':
+      case 'phone':
+        return InputLimits.phone;
+      default:
+        return InputLimits.contactValue;
     }
   }
 
@@ -416,25 +429,30 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
               label: 'Titulo del anuncio',
               controller: _titleController,
               hintText: 'Ej: Clases de guitarra',
+              maxLength: InputLimits.opportunityTitle,
             ),
             const SizedBox(height: 12),
             _buildTextField(
               label: 'Descripcion',
               controller: _descriptionController,
               hintText: 'Describe que ofreces o que buscas',
+              maxLength: InputLimits.opportunityDescription,
               maxLines: 3,
+              showCounter: true,
             ),
             const SizedBox(height: 12),
             _buildTextField(
               label: 'Ciudad',
               controller: _cityController,
               hintText: 'Ej: Madrid',
+              maxLength: InputLimits.shortText,
             ),
             const SizedBox(height: 12),
             _buildTextField(
               label: 'Provincia',
               controller: _provinceController,
               hintText: 'Ej: Madrid',
+              maxLength: InputLimits.shortText,
             ),
             if (template.showEventDate) ...[
               const SizedBox(height: 12),
@@ -442,6 +460,8 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
                 label: 'Fecha',
                 controller: _eventDateController,
                 helperText: 'Formato: YYYY-MM-DD',
+                maxLength: InputLimits.date,
+                inputFormatters: InputLimits.dateFormatters,
               ),
             ],
             if (template.showPrice) ...[
@@ -453,9 +473,8 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]')),
-                ],
+                maxLength: InputLimits.price,
+                inputFormatters: InputLimits.priceFormatters,
                 suffixText: 'EUR',
               ),
             ],
@@ -515,6 +534,7 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
               controller: _contactValueController,
               hintText: _contactHintText(),
               keyboardType: _contactKeyboardType(),
+              maxLength: _contactMaxLength(),
               inputFormatters: _contactInputFormatters(),
             ),
           ],
@@ -603,12 +623,15 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
     String? helperText,
     String? suffixText,
     int maxLines = 1,
+    int? maxLength,
+    bool showCounter = false,
     TextInputType? keyboardType,
     List<TextInputFormatter>? inputFormatters,
   }) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
+      maxLength: maxLength,
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
       decoration: InputDecoration(
@@ -616,6 +639,7 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
         hintText: hintText,
         helperText: helperText,
         suffixText: suffixText,
+        counterText: maxLength == null || showCounter ? null : '',
       ),
     );
   }
