@@ -158,7 +158,21 @@ Table alert_preference_types {
   }
 }
 
-//Alertas generadas por matching; en V1 se consultan en app, FCM queda para despues
+//Tokens FCM de dispositivos autenticados; los usa el backend para enviar push
+Table device_tokens {
+  id integer [primary key, increment]
+  user_id integer [not null]
+  token varchar [not null, unique]
+  platform varchar [not null] // android, ios, web
+  created_at timestamp [not null]
+  last_seen_at timestamp [not null] // ultima vez que Flutter registro/actualizo el token
+
+  indexes {
+    (user_id)
+  }
+}
+
+//Alertas generadas por matching; se consultan en app y pueden entregarse por FCM
 Table alerts {
   id integer [primary key, increment]
   user_id integer [not null]
@@ -226,6 +240,7 @@ Ref: opportunity_instruments.instrument_id > instruments.id
 Ref: alert_preferences.user_id > users.id
 Ref: alert_preference_types.alert_preference_id > alert_preferences.id
 Ref: alert_preference_types.opportunity_type_id > opportunity_types.id
+Ref: device_tokens.user_id > users.id
 Ref: alerts.user_id > users.id
 Ref: alerts.opportunity_id > opportunities.id
 

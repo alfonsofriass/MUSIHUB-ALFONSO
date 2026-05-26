@@ -26,6 +26,7 @@ from app.models import (
     ProfileStyle,
     User,
 )
+from app.push import send_alert_push
 
 router = APIRouter(prefix="/opportunities")
 
@@ -241,7 +242,8 @@ def _generate_alerts_for_opportunity(
     current_user: User,
     instrument_ids: list[int],
     style_ids: list[int],
-) -> None:
+) -> list[Alert]:
+    immediate_alerts: list[Alert] = []
     alert_preferences = db.scalars(
         select(AlertPreference)
         .join(
@@ -320,14 +322,17 @@ def _generate_alerts_for_opportunity(
         if existing_alert is not None:
             continue
 
-        db.add(
-            Alert(
-                user_id=alert_preference.user_id,
-                opportunity_id=opportunity.id,
-                score=score,
-                reason=", ".join(reasons),
-            )
+        alert = Alert(
+            user_id=alert_preference.user_id,
+            opportunity_id=opportunity.id,
+            score=score,
+            reason=", ".join(reasons),
         )
+        db.add(alert)
+        if alert_preference.frequency == "immediate":
+            immediate_alerts.append(alert)
+
+    return immediate_alerts
 
 
 def _can_view_opportunity_contact(
@@ -512,7 +517,7 @@ def create_opportunity(
             )
         )
 
-    _generate_alerts_for_opportunity(
+    immediate_alerts = _generate_alerts_for_opportunity(
         db=db,
         opportunity=opportunity,
         opportunity_type=opportunity_type,
@@ -522,6 +527,13 @@ def create_opportunity(
     )
 
     db.commit()
+
+    for alert in immediate_alerts:
+        send_alert_push(
+            db=db,
+            alert=alert,
+            opportunity=opportunity,
+        )
 
     return _build_opportunity_response(
         opportunity=opportunity,

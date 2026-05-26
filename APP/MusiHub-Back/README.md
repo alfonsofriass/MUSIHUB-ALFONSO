@@ -17,7 +17,8 @@ Backend FastAPI del TFG MusiHub.
 - Favoritos de anuncios.
 - Bandas V1.
 - Publicación de anuncios en nombre de banda.
-- Alertas V1 sin push real: preferencias, matching básico, trazabilidad y anti-duplicados.
+- Alertas V1 con push inmediato por FCM: preferencias, matching básico,
+  trazabilidad, anti-duplicados y registro de tokens de dispositivo.
 
 ## Endpoints principales
 - `POST /api/v1/auth/register`
@@ -49,6 +50,7 @@ Backend FastAPI del TFG MusiHub.
 - `GET /api/v1/alerts/preferences`
 - `PUT /api/v1/alerts/preferences`
 - `GET /api/v1/alerts/me`
+- `POST /api/v1/device-tokens`
 - `GET /api/v1/contact-requests/received`
 - `GET /api/v1/contact-requests/sent`
 - `PATCH /api/v1/contact-requests/{id}/accept`
@@ -125,13 +127,39 @@ combinables:
 - El matching es básico y explicable: tipo, ciudad, provincia, instrumento y estilo.
 - Las alertas se guardan en BD y se evita duplicar la misma alerta para el mismo
   usuario y anuncio.
-- FCM y envíos programados quedan para una fase posterior.
+- Si la preferencia es `immediate`, el backend intenta enviar push por FCM tras
+  guardar la alerta.
+- Las frecuencias `daily` y `weekly` guardan la alerta en BD, pero el envío
+  programado queda para una fase posterior.
+- Si FCM falla, no debe fallar la creación del anuncio ni la alerta en BD.
+
+## FCM
+- `POST /api/v1/device-tokens` requiere JWT y registra o actualiza el token FCM
+  del dispositivo autenticado.
+- Payload:
+
+```json
+{
+  "token": "FCM_TOKEN",
+  "platform": "android"
+}
+```
+
+- Variables de entorno opcionales:
+
+```env
+PUSH_NOTIFICATIONS_ENABLED=true
+FIREBASE_CREDENTIALS_PATH=/ruta/privada/service-account.json
+FIREBASE_PROJECT_ID=musihub
+```
+
+El `service-account.json` es secreto y no debe subirse a Git.
 
 ## Migraciones
 Head esperado:
 
 ```text
-a7b8c9d0e1f2
+b8c9d0e1f2a3
 ```
 
 ## Ejecución local
@@ -139,4 +167,10 @@ a7b8c9d0e1f2
 docker compose up -d db
 alembic upgrade head
 uvicorn app.main:app --reload
+```
+
+Para probar FCM desde un móvil físico en la misma red, levantar el backend con:
+
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
