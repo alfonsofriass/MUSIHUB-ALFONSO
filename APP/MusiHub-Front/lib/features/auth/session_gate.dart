@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
+import 'package:musihub_front/core/push/push_notifications_service.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/features/auth/auth_api.dart';
 import 'package:musihub_front/features/auth/login_screen.dart';
@@ -41,6 +42,7 @@ class _SessionGateState extends State<SessionGate> {
 
     try {
       await _authApi.me(token);
+      await PushNotificationsService.registerDevice(authToken: token);
 
       return OpportunitiesListScreen(tokenStore: _tokenStore);
     } catch (_) {

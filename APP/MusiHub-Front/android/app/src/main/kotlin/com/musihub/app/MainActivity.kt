@@ -1,4 +1,4 @@
-package com.example.musihub_front
+package com.musihub.app
 
 import io.flutter.embedding.android.FlutterActivity
 
