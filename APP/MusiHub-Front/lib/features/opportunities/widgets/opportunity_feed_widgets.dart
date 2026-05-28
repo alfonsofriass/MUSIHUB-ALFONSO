@@ -485,10 +485,12 @@ class _OpportunityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isClosed = !opportunity.isActive;
+
     return Material(
-      color: Colors.white,
-      elevation: 3,
-      shadowColor: Colors.black.withValues(alpha: 0.18),
+      color: isClosed ? MusiHubColors.fieldGrey : Colors.white,
+      elevation: isClosed ? 1 : 3,
+      shadowColor: Colors.black.withValues(alpha: isClosed ? 0.08 : 0.18),
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,
@@ -502,11 +504,19 @@ class _OpportunityCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(child: _OpportunityTags(opportunity: opportunity)),
+                  if (isClosed) ...[
+                    const SizedBox(width: 8),
+                    const _ClosedBadge(),
+                  ],
                   IconButton(
                     onPressed: onFavoriteTap,
                     icon: Icon(
                       isFavorite ? Icons.favorite : Icons.favorite_border,
-                      color: isFavorite ? MusiHubColors.primary : null,
+                      color: isFavorite
+                          ? isClosed
+                                ? MusiHubColors.textGrey
+                                : MusiHubColors.primary
+                          : null,
                     ),
                     iconSize: 22,
                     padding: EdgeInsets.zero,
@@ -514,7 +524,7 @@ class _OpportunityCard extends StatelessWidget {
                       minWidth: 32,
                       minHeight: 32,
                     ),
-                    tooltip: 'Guardar',
+                    tooltip: isFavorite ? 'Quitar de guardados' : 'Guardar',
                   ),
                 ],
               ),
@@ -523,7 +533,9 @@ class _OpportunityCard extends StatelessWidget {
                 opportunity.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleMedium,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: isClosed ? MusiHubColors.textGrey : Colors.black,
+                ),
               ),
               if (opportunity.authorBand != null) ...[
                 const SizedBox(height: 3),
@@ -553,7 +565,9 @@ class _OpportunityCard extends StatelessWidget {
                 opportunity.description,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: isClosed ? MusiHubColors.textGrey : null,
+                ),
               ),
               const SizedBox(height: 10),
               Wrap(
@@ -608,6 +622,30 @@ class _EmptyResults extends StatelessWidget {
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ClosedBadge extends StatelessWidget {
+  const _ClosedBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: MusiHubColors.borderGrey),
+      ),
+      child: const Text(
+        'Cerrado',
+        style: TextStyle(
+          color: MusiHubColors.textGrey,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

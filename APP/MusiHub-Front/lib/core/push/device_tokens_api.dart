@@ -25,6 +25,21 @@ class DeviceTokensApi {
     final json = jsonDecode(response.body) as Map<String, dynamic>;
     return DeviceTokenRegistration.fromJson(json);
   }
+
+  Future<void> unregisterDeviceToken({
+    required String authToken,
+    required String deviceToken,
+  }) async {
+    final response = await _apiClient.post(
+      '/device-tokens/unregister',
+      token: authToken,
+      body: {'token': deviceToken},
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception('No se pudo desregistrar el token del dispositivo.');
+    }
+  }
 }
 
 class DeviceTokenRegistration {

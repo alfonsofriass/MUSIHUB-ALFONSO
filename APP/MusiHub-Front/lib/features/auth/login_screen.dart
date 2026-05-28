@@ -3,8 +3,10 @@ import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/push/push_notifications_service.dart';
 import 'package:musihub_front/core/session/token_store.dart';
+import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/features/auth/auth_api.dart';
 import 'package:musihub_front/features/auth/register_screen.dart';
+import 'package:musihub_front/features/auth/widgets/auth_logo.dart';
 import 'package:musihub_front/features/opportunities/opportunities_list_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -84,32 +86,45 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _openRegister() async {
-    final wasRegistered = await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(builder: (_) => const RegisterScreen()),
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(builder: (_) => const RegisterScreen()),
     );
-
-    if (wasRegistered != true || !mounted) return;
-
-    setState(() {
-      _successMessage = 'Cuenta creada. Inicia sesion.';
-      _errorMessage = null;
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('MusiHub')),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(28, 52, 28, 28),
           children: [
+            const Center(child: MusiHubLogoMark()),
+            const SizedBox(height: 24),
+            Text(
+              'MusiHub',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.headlineLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'La plataforma que centraliza oportunidades musicales',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 56),
+            Text(
+              'Iniciar sesion',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 18),
             TextField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               maxLength: InputLimits.email,
+              textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
                 labelText: 'Email',
+                hintText: 'Introduce tu email',
                 counterText: '',
               ),
             ),
@@ -118,38 +133,60 @@ class _LoginScreenState extends State<LoginScreen> {
               controller: _passwordController,
               obscureText: true,
               maxLength: InputLimits.password,
+              onSubmitted: (_) {
+                if (!_isLoading) {
+                  _login();
+                }
+              },
               decoration: const InputDecoration(
                 labelText: 'Contrasena',
+                hintText: 'Introduce tu contrasena',
                 counterText: '',
               ),
             ),
             const SizedBox(height: 24),
             FilledButton(
               onPressed: _isLoading ? null : _login,
-              child: Text(_isLoading ? 'Entrando...' : 'Entrar'),
+              child: Text(_isLoading ? 'Entrando...' : 'Iniciar sesion'),
             ),
             const SizedBox(height: 12),
-            TextButton(
+            OutlinedButton(
               onPressed: _isLoading ? null : _openRegister,
               child: const Text('Crear cuenta'),
             ),
             if (_successMessage != null) ...[
               const SizedBox(height: 16),
-              Text(
-                _successMessage!,
-                style: TextStyle(color: Theme.of(context).colorScheme.primary),
+              _AuthMessage(
+                message: _successMessage!,
+                color: MusiHubColors.primary,
               ),
             ],
             if (_errorMessage != null) ...[
               const SizedBox(height: 16),
-              Text(
-                _errorMessage!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              _AuthMessage(
+                message: _errorMessage!,
+                color: Theme.of(context).colorScheme.error,
               ),
             ],
           ],
         ),
       ),
+    );
+  }
+}
+
+class _AuthMessage extends StatelessWidget {
+  const _AuthMessage({required this.message, required this.color});
+
+  final String message;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      message,
+      textAlign: TextAlign.center,
+      style: TextStyle(color: color, fontWeight: FontWeight.w600),
     );
   }
 }

@@ -15,8 +15,8 @@ void main() {
     expect(find.text('MusiHub'), findsOneWidget);
     expect(find.text('Email'), findsOneWidget);
     expect(find.text('Contrasena'), findsOneWidget);
-    expect(find.text('Entrar'), findsOneWidget);
-    expect(find.text('Crear cuenta'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Iniciar sesion'), findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, 'Crear cuenta'), findsOneWidget);
   });
 
   test('builds opportunity filter query params', () {
@@ -210,6 +210,8 @@ void main() {
       preferredProvince: null,
       notificationsEnabled: true,
       opportunityTypeIds: [1, 2],
+      instrumentIds: [2],
+      styleIds: [1],
     );
 
     expect(request.toJson(), {
@@ -218,6 +220,8 @@ void main() {
       'preferred_province': null,
       'notifications_enabled': true,
       'opportunity_type_ids': [1, 2],
+      'instrument_ids': [2],
+      'style_ids': [1],
     });
   });
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
+import 'package:musihub_front/core/widgets/musihub_empty_state.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
 import 'package:musihub_front/features/opportunities/opportunity_display.dart';
 import 'package:musihub_front/features/opportunities/opportunity_detail_screen.dart';
@@ -143,14 +144,44 @@ class _MyOpportunitiesScreenState extends State<MyOpportunitiesScreen> {
           builder: (context, snapshot) {
             if (snapshot.hasData) {
               final opportunities = snapshot.data!;
-
-              if (opportunities.isEmpty) {
-                return const Center(child: Text('Todavia no tienes anuncios.'));
-              }
+              final activeCount = opportunities
+                  .where((opportunity) => opportunity.isActive)
+                  .length;
+              final closedCount = opportunities.length - activeCount;
 
               return ListView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                padding: const EdgeInsets.fromLTRB(24, 18, 24, 28),
                 children: [
+                  Text(
+                    'Mis anuncios',
+                    style: Theme.of(context).textTheme.headlineLarge,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Gestiona las publicaciones que has creado en MusiHub.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 18),
+                  if (opportunities.isEmpty)
+                    MusiHubEmptyState(
+                      icon: Icons.campaign_outlined,
+                      title: 'Todavia no tienes anuncios',
+                      message:
+                          'Publica tu primera oportunidad para que aparezca en la comunidad.',
+                      action: FilledButton.icon(
+                        onPressed: _openCreateOpportunity,
+                        icon: const Icon(Icons.add),
+                        label: const Text('Publicar anuncio'),
+                      ),
+                    )
+                  else ...[
+                    _MyOpportunitiesSummary(
+                      totalCount: opportunities.length,
+                      activeCount: activeCount,
+                      closedCount: closedCount,
+                    ),
+                    const SizedBox(height: 18),
+                  ],
                   for (final opportunity in opportunities) ...[
                     _MyOpportunityCard(
                       opportunity: opportunity,
@@ -176,6 +207,77 @@ class _MyOpportunitiesScreenState extends State<MyOpportunitiesScreen> {
           },
         ),
       ),
+    );
+  }
+}
+
+class _MyOpportunitiesSummary extends StatelessWidget {
+  const _MyOpportunitiesSummary({
+    required this.totalCount,
+    required this.activeCount,
+    required this.closedCount,
+  });
+
+  final int totalCount;
+  final int activeCount;
+  final int closedCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: MusiHubColors.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: MusiHubColors.primary.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          _SummaryMetric(label: 'Total', value: totalCount),
+          const _SummaryDivider(),
+          _SummaryMetric(label: 'Activos', value: activeCount),
+          const _SummaryDivider(),
+          _SummaryMetric(label: 'Cerrados', value: closedCount),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryMetric extends StatelessWidget {
+  const _SummaryMetric({required this.label, required this.value});
+
+  final String label;
+  final int value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            value.toString(),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(color: MusiHubColors.primary),
+          ),
+          const SizedBox(height: 2),
+          Text(label, style: Theme.of(context).textTheme.bodySmall),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryDivider extends StatelessWidget {
+  const _SummaryDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 34,
+      width: 1,
+      color: MusiHubColors.primary.withValues(alpha: 0.18),
     );
   }
 }

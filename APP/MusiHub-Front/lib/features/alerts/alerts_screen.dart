@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
+import 'package:musihub_front/core/catalog/catalog_item.dart';
 import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
+import 'package:musihub_front/core/widgets/musihub_empty_state.dart';
 import 'package:musihub_front/features/alerts/alerts_api.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
 import 'package:musihub_front/features/opportunities/opportunity_detail_screen.dart';
 import 'package:musihub_front/features/opportunities/opportunity_display.dart';
-import 'package:musihub_front/features/profile/profile_screen.dart';
+import 'package:musihub_front/features/profile/profile_api.dart';
 
 enum AlertsScreenMode { generated, settings }
 
@@ -31,10 +33,13 @@ class _AlertsScreenState extends State<AlertsScreen> {
   final _cityController = TextEditingController();
   final _provinceController = TextEditingController();
   final _selectedTypeIds = <int>{};
+  final _selectedInstrumentIds = <int>{};
+  final _selectedStyleIds = <int>{};
   final _apiClient = ApiClient();
 
   late final AlertsApi _alertsApi;
   late final OpportunitiesApi _opportunitiesApi;
+  late final ProfileApi _profileApi;
   late Future<_AlertsData> _initialDataFuture;
 
   String? _token;
@@ -49,6 +54,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
     super.initState();
     _alertsApi = AlertsApi(apiClient: _apiClient);
     _opportunitiesApi = OpportunitiesApi(apiClient: _apiClient);
+    _profileApi = ProfileApi(apiClient: _apiClient);
     _initialDataFuture = _loadInitialData();
   }
 
@@ -72,18 +78,32 @@ class _AlertsScreenState extends State<AlertsScreen> {
     if (widget.mode == AlertsScreenMode.generated) {
       final alerts = await _alertsApi.listMyAlerts(token);
 
-      return _AlertsData(types: const [], alerts: alerts);
+      return _AlertsData(
+        types: const [],
+        instruments: const [],
+        styles: const [],
+        alerts: alerts,
+      );
     }
 
     final typesFuture = _opportunitiesApi.listOpportunityTypes();
+    final instrumentsFuture = _profileApi.listInstruments();
+    final stylesFuture = _profileApi.listMusicStyles();
     final preferencesFuture = _alertsApi.getPreferences(token);
 
     final types = await typesFuture;
+    final instruments = await instrumentsFuture;
+    final styles = await stylesFuture;
     final preferencesResponse = await preferencesFuture;
 
     _applyPreferences(preferencesResponse.preferences);
 
-    return _AlertsData(types: types, alerts: const []);
+    return _AlertsData(
+      types: types,
+      instruments: instruments,
+      styles: styles,
+      alerts: const [],
+    );
   }
 
   void _applyPreferences(AlertPreferences? preferences) {
@@ -96,9 +116,18 @@ class _AlertsScreenState extends State<AlertsScreen> {
       ..addAll(
         preferences?.opportunityTypes.map((type) => type.id) ?? const <int>[],
       );
+    _selectedInstrumentIds
+      ..clear()
+      ..addAll(
+        preferences?.instruments.map((instrument) => instrument.id) ??
+            const <int>[],
+      );
+    _selectedStyleIds
+      ..clear()
+      ..addAll(preferences?.styles.map((style) => style.id) ?? const <int>[]);
   }
 
-  Future<void> _savePreferences(_AlertsData data) async {
+  Future<void> _savePreferences() async {
     final token = _token;
 
     if (token == null || token.isEmpty) {
@@ -124,6 +153,8 @@ class _AlertsScreenState extends State<AlertsScreen> {
           preferredProvince: _textOrNull(_provinceController.text),
           notificationsEnabled: _notificationsEnabled,
           opportunityTypeIds: _selectedTypeIds.toList(),
+          instrumentIds: _selectedInstrumentIds.toList(),
+          styleIds: _selectedStyleIds.toList(),
         ),
       );
 
@@ -175,14 +206,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
     if (!mounted) return;
 
     _retryLoad();
-  }
-
-  Future<void> _openProfile() async {
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(
-        builder: (_) => ProfileScreen(tokenStore: widget.tokenStore),
-      ),
-    );
   }
 
   @override
@@ -283,10 +306,24 @@ class _AlertsScreenState extends State<AlertsScreen> {
           children: [_buildTypeChips(data.types)],
         ),
         const SizedBox(height: 18),
-        _MusicalProfileCard(onEditProfile: _openProfile),
+        _AlertConfigCard(
+          title: 'Instrumentos',
+          subtitle:
+              'Elige instrumentos de interes. Si no eliges ninguno, no se filtra por instrumento.',
+          children: [
+            _buildCatalogChips(data.instruments, _selectedInstrumentIds),
+          ],
+        ),
+        const SizedBox(height: 18),
+        _AlertConfigCard(
+          title: 'Estilos musicales',
+          subtitle:
+              'Elige estilos de interes. Si no eliges ninguno, no se filtra por estilo.',
+          children: [_buildCatalogChips(data.styles, _selectedStyleIds)],
+        ),
         const SizedBox(height: 18),
         FilledButton(
-          onPressed: _isSaving ? null : () => _savePreferences(data),
+          onPressed: _isSaving ? null : _savePreferences,
           child: Text(_isSaving ? 'Guardando...' : 'Guardar alertas'),
         ),
         if (_successMessage != null) ...[
@@ -307,6 +344,34 @@ class _AlertsScreenState extends State<AlertsScreen> {
     );
   }
 
+  Widget _buildCatalogChips(List<CatalogItem> items, Set<int> selectedIds) {
+    if (items.isEmpty) {
+      return const Text('No hay opciones disponibles.');
+    }
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: items.map((item) {
+        final isSelected = selectedIds.contains(item.id);
+
+        return FilterChip(
+          label: Text(item.name),
+          selected: isSelected,
+          onSelected: (value) {
+            setState(() {
+              if (value) {
+                selectedIds.add(item.id);
+              } else {
+                selectedIds.remove(item.id);
+              }
+            });
+          },
+        );
+      }).toList(),
+    );
+  }
+
   Widget _buildGeneratedAlertsContent(_AlertsData data) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(26, 24, 26, 96),
@@ -317,7 +382,9 @@ class _AlertsScreenState extends State<AlertsScreen> {
           'Oportunidades que encajan con tu perfil y preferencias.',
           style: Theme.of(context).textTheme.bodySmall,
         ),
-        const SizedBox(height: 22),
+        const SizedBox(height: 16),
+        const _AlertScoreInfo(),
+        const SizedBox(height: 18),
         if (data.alerts.isEmpty)
           const _EmptyAlerts()
         else
@@ -385,9 +452,16 @@ class _AlertsScreenState extends State<AlertsScreen> {
 }
 
 class _AlertsData {
-  const _AlertsData({required this.types, required this.alerts});
+  const _AlertsData({
+    required this.types,
+    required this.instruments,
+    required this.styles,
+    required this.alerts,
+  });
 
   final List<OpportunityType> types;
+  final List<CatalogItem> instruments;
+  final List<CatalogItem> styles;
   final List<GeneratedAlert> alerts;
 }
 
@@ -525,22 +599,37 @@ class _AlertConfigCard extends StatelessWidget {
   }
 }
 
-class _MusicalProfileCard extends StatelessWidget {
-  const _MusicalProfileCard({required this.onEditProfile});
-
-  final VoidCallback onEditProfile;
+class _AlertScoreInfo extends StatelessWidget {
+  const _AlertScoreInfo();
 
   @override
   Widget build(BuildContext context) {
-    return _AlertConfigCard(
-      title: 'Coincidencia musical',
-      subtitle: 'Instrumentos y estilos se calculan desde tu perfil musical.',
-      children: [
-        OutlinedButton(
-          onPressed: onEditProfile,
-          child: const Text('Editar perfil musical'),
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: MusiHubColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: MusiHubColors.primary.withValues(alpha: 0.18),
         ),
-      ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.auto_awesome_outlined,
+            size: 20,
+            color: MusiHubColors.primary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'La puntuacion resume cuanto encaja el anuncio con tus preferencias, ubicacion e intereses musicales. El motivo explica las coincidencias detectadas.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -572,11 +661,21 @@ class _GeneratedAlertCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _ScoreBadge(score: alert.score),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      alert.reason,
-                      style: Theme.of(context).textTheme.bodySmall,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Motivo de la alerta',
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          alert.reason,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -650,18 +749,31 @@ class _ScoreBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      width: 54,
+      padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
         color: MusiHubColors.primary,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(8),
       ),
-      child: Text(
-        '$score',
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-        ),
+      child: Column(
+        children: [
+          Text(
+            '$score',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const Text(
+            'pts',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -691,17 +803,11 @@ class _EmptyAlerts extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: MusiHubColors.fieldGrey,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        'Todavia no hay alertas generadas.',
-        textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.bodyMedium,
-      ),
+    return const MusiHubEmptyState(
+      icon: Icons.notifications_none,
+      title: 'Todavia no hay alertas',
+      message:
+          'Cuando se publiquen anuncios que encajen contigo, apareceran aqui.',
     );
   }
 }

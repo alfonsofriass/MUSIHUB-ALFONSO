@@ -64,15 +64,22 @@ class _OpportunityDetailScreenState extends State<OpportunityDetailScreen> {
     );
     final favoritesFuture = _opportunitiesApi.listFavoriteOpportunities(token);
     final userFuture = _authApi.me(token);
+    final sentRequestsFuture = _contactRequestsApi.listSent(token);
 
     final opportunity = await opportunityFuture;
     final favorites = await favoritesFuture;
     final user = await userFuture;
+    final sentRequests = await sentRequestsFuture;
+    final contactRequestStatus = _contactRequestStatusForOpportunity(
+      sentRequests: sentRequests,
+      opportunityId: opportunity.id,
+    );
 
     return _OpportunityDetailData(
       opportunity: opportunity,
       isFavorite: favorites.any((favorite) => favorite.id == opportunity.id),
       currentUserId: user.id,
+      contactRequestStatus: contactRequestStatus,
     );
   }
 
@@ -135,17 +142,19 @@ class _OpportunityDetailScreenState extends State<OpportunityDetailScreen> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Solicitud de contacto enviada.')),
-      );
-      _refresh();
+      setState(() {
+        _detailFuture = Future.value(
+          data.copyWith(contactRequestStatus: 'pending'),
+        );
+      });
     } on DuplicateContactRequestException {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ya habias solicitado este contacto.')),
-      );
-      _refresh();
+      setState(() {
+        _detailFuture = Future.value(
+          data.copyWith(contactRequestStatus: 'pending'),
+        );
+      });
     } catch (_) {
       if (!mounted) return;
 
@@ -232,6 +241,7 @@ class _OpportunityDetailScreenState extends State<OpportunityDetailScreen> {
               return _OpportunityDetail(
                 opportunity: snapshot.data!.opportunity,
                 currentUserId: snapshot.data!.currentUserId,
+                contactRequestStatus: snapshot.data!.contactRequestStatus,
                 isRequestingContact: _isRequestingContact,
                 onRequestContact: () => _requestContact(snapshot.data!),
                 onOpenAuthorProfile: () =>
@@ -261,25 +271,45 @@ class _OpportunityDetailData {
     required this.opportunity,
     required this.isFavorite,
     required this.currentUserId,
+    required this.contactRequestStatus,
   });
 
   final Opportunity opportunity;
   final bool isFavorite;
   final int currentUserId;
+  final String? contactRequestStatus;
 
-  _OpportunityDetailData copyWith({bool? isFavorite}) {
+  _OpportunityDetailData copyWith({
+    bool? isFavorite,
+    String? contactRequestStatus,
+  }) {
     return _OpportunityDetailData(
       opportunity: opportunity,
       isFavorite: isFavorite ?? this.isFavorite,
       currentUserId: currentUserId,
+      contactRequestStatus: contactRequestStatus ?? this.contactRequestStatus,
     );
   }
+}
+
+String? _contactRequestStatusForOpportunity({
+  required List<ContactRequestItem> sentRequests,
+  required int opportunityId,
+}) {
+  for (final request in sentRequests) {
+    if (request.opportunity.id == opportunityId) {
+      return request.status;
+    }
+  }
+
+  return null;
 }
 
 class _OpportunityDetail extends StatelessWidget {
   const _OpportunityDetail({
     required this.opportunity,
     required this.currentUserId,
+    required this.contactRequestStatus,
     required this.isRequestingContact,
     required this.onRequestContact,
     required this.onOpenAuthorProfile,
@@ -288,6 +318,7 @@ class _OpportunityDetail extends StatelessWidget {
 
   final Opportunity opportunity;
   final int currentUserId;
+  final String? contactRequestStatus;
   final bool isRequestingContact;
   final VoidCallback onRequestContact;
   final VoidCallback onOpenAuthorProfile;
@@ -324,6 +355,7 @@ class _OpportunityDetail extends StatelessWidget {
         _ContactAction(
           opportunity: opportunity,
           isOwnOpportunity: isOwnOpportunity,
+          contactRequestStatus: contactRequestStatus,
           isRequestingContact: isRequestingContact,
           onRequestContact: onRequestContact,
         ),
@@ -621,12 +653,14 @@ class _ContactAction extends StatelessWidget {
   const _ContactAction({
     required this.opportunity,
     required this.isOwnOpportunity,
+    required this.contactRequestStatus,
     required this.isRequestingContact,
     required this.onRequestContact,
   });
 
   final Opportunity opportunity;
   final bool isOwnOpportunity;
+  final String? contactRequestStatus;
   final bool isRequestingContact;
   final VoidCallback onRequestContact;
 
@@ -641,10 +675,42 @@ class _ContactAction extends StatelessWidget {
       );
     }
 
+    if (!opportunity.isActive) {
+      return const _ContactNotice(
+        icon: Icons.lock_outline,
+        text: 'Este anuncio esta cerrado y ya no acepta solicitudes.',
+      );
+    }
+
     if (isOwnOpportunity) {
       return const _ContactNotice(
         icon: Icons.lock_outline,
         text: 'Tu dato de contacto no esta visible publicamente.',
+      );
+    }
+
+    if (contactRequestStatus == 'pending') {
+      return const _ContactStateNotice(
+        icon: Icons.mark_email_unread_outlined,
+        text: 'Solicitud enviada',
+        detail: 'El anunciante todavia no ha respondido.',
+      );
+    }
+
+    if (contactRequestStatus == 'rejected') {
+      return const _ContactStateNotice(
+        icon: Icons.block_outlined,
+        text: 'Solicitud rechazada',
+        detail: 'El anunciante no ha aceptado compartir el contacto.',
+        muted: true,
+      );
+    }
+
+    if (contactRequestStatus == 'accepted') {
+      return const _ContactStateNotice(
+        icon: Icons.mark_email_read_outlined,
+        text: 'Solicitud aceptada',
+        detail: 'El contacto todavia no esta disponible.',
       );
     }
 
@@ -668,6 +734,56 @@ class _ContactAction extends StatelessWidget {
       default:
         return 'Contacto';
     }
+  }
+}
+
+class _ContactStateNotice extends StatelessWidget {
+  const _ContactStateNotice({
+    required this.icon,
+    required this.text,
+    required this.detail,
+    this.muted = false,
+  });
+
+  final IconData icon;
+  final String text;
+  final String detail;
+  final bool muted;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = muted ? MusiHubColors.textGrey : MusiHubColors.primary;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  text,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleMedium?.copyWith(color: color),
+                ),
+                const SizedBox(height: 2),
+                Text(detail, style: Theme.of(context).textTheme.bodySmall),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

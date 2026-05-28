@@ -136,6 +136,11 @@ class _FavoriteOpportunitiesScreenState
                     'Guardados',
                     style: Theme.of(context).textTheme.headlineLarge,
                   ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Anuncios que quieres revisar o contactar mas adelante.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                   const SizedBox(height: 16),
                   OpportunityFeedResults(
                     opportunities: favorites,
@@ -143,7 +148,7 @@ class _FavoriteOpportunitiesScreenState
                         .map((opportunity) => opportunity.id)
                         .toSet(),
                     hasFilters: false,
-                    emptyMessage: 'Todavia no has guardado anuncios.',
+                    emptyMessage: 'Todavia no has guardado ningun anuncio.',
                     onOpen: _openDetail,
                     onFavoriteTap: _removeFavorite,
                   ),

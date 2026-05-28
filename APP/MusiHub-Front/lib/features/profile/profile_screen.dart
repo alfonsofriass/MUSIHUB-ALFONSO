@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
 import 'package:musihub_front/core/forms/input_limits.dart';
+import 'package:musihub_front/core/push/push_notifications_service.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/features/alerts/alerts_screen.dart';
@@ -297,6 +298,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _logout() async {
+    final token = _token ?? await widget.tokenStore.readAccessToken();
+
+    if (token != null && token.isNotEmpty) {
+      await PushNotificationsService.unregisterDevice(authToken: token);
+    }
+
     await widget.tokenStore.clearAccessToken();
 
     if (!mounted) return;

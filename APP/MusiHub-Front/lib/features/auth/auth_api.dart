@@ -41,6 +41,10 @@ class AuthApi {
     );
 
     if (response.statusCode != 200 && response.statusCode != 201) {
+      if (_responseDetail(response.body) == 'Email already registered') {
+        throw const EmailAlreadyRegisteredException();
+      }
+
       throw Exception('No se pudo crear la cuenta.');
     }
   }
@@ -61,6 +65,19 @@ class AuthApi {
       role: json['role'] as String,
     );
   }
+}
+
+String? _responseDetail(String body) {
+  try {
+    final json = jsonDecode(body) as Map<String, dynamic>;
+    return json['detail'] as String?;
+  } catch (_) {
+    return null;
+  }
+}
+
+class EmailAlreadyRegisteredException implements Exception {
+  const EmailAlreadyRegisteredException();
 }
 
 class AuthUser {

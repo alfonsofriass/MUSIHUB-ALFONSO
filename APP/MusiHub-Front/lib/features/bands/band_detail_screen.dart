@@ -137,12 +137,6 @@ class _BandDetailScreenState extends State<BandDetailScreen> {
     }
   }
 
-  void _showFutureFeature(String label) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$label estara disponible mas adelante.')),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -162,8 +156,6 @@ class _BandDetailScreenState extends State<BandDetailScreen> {
                 onVisibilityChanged: (value) =>
                     _updateMyVisibility(band: data.band, isVisible: value),
                 onInviteTap: () => _openInviteMembers(data.band),
-                onRequestsTap: () =>
-                    _showFutureFeature('Solicitudes pendientes'),
                 onSettingsTap: () => _openManageBand(data.band),
               );
             }
@@ -211,7 +203,6 @@ class _BandDetail extends StatelessWidget {
     required this.isUpdatingVisibility,
     required this.onVisibilityChanged,
     required this.onInviteTap,
-    required this.onRequestsTap,
     required this.onSettingsTap,
   });
 
@@ -221,7 +212,6 @@ class _BandDetail extends StatelessWidget {
   final bool isUpdatingVisibility;
   final ValueChanged<bool> onVisibilityChanged;
   final VoidCallback onInviteTap;
-  final VoidCallback onRequestsTap;
   final VoidCallback onSettingsTap;
 
   @override
@@ -298,13 +288,6 @@ class _BandDetail extends StatelessWidget {
                 icon: Icons.group_add_outlined,
                 label: 'Invitar miembros',
                 onTap: onInviteTap,
-              ),
-              const SizedBox(height: 8),
-              _ManageRow(
-                icon: Icons.mail_outline,
-                label: 'Solicitudes pendientes',
-                showDot: true,
-                onTap: onRequestsTap,
               ),
               const SizedBox(height: 8),
               _ManageRow(
@@ -603,13 +586,11 @@ class _ManageRow extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
-    this.showDot = false,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final bool showDot;
 
   @override
   Widget build(BuildContext context) {
@@ -628,16 +609,6 @@ class _ManageRow extends StatelessWidget {
             Icon(icon, size: 18, color: MusiHubColors.primary),
             const SizedBox(width: 10),
             Expanded(child: Text(label)),
-            if (showDot)
-              Container(
-                width: 8,
-                height: 8,
-                margin: const EdgeInsets.only(right: 10),
-                decoration: const BoxDecoration(
-                  color: MusiHubColors.primary,
-                  shape: BoxShape.circle,
-                ),
-              ),
             const Icon(Icons.chevron_right, size: 18),
           ],
         ),

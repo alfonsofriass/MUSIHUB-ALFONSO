@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
+import 'package:musihub_front/core/widgets/musihub_empty_state.dart';
 import 'package:musihub_front/features/contact_requests/contact_requests_api.dart';
 import 'package:musihub_front/features/opportunities/opportunity_detail_screen.dart';
 import 'package:musihub_front/features/opportunities/opportunity_display.dart';
@@ -144,15 +145,23 @@ class _ContactRequestsScreenState extends State<ContactRequestsScreen> {
             if (snapshot.hasData) {
               final requests = snapshot.data!;
 
-              if (requests.isEmpty) {
-                return _EmptyContactRequests(isReceivedMode: _isReceivedMode);
-              }
-
               return ListView(
                 padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
                 children: [
                   Text(title, style: Theme.of(context).textTheme.headlineLarge),
+                  const SizedBox(height: 6),
+                  Text(
+                    _isReceivedMode
+                        ? 'Personas interesadas en tus anuncios.'
+                        : 'Solicitudes que has enviado para desbloquear contacto.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                   const SizedBox(height: 16),
+                  if (requests.isEmpty)
+                    _EmptyContactRequests(isReceivedMode: _isReceivedMode)
+                  else
+                    _ContactRequestsHint(isReceivedMode: _isReceivedMode),
+                  if (requests.isNotEmpty) const SizedBox(height: 16),
                   for (final request in requests) ...[
                     _ContactRequestCard(
                       request: request,
@@ -221,17 +230,50 @@ class _ContactRequestCard extends StatelessWidget {
             children: [
               Row(
                 children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: MusiHubColors.primary.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      isReceivedMode
+                          ? Icons.mark_email_unread_outlined
+                          : Icons.outgoing_mail,
+                      size: 20,
+                      color: MusiHubColors.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      opportunity.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleMedium,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isReceivedMode
+                              ? 'Solicitud recibida'
+                              : 'Solicitud enviada',
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _dateLabel(request.createdAt),
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 10),
                   _RequestStatusBadge(status: request.status),
                 ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                opportunity.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
               if (isReceivedMode && requester != null) ...[
@@ -294,6 +336,20 @@ class _ContactRequestCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _dateLabel(String value) {
+    final date = DateTime.tryParse(value);
+    if (date == null) {
+      return value;
+    }
+
+    final localDate = date.toLocal();
+    return '${_twoDigits(localDate.day)}/${_twoDigits(localDate.month)}/${localDate.year}';
+  }
+
+  String _twoDigits(int value) {
+    return value.toString().padLeft(2, '0');
   }
 
   String _contactMethodLabel(String method) {
@@ -373,6 +429,45 @@ class _AcceptedContactInfo extends StatelessWidget {
   }
 }
 
+class _ContactRequestsHint extends StatelessWidget {
+  const _ContactRequestsHint({required this.isReceivedMode});
+
+  final bool isReceivedMode;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: MusiHubColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: MusiHubColors.primary.withValues(alpha: 0.18),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.info_outline,
+            size: 18,
+            color: MusiHubColors.primary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              isReceivedMode
+                  ? 'Acepta una solicitud para que esa persona vea tu dato de contacto.'
+                  : 'Cuando una solicitud sea aceptada, aqui veras el contacto del anuncio.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _SmallInfo extends StatelessWidget {
   const _SmallInfo({required this.icon, required this.text});
 
@@ -424,16 +519,16 @@ class _EmptyContactRequests extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Text(
-          isReceivedMode
-              ? 'Todavia no has recibido solicitudes de contacto.'
-              : 'Todavia no has enviado solicitudes de contacto.',
-          textAlign: TextAlign.center,
-        ),
-      ),
+    return MusiHubEmptyState(
+      icon: isReceivedMode
+          ? Icons.mark_email_unread_outlined
+          : Icons.outgoing_mail,
+      title: isReceivedMode
+          ? 'Sin solicitudes recibidas'
+          : 'Sin solicitudes enviadas',
+      message: isReceivedMode
+          ? 'Cuando alguien quiera contactar por uno de tus anuncios, aparecera aqui.'
+          : 'Cuando solicites contacto desde un anuncio, podras seguir aqui su estado.',
     );
   }
 }

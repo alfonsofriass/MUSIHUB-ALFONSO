@@ -35,20 +35,45 @@ class PushNotificationsService {
       await FirebaseMessaging.instance.requestPermission();
 
       final fcmToken = await FirebaseMessaging.instance.getToken();
-      debugPrint('FCM TOKEN: $fcmToken');
+      if (kDebugMode && fcmToken != null && fcmToken.isNotEmpty) {
+        debugPrint('FCM token obtenido.');
+      }
 
       if (fcmToken != null && fcmToken.isNotEmpty) {
         await _sendTokenToBackend(authToken: authToken, fcmToken: fcmToken);
       }
 
-      await _tokenRefreshSubscription?.cancel();
+      await _stopListeningForTokenRefresh();
       _tokenRefreshSubscription = FirebaseMessaging.instance.onTokenRefresh
           .listen((newToken) async {
-            debugPrint('FCM TOKEN REFRESHED: $newToken');
+            if (kDebugMode) {
+              debugPrint('FCM token refrescado.');
+            }
             await _sendTokenToBackend(authToken: authToken, fcmToken: newToken);
           });
     } catch (error) {
       debugPrint('No se pudo registrar FCM: $error');
+    }
+  }
+
+  static Future<void> unregisterDevice({required String authToken}) async {
+    if (!_isSupportedPlatform) {
+      await _stopListeningForTokenRefresh();
+      return;
+    }
+
+    try {
+      await initialize();
+
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+
+      if (fcmToken != null && fcmToken.isNotEmpty) {
+        await _removeTokenFromBackend(authToken: authToken, fcmToken: fcmToken);
+      }
+    } catch (error) {
+      debugPrint('No se pudo desregistrar FCM: $error');
+    } finally {
+      await _stopListeningForTokenRefresh();
     }
   }
 
@@ -68,5 +93,27 @@ class PushNotificationsService {
     } finally {
       apiClient.close();
     }
+  }
+
+  static Future<void> _removeTokenFromBackend({
+    required String authToken,
+    required String fcmToken,
+  }) async {
+    final apiClient = ApiClient();
+    final deviceTokensApi = DeviceTokensApi(apiClient: apiClient);
+
+    try {
+      await deviceTokensApi.unregisterDeviceToken(
+        authToken: authToken,
+        deviceToken: fcmToken,
+      );
+    } finally {
+      apiClient.close();
+    }
+  }
+
+  static Future<void> _stopListeningForTokenRefresh() async {
+    await _tokenRefreshSubscription?.cancel();
+    _tokenRefreshSubscription = null;
   }
 }

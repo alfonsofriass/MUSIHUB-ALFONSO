@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:musihub_front/core/api/api_client.dart';
+import 'package:musihub_front/core/catalog/catalog_item.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
 
 class AlertsApi {
@@ -92,11 +93,16 @@ class AlertPreferences {
     required this.preferredProvince,
     required this.notificationsEnabled,
     required this.opportunityTypes,
+    required this.instruments,
+    required this.styles,
   });
 
   factory AlertPreferences.fromJson(Map<String, dynamic> json) {
     final opportunityTypes =
         json['opportunity_types'] as List<dynamic>? ?? const <dynamic>[];
+    final instruments =
+        json['instruments'] as List<dynamic>? ?? const <dynamic>[];
+    final styles = json['styles'] as List<dynamic>? ?? const <dynamic>[];
 
     return AlertPreferences(
       id: json['id'] as int,
@@ -107,6 +113,12 @@ class AlertPreferences {
       opportunityTypes: opportunityTypes
           .map((item) => OpportunityType.fromJson(item as Map<String, dynamic>))
           .toList(),
+      instruments: instruments
+          .map((item) => CatalogItem.fromJson(item as Map<String, dynamic>))
+          .toList(),
+      styles: styles
+          .map((item) => CatalogItem.fromJson(item as Map<String, dynamic>))
+          .toList(),
     );
   }
 
@@ -116,6 +128,8 @@ class AlertPreferences {
   final String? preferredProvince;
   final bool notificationsEnabled;
   final List<OpportunityType> opportunityTypes;
+  final List<CatalogItem> instruments;
+  final List<CatalogItem> styles;
 }
 
 class AlertPreferencesSaveRequest {
@@ -125,6 +139,8 @@ class AlertPreferencesSaveRequest {
     required this.preferredProvince,
     required this.notificationsEnabled,
     required this.opportunityTypeIds,
+    required this.instrumentIds,
+    required this.styleIds,
   });
 
   final String frequency;
@@ -132,6 +148,8 @@ class AlertPreferencesSaveRequest {
   final String? preferredProvince;
   final bool notificationsEnabled;
   final List<int> opportunityTypeIds;
+  final List<int> instrumentIds;
+  final List<int> styleIds;
 
   Map<String, dynamic> toJson() {
     return {
@@ -140,6 +158,8 @@ class AlertPreferencesSaveRequest {
       'preferred_province': preferredProvince,
       'notifications_enabled': notificationsEnabled,
       'opportunity_type_ids': opportunityTypeIds,
+      'instrument_ids': instrumentIds,
+      'style_ids': styleIds,
     };
   }
 }
