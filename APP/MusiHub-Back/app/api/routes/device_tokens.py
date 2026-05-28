@@ -30,6 +30,19 @@ class DeviceTokenRegisterResponse(BaseModel):
     message: str
 
 
+class DeviceTokenUnregisterRequest(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        str_strip_whitespace=True,
+    )
+
+    token: str = Field(min_length=1, max_length=500)
+
+
+class DeviceTokenUnregisterResponse(BaseModel):
+    message: str
+
+
 @router.post("/device-tokens", response_model=DeviceTokenRegisterResponse)
 def register_device_token(
     payload: DeviceTokenRegisterRequest,
@@ -69,3 +82,26 @@ def register_device_token(
         platform=device_token.platform,
         message="Device token registered",
     )
+
+
+@router.post(
+    "/device-tokens/unregister",
+    response_model=DeviceTokenUnregisterResponse,
+)
+def unregister_device_token(
+    payload: DeviceTokenUnregisterRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> DeviceTokenUnregisterResponse:
+    device_token = db.scalar(
+        select(DeviceToken).where(
+            DeviceToken.token == payload.token,
+            DeviceToken.user_id == current_user.id,
+        )
+    )
+
+    if device_token is not None:
+        db.delete(device_token)
+        db.commit()
+
+    return DeviceTokenUnregisterResponse(message="Device token unregistered")

@@ -51,6 +51,7 @@ Backend FastAPI del TFG MusiHub.
 - `PUT /api/v1/alerts/preferences`
 - `GET /api/v1/alerts/me`
 - `POST /api/v1/device-tokens`
+- `POST /api/v1/device-tokens/unregister`
 - `GET /api/v1/contact-requests/received`
 - `GET /api/v1/contact-requests/sent`
 - `PATCH /api/v1/contact-requests/{id}/accept`
@@ -120,11 +121,16 @@ combinables:
 
 ## Alertas V1
 - El usuario puede guardar preferencias de alertas con frecuencia, ubicación
-  opcional, estado activado/desactivado y tipos de anuncio.
+  opcional, estado activado/desactivado, tipos de anuncio, instrumentos y
+  estilos de interes.
 - `opportunity_type_ids: []` significa que no se generan alertas.
+- `instrument_ids: []` significa que no se filtra por instrumento.
+- `style_ids: []` significa que no se filtra por estilo.
 - Al crear un anuncio, el backend evalúa preferencias de otros usuarios y genera
   alertas si hay coincidencia.
 - El matching es básico y explicable: tipo, ciudad, provincia, instrumento y estilo.
+- Los instrumentos y estilos de alerta son independientes del perfil musical del
+  usuario.
 - Las alertas se guardan en BD y se evita duplicar la misma alerta para el mismo
   usuario y anuncio.
 - Si la preferencia es `immediate`, el backend intenta enviar push por FCM tras
@@ -136,12 +142,23 @@ combinables:
 ## FCM
 - `POST /api/v1/device-tokens` requiere JWT y registra o actualiza el token FCM
   del dispositivo autenticado.
-- Payload:
+- Payload de registro:
 
 ```json
 {
   "token": "FCM_TOKEN",
   "platform": "android"
+}
+```
+
+- `POST /api/v1/device-tokens/unregister` requiere JWT y elimina el token FCM
+  del usuario autenticado al hacer logout. Si el token no existe o ya no
+  pertenece al usuario, responde correctamente sin error.
+- Payload de desregistro:
+
+```json
+{
+  "token": "FCM_TOKEN"
 }
 ```
 

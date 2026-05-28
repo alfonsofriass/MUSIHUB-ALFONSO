@@ -368,6 +368,16 @@ class AlertPreference(Base):
         back_populates="alert_preference",
         cascade="all, delete-orphan",
     )
+    alert_preference_instruments: Mapped[list["AlertPreferenceInstrument"]] = (
+        relationship(
+            back_populates="alert_preference",
+            cascade="all, delete-orphan",
+        )
+    )
+    alert_preference_styles: Mapped[list["AlertPreferenceStyle"]] = relationship(
+        back_populates="alert_preference",
+        cascade="all, delete-orphan",
+    )
 
 
 class AlertPreferenceType(Base):
@@ -388,6 +398,42 @@ class AlertPreferenceType(Base):
     opportunity_type: Mapped["OpportunityType"] = relationship(
         back_populates="alert_preference_types"
     )
+
+
+class AlertPreferenceInstrument(Base):
+    __tablename__ = "alert_preference_instruments"
+
+    alert_preference_id: Mapped[int] = mapped_column(
+        ForeignKey("alert_preferences.id"),
+        primary_key=True,
+    )
+    instrument_id: Mapped[int] = mapped_column(
+        ForeignKey("instruments.id"),
+        primary_key=True,
+    )
+
+    alert_preference: Mapped["AlertPreference"] = relationship(
+        back_populates="alert_preference_instruments"
+    )
+    instrument: Mapped["Instrument"] = relationship()
+
+
+class AlertPreferenceStyle(Base):
+    __tablename__ = "alert_preference_styles"
+
+    alert_preference_id: Mapped[int] = mapped_column(
+        ForeignKey("alert_preferences.id"),
+        primary_key=True,
+    )
+    style_id: Mapped[int] = mapped_column(
+        ForeignKey("music_styles.id"),
+        primary_key=True,
+    )
+
+    alert_preference: Mapped["AlertPreference"] = relationship(
+        back_populates="alert_preference_styles"
+    )
+    style: Mapped["MusicStyle"] = relationship()
 
 
 class DeviceToken(Base):

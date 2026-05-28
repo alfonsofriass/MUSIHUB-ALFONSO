@@ -11,6 +11,8 @@ from app.db import get_db
 from app.models import (
     Alert,
     AlertPreference,
+    AlertPreferenceInstrument,
+    AlertPreferenceStyle,
     AlertPreferenceType,
     Band,
     BandMember,
@@ -21,9 +23,6 @@ from app.models import (
     OpportunityInstrument,
     OpportunityStyle,
     OpportunityType,
-    Profile,
-    ProfileInstrument,
-    ProfileStyle,
     User,
 )
 from app.push import send_alert_push
@@ -269,26 +268,29 @@ def _generate_alerts_for_opportunity(
         ):
             continue
 
-        profile = db.scalar(
-            select(Profile).where(Profile.user_id == alert_preference.user_id)
+        preferred_instrument_ids = set(
+            db.scalars(
+                select(AlertPreferenceInstrument.instrument_id).where(
+                    AlertPreferenceInstrument.alert_preference_id
+                    == alert_preference.id
+                )
+            ).all()
         )
-        profile_instrument_ids: set[int] = set()
-        profile_style_ids: set[int] = set()
-        if profile is not None:
-            profile_instrument_ids = set(
-                db.scalars(
-                    select(ProfileInstrument.instrument_id).where(
-                        ProfileInstrument.profile_id == profile.id
-                    )
-                ).all()
-            )
-            profile_style_ids = set(
-                db.scalars(
-                    select(ProfileStyle.style_id).where(
-                        ProfileStyle.profile_id == profile.id
-                    )
-                ).all()
-            )
+        if (
+            preferred_instrument_ids
+            and not opportunity_instrument_ids & preferred_instrument_ids
+        ):
+            continue
+
+        preferred_style_ids = set(
+            db.scalars(
+                select(AlertPreferenceStyle.style_id).where(
+                    AlertPreferenceStyle.alert_preference_id == alert_preference.id
+                )
+            ).all()
+        )
+        if preferred_style_ids and not opportunity_style_ids & preferred_style_ids:
+            continue
 
         score = ALERT_TYPE_SCORE
         reasons = [f"Tipo: {opportunity_type.name}"]
@@ -301,11 +303,11 @@ def _generate_alerts_for_opportunity(
             score += ALERT_PROVINCE_SCORE
             reasons.append(f"Provincia: {opportunity.province}")
 
-        if opportunity_instrument_ids & profile_instrument_ids:
+        if preferred_instrument_ids:
             score += ALERT_INSTRUMENT_SCORE
             reasons.append("Instrumento compatible")
 
-        if opportunity_style_ids & profile_style_ids:
+        if preferred_style_ids:
             score += ALERT_STYLE_SCORE
             reasons.append("Estilo compatible")
 

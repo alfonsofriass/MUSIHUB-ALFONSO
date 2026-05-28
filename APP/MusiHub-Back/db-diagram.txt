@@ -157,6 +157,24 @@ Table alert_preference_types {
     (alert_preference_id, opportunity_type_id) [pk]
   }
 }
+//Instrumentos de interes para alertas; independiente de los instrumentos del perfil
+Table alert_preference_instruments {
+  alert_preference_id integer [not null]
+  instrument_id integer [not null]
+
+  indexes {
+    (alert_preference_id, instrument_id) [pk]
+  }
+}
+//Estilos de interes para alertas; independiente de los estilos del perfil
+Table alert_preference_styles {
+  alert_preference_id integer [not null]
+  style_id integer [not null]
+
+  indexes {
+    (alert_preference_id, style_id) [pk]
+  }
+}
 
 //Tokens FCM de dispositivos autenticados; los usa el backend para enviar push
 Table device_tokens {
@@ -240,6 +258,10 @@ Ref: opportunity_instruments.instrument_id > instruments.id
 Ref: alert_preferences.user_id > users.id
 Ref: alert_preference_types.alert_preference_id > alert_preferences.id
 Ref: alert_preference_types.opportunity_type_id > opportunity_types.id
+Ref: alert_preference_instruments.alert_preference_id > alert_preferences.id
+Ref: alert_preference_instruments.instrument_id > instruments.id
+Ref: alert_preference_styles.alert_preference_id > alert_preferences.id
+Ref: alert_preference_styles.style_id > music_styles.id
 Ref: device_tokens.user_id > users.id
 Ref: alerts.user_id > users.id
 Ref: alerts.opportunity_id > opportunities.id

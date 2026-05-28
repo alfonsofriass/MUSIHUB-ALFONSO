@@ -14,7 +14,11 @@ from app.db import get_db
 from app.models import (
     Alert,
     AlertPreference,
+    AlertPreferenceInstrument,
+    AlertPreferenceStyle,
     AlertPreferenceType,
+    Instrument,
+    MusicStyle,
     Opportunity,
     OpportunityType,
     User,
@@ -31,6 +35,11 @@ class AlertPreferenceTypeResponse(BaseModel):
     name: str
 
 
+class AlertPreferenceCatalogItemResponse(BaseModel):
+    id: int
+    name: str
+
+
 class AlertPreferenceResponse(BaseModel):
     id: int
     frequency: str
@@ -38,6 +47,8 @@ class AlertPreferenceResponse(BaseModel):
     preferred_province: str | None
     notifications_enabled: bool
     opportunity_types: list[AlertPreferenceTypeResponse]
+    instruments: list[AlertPreferenceCatalogItemResponse]
+    styles: list[AlertPreferenceCatalogItemResponse]
 
 
 class AlertPreferencesMeResponse(BaseModel):
@@ -56,6 +67,8 @@ class AlertPreferenceUpdateRequest(BaseModel):
     preferred_province: str | None = Field(default=None, max_length=120)
     notifications_enabled: bool = True
     opportunity_type_ids: list[int] = Field(default_factory=list)
+    instrument_ids: list[int] = Field(default_factory=list)
+    style_ids: list[int] = Field(default_factory=list)
 
 
 class AlertResponse(BaseModel):
@@ -115,6 +128,56 @@ def _load_opportunity_types(
     return opportunity_types
 
 
+def _load_instruments(
+    db: Session,
+    instrument_ids: list[int],
+) -> list[Instrument]:
+    if not instrument_ids:
+        return []
+
+    instruments = db.scalars(
+        select(Instrument).where(Instrument.id.in_(instrument_ids))
+    ).all()
+    found_ids = {instrument.id for instrument in instruments}
+    missing_ids = sorted(set(instrument_ids) - found_ids)
+
+    if missing_ids:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "message": "Invalid instrument_ids",
+                "ids": missing_ids,
+            },
+        )
+
+    return instruments
+
+
+def _load_music_styles(
+    db: Session,
+    style_ids: list[int],
+) -> list[MusicStyle]:
+    if not style_ids:
+        return []
+
+    styles = db.scalars(
+        select(MusicStyle).where(MusicStyle.id.in_(style_ids))
+    ).all()
+    found_ids = {style.id for style in styles}
+    missing_ids = sorted(set(style_ids) - found_ids)
+
+    if missing_ids:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "message": "Invalid style_ids",
+                "ids": missing_ids,
+            },
+        )
+
+    return styles
+
+
 def _build_alert_preferences_response(
     alert_preference: AlertPreference,
     db: Session,
@@ -127,6 +190,24 @@ def _build_alert_preferences_response(
         )
         .where(AlertPreferenceType.alert_preference_id == alert_preference.id)
         .order_by(OpportunityType.id)
+    ).all()
+    instruments = db.scalars(
+        select(Instrument)
+        .join(
+            AlertPreferenceInstrument,
+            AlertPreferenceInstrument.instrument_id == Instrument.id,
+        )
+        .where(AlertPreferenceInstrument.alert_preference_id == alert_preference.id)
+        .order_by(Instrument.id)
+    ).all()
+    styles = db.scalars(
+        select(MusicStyle)
+        .join(
+            AlertPreferenceStyle,
+            AlertPreferenceStyle.style_id == MusicStyle.id,
+        )
+        .where(AlertPreferenceStyle.alert_preference_id == alert_preference.id)
+        .order_by(MusicStyle.id)
     ).all()
 
     return AlertPreferencesMeResponse(
@@ -144,6 +225,20 @@ def _build_alert_preferences_response(
                     name=opportunity_type.name,
                 )
                 for opportunity_type in opportunity_types
+            ],
+            instruments=[
+                AlertPreferenceCatalogItemResponse(
+                    id=instrument.id,
+                    name=instrument.name,
+                )
+                for instrument in instruments
+            ],
+            styles=[
+                AlertPreferenceCatalogItemResponse(
+                    id=style.id,
+                    name=style.name,
+                )
+                for style in styles
             ],
         ),
     )
@@ -228,9 +323,25 @@ def update_my_alert_preferences(
         "opportunity_type_ids",
         payload.opportunity_type_ids,
     )
+    _validate_unique_positive_ids(
+        "instrument_ids",
+        payload.instrument_ids,
+    )
+    _validate_unique_positive_ids(
+        "style_ids",
+        payload.style_ids,
+    )
     opportunity_types = _load_opportunity_types(
         db=db,
         opportunity_type_ids=payload.opportunity_type_ids,
+    )
+    instruments = _load_instruments(
+        db=db,
+        instrument_ids=payload.instrument_ids,
+    )
+    styles = _load_music_styles(
+        db=db,
+        style_ids=payload.style_ids,
     )
 
     alert_preference = db.scalar(
@@ -257,6 +368,16 @@ def update_my_alert_preferences(
             AlertPreferenceType.alert_preference_id == alert_preference.id
         )
     )
+    db.execute(
+        delete(AlertPreferenceInstrument).where(
+            AlertPreferenceInstrument.alert_preference_id == alert_preference.id
+        )
+    )
+    db.execute(
+        delete(AlertPreferenceStyle).where(
+            AlertPreferenceStyle.alert_preference_id == alert_preference.id
+        )
+    )
 
     valid_opportunity_type_ids = {
         opportunity_type.id for opportunity_type in opportunity_types
@@ -268,6 +389,27 @@ def update_my_alert_preferences(
             AlertPreferenceType(
                 alert_preference_id=alert_preference.id,
                 opportunity_type_id=opportunity_type_id,
+            )
+        )
+    valid_instrument_ids = {instrument.id for instrument in instruments}
+    for instrument_id in payload.instrument_ids:
+        if instrument_id not in valid_instrument_ids:
+            continue
+        db.add(
+            AlertPreferenceInstrument(
+                alert_preference_id=alert_preference.id,
+                instrument_id=instrument_id,
+            )
+        )
+
+    valid_style_ids = {style.id for style in styles}
+    for style_id in payload.style_ids:
+        if style_id not in valid_style_ids:
+            continue
+        db.add(
+            AlertPreferenceStyle(
+                alert_preference_id=alert_preference.id,
+                style_id=style_id,
             )
         )
 
