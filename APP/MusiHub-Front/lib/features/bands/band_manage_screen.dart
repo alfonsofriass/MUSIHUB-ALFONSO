@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
+import 'package:musihub_front/core/catalog/locations_api.dart';
 import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/session/token_store.dart';
+import 'package:musihub_front/core/widgets/location_selector.dart';
 import 'package:musihub_front/features/bands/bands_api.dart';
 import 'package:musihub_front/features/profile/profile_api.dart';
 
@@ -30,7 +32,8 @@ class _BandManageScreenState extends State<BandManageScreen> {
 
   late final BandsApi _bandsApi;
   late final ProfileApi _profileApi;
-  late Future<List<CatalogItem>> _stylesFuture;
+  late final LocationsApi _locationsApi;
+  late Future<_BandManageData> _initialDataFuture;
 
   String? _token;
   bool _isSaving = false;
@@ -42,8 +45,9 @@ class _BandManageScreenState extends State<BandManageScreen> {
     super.initState();
     _bandsApi = BandsApi(apiClient: _apiClient);
     _profileApi = ProfileApi(apiClient: _apiClient);
+    _locationsApi = LocationsApi(apiClient: _apiClient);
     _applyBand(widget.band);
-    _stylesFuture = _loadStyles();
+    _initialDataFuture = _loadInitialData();
   }
 
   @override
@@ -66,7 +70,7 @@ class _BandManageScreenState extends State<BandManageScreen> {
       ..addAll(band.styles.map((style) => style.id));
   }
 
-  Future<List<CatalogItem>> _loadStyles() async {
+  Future<_BandManageData> _loadInitialData() async {
     final token = await widget.tokenStore.readAccessToken();
 
     if (token == null || token.isEmpty) {
@@ -74,7 +78,13 @@ class _BandManageScreenState extends State<BandManageScreen> {
     }
 
     _token = token;
-    return _profileApi.listMusicStyles();
+    final stylesFuture = _profileApi.listMusicStyles();
+    final locationsFuture = _locationsApi.listLocations();
+
+    final styles = await stylesFuture;
+    final locations = await locationsFuture;
+
+    return _BandManageData(styles: styles, locations: locations);
   }
 
   Future<void> _save() async {
@@ -229,7 +239,7 @@ class _BandManageScreenState extends State<BandManageScreen> {
   void _retryLoad() {
     setState(() {
       _errorMessage = null;
-      _stylesFuture = _loadStyles();
+      _initialDataFuture = _loadInitialData();
     });
   }
 
@@ -238,8 +248,8 @@ class _BandManageScreenState extends State<BandManageScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Configuracion'), centerTitle: true),
       body: SafeArea(
-        child: FutureBuilder<List<CatalogItem>>(
-          future: _stylesFuture,
+        child: FutureBuilder<_BandManageData>(
+          future: _initialDataFuture,
           builder: (context, snapshot) {
             if (snapshot.hasData) {
               return _buildForm(snapshot.data!);
@@ -256,7 +266,7 @@ class _BandManageScreenState extends State<BandManageScreen> {
     );
   }
 
-  Widget _buildForm(List<CatalogItem> styles) {
+  Widget _buildForm(_BandManageData data) {
     final canDeleteBand = widget.band.members.length == 1;
 
     return ListView(
@@ -281,22 +291,18 @@ class _BandManageScreenState extends State<BandManageScreen> {
               showCounter: true,
             ),
             const SizedBox(height: 12),
-            _buildTextField(
-              label: 'Ciudad',
-              controller: _cityController,
-              maxLength: InputLimits.shortText,
-            ),
-            const SizedBox(height: 12),
-            _buildTextField(
-              label: 'Provincia',
-              controller: _provinceController,
-              maxLength: InputLimits.shortText,
+            LocationSelector(
+              locations: data.locations,
+              provinceController: _provinceController,
+              cityController: _cityController,
+              requireProvince: true,
+              requireCity: true,
             ),
           ],
         ),
         _BandManageSection(
           title: 'Estilo musical',
-          children: [_buildStyleChips(styles)],
+          children: [_buildStyleChips(data.styles)],
         ),
         FilledButton(
           onPressed: _isSaving ? null : _save,
@@ -467,6 +473,13 @@ class _DeleteBandCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _BandManageData {
+  const _BandManageData({required this.styles, required this.locations});
+
+  final List<CatalogItem> styles;
+  final List<LocationProvince> locations;
 }
 
 class _BandManageLoadError extends StatelessWidget {

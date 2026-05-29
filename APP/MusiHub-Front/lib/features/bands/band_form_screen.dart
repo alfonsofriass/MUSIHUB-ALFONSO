@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
+import 'package:musihub_front/core/catalog/locations_api.dart';
 import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/session/token_store.dart';
+import 'package:musihub_front/core/widgets/location_selector.dart';
 import 'package:musihub_front/features/bands/bands_api.dart';
 import 'package:musihub_front/features/profile/profile_api.dart';
 
@@ -26,6 +28,7 @@ class _BandFormScreenState extends State<BandFormScreen> {
 
   late final BandsApi _bandsApi;
   late final ProfileApi _profileApi;
+  late final LocationsApi _locationsApi;
   late Future<_BandFormData> _initialDataFuture;
 
   String? _token;
@@ -37,6 +40,7 @@ class _BandFormScreenState extends State<BandFormScreen> {
     super.initState();
     _bandsApi = BandsApi(apiClient: _apiClient);
     _profileApi = ProfileApi(apiClient: _apiClient);
+    _locationsApi = LocationsApi(apiClient: _apiClient);
     _initialDataFuture = _loadInitialData();
   }
 
@@ -61,11 +65,17 @@ class _BandFormScreenState extends State<BandFormScreen> {
 
     final instrumentsFuture = _profileApi.listInstruments();
     final stylesFuture = _profileApi.listMusicStyles();
+    final locationsFuture = _locationsApi.listLocations();
 
     final instruments = await instrumentsFuture;
     final styles = await stylesFuture;
+    final locations = await locationsFuture;
 
-    return _BandFormData(instruments: instruments, styles: styles);
+    return _BandFormData(
+      instruments: instruments,
+      styles: styles,
+      locations: locations,
+    );
   }
 
   Future<void> _save(_BandFormData data) async {
@@ -210,18 +220,12 @@ class _BandFormScreenState extends State<BandFormScreen> {
               showCounter: true,
             ),
             const SizedBox(height: 12),
-            _buildTextField(
-              label: 'Ciudad',
-              controller: _cityController,
-              hintText: 'Ej: Granada',
-              maxLength: InputLimits.shortText,
-            ),
-            const SizedBox(height: 12),
-            _buildTextField(
-              label: 'Provincia',
-              controller: _provinceController,
-              hintText: 'Ej: Granada',
-              maxLength: InputLimits.shortText,
+            LocationSelector(
+              locations: data.locations,
+              provinceController: _provinceController,
+              cityController: _cityController,
+              requireProvince: true,
+              requireCity: true,
             ),
           ],
         ),
@@ -333,10 +337,15 @@ class _BandFormScreenState extends State<BandFormScreen> {
 }
 
 class _BandFormData {
-  const _BandFormData({required this.instruments, required this.styles});
+  const _BandFormData({
+    required this.instruments,
+    required this.styles,
+    required this.locations,
+  });
 
   final List<CatalogItem> instruments;
   final List<CatalogItem> styles;
+  final List<LocationProvince> locations;
 }
 
 class _BandFormSection extends StatelessWidget {

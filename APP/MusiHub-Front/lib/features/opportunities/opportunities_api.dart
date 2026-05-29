@@ -161,6 +161,23 @@ class OpportunitiesApi {
     return Opportunity.fromJson(json);
   }
 
+  Future<Opportunity> reopenOpportunity({
+    required String token,
+    required int id,
+  }) async {
+    final response = await _apiClient.patch(
+      '/opportunities/$id/reopen',
+      token: token,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('No se pudo reabrir el anuncio.');
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    return Opportunity.fromJson(json);
+  }
+
   List<Opportunity> _decodeOpportunityList(String body) {
     final json = jsonDecode(body);
 

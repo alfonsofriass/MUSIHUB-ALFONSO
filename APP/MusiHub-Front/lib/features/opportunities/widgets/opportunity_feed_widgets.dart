@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
+import 'package:musihub_front/core/catalog/locations_api.dart';
 import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
+import 'package:musihub_front/core/widgets/location_selector.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
 import 'package:musihub_front/features/opportunities/opportunity_display.dart';
 
@@ -10,11 +12,13 @@ class OpportunityFilterData {
     required this.types,
     required this.instruments,
     required this.styles,
+    required this.locations,
   });
 
   final List<OpportunityType> types;
   final List<CatalogItem> instruments;
   final List<CatalogItem> styles;
+  final List<LocationProvince> locations;
 }
 
 class OpportunitySearchPlaceholder extends StatelessWidget {
@@ -234,26 +238,12 @@ class OpportunityAdvancedFilters extends StatelessWidget {
               onChanged: onTypeChanged,
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: cityController,
-              maxLength: InputLimits.shortText,
-              textInputAction: TextInputAction.search,
-              decoration: const InputDecoration(
-                labelText: 'Ciudad',
-                counterText: '',
-              ),
-              onSubmitted: (_) => onApply(),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: provinceController,
-              maxLength: InputLimits.shortText,
-              textInputAction: TextInputAction.search,
-              decoration: const InputDecoration(
-                labelText: 'Provincia',
-                counterText: '',
-              ),
-              onSubmitted: (_) => onApply(),
+            LocationSelector(
+              locations: data.locations,
+              provinceController: provinceController,
+              cityController: cityController,
+              requireProvince: false,
+              requireCity: false,
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<int>(

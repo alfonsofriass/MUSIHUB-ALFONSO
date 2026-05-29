@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
+import 'package:musihub_front/core/catalog/locations_api.dart';
 import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/push/push_notifications_service.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
+import 'package:musihub_front/core/widgets/location_selector.dart';
 import 'package:musihub_front/features/alerts/alerts_api.dart';
 import 'package:musihub_front/features/auth/auth_api.dart';
 import 'package:musihub_front/features/auth/widgets/auth_logo.dart';
@@ -72,6 +74,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   late final ProfileApi _profileApi;
   late final AlertsApi _alertsApi;
   late final OpportunitiesApi _opportunitiesApi;
+  late final LocationsApi _locationsApi;
   late Future<_OnboardingCatalogs> _catalogsFuture;
 
   _RegisterStep _step = _RegisterStep.account;
@@ -93,6 +96,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _profileApi = ProfileApi(apiClient: _apiClient);
     _alertsApi = AlertsApi(apiClient: _apiClient);
     _opportunitiesApi = OpportunitiesApi(apiClient: _apiClient);
+    _locationsApi = LocationsApi(apiClient: _apiClient);
     _catalogsFuture = _loadCatalogs();
   }
 
@@ -113,11 +117,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final instrumentsFuture = _profileApi.listInstruments();
     final stylesFuture = _profileApi.listMusicStyles();
     final opportunityTypesFuture = _opportunitiesApi.listOpportunityTypes();
+    final locationsFuture = _locationsApi.listLocations();
 
     final catalogs = _OnboardingCatalogs(
       instruments: await instrumentsFuture,
       styles: await stylesFuture,
       opportunityTypes: await opportunityTypesFuture,
+      locations: await locationsFuture,
     );
 
     if (!_catalogDefaultsApplied) {
@@ -580,27 +586,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
         const Center(child: _ProfilePhotoPlaceholder()),
         const SizedBox(height: 26),
         _LabeledField(
-          label: 'Ciudad',
-          child: TextField(
-            controller: _cityController,
-            maxLength: InputLimits.shortText,
-            textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              hintText: 'Madrid, Granada...',
-              counterText: '',
-            ),
-          ),
-        ),
-        _LabeledField(
-          label: 'Provincia',
-          child: TextField(
-            controller: _provinceController,
-            maxLength: InputLimits.shortText,
-            textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              hintText: 'Madrid, Granada...',
-              counterText: '',
-            ),
+          label: 'Ubicacion',
+          child: LocationSelector(
+            locations: catalogs.locations,
+            provinceController: _provinceController,
+            cityController: _cityController,
+            requireProvince: false,
+            requireCity: false,
           ),
         ),
         _ChipSection(
@@ -785,11 +777,13 @@ class _OnboardingCatalogs {
     required this.instruments,
     required this.styles,
     required this.opportunityTypes,
+    required this.locations,
   });
 
   final List<CatalogItem> instruments;
   final List<CatalogItem> styles;
   final List<OpportunityType> opportunityTypes;
+  final List<LocationProvince> locations;
 }
 
 class _RoleOption {

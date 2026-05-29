@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
+import 'package:musihub_front/core/catalog/locations_api.dart';
 import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/push/push_notifications_service.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
+import 'package:musihub_front/core/widgets/location_selector.dart';
 import 'package:musihub_front/features/alerts/alerts_screen.dart';
 import 'package:musihub_front/features/auth/login_screen.dart';
 import 'package:musihub_front/features/bands/bands_api.dart';
@@ -38,6 +40,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   late final ProfileApi _profileApi;
   late final BandsApi _bandsApi;
+  late final LocationsApi _locationsApi;
   late Future<_ProfileInitialData> _initialData;
 
   String? _token;
@@ -53,6 +56,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     _profileApi = ProfileApi(apiClient: _apiClient);
     _bandsApi = BandsApi(apiClient: _apiClient);
+    _locationsApi = LocationsApi(apiClient: _apiClient);
     _initialData = _loadInitialData();
   }
 
@@ -81,11 +85,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final stylesFuture = _profileApi.listMusicStyles();
     final profileFuture = _profileApi.getMyProfile(token);
     final bandsFuture = _bandsApi.listMyBands(token);
+    final locationsFuture = _locationsApi.listLocations();
 
     final instruments = await instrumentsFuture;
     final styles = await stylesFuture;
     final profileMe = await profileFuture;
     final bands = await bandsFuture;
+    final locations = await locationsFuture;
 
     _applyProfile(profileMe.profile);
     _profileExists = profileMe.exists;
@@ -94,6 +100,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       instruments: instruments,
       styles: styles,
       bands: bands,
+      locations: locations,
     );
   }
 
@@ -595,24 +602,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _ProfileSection(
           title: 'Datos basicos',
           children: [
-            TextField(
-              controller: _cityController,
-              onChanged: (_) => setState(() {}),
-              maxLength: InputLimits.shortText,
-              decoration: const InputDecoration(
-                labelText: 'Ciudad',
-                counterText: '',
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _provinceController,
-              onChanged: (_) => setState(() {}),
-              maxLength: InputLimits.shortText,
-              decoration: const InputDecoration(
-                labelText: 'Provincia',
-                counterText: '',
-              ),
+            LocationSelector(
+              locations: data.locations,
+              provinceController: _provinceController,
+              cityController: _cityController,
+              requireProvince: false,
+              requireCity: false,
             ),
             const SizedBox(height: 12),
             TextField(
@@ -1190,9 +1185,11 @@ class _ProfileInitialData {
     required this.instruments,
     required this.styles,
     required this.bands,
+    required this.locations,
   });
 
   final List<CatalogItem> instruments;
   final List<CatalogItem> styles;
   final List<Band> bands;
+  final List<LocationProvince> locations;
 }

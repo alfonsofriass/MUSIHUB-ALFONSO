@@ -215,6 +215,11 @@ class _OpportunityDetailScreenState extends State<OpportunityDetailScreen> {
             builder: (context, snapshot) {
               final data = snapshot.data;
 
+              if (data != null &&
+                  data.opportunity.authorUserId == data.currentUserId) {
+                return const SizedBox.shrink();
+              }
+
               return IconButton(
                 onPressed: data == null ? null : () => _toggleFavorite(data),
                 icon: Icon(

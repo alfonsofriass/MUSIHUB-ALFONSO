@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
-import 'package:musihub_front/core/forms/input_limits.dart';
+import 'package:musihub_front/core/catalog/locations_api.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
+import 'package:musihub_front/core/widgets/location_selector.dart';
 import 'package:musihub_front/core/widgets/musihub_empty_state.dart';
 import 'package:musihub_front/features/alerts/alerts_api.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
@@ -40,6 +41,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
   late final AlertsApi _alertsApi;
   late final OpportunitiesApi _opportunitiesApi;
   late final ProfileApi _profileApi;
+  late final LocationsApi _locationsApi;
   late Future<_AlertsData> _initialDataFuture;
 
   String? _token;
@@ -55,6 +57,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
     _alertsApi = AlertsApi(apiClient: _apiClient);
     _opportunitiesApi = OpportunitiesApi(apiClient: _apiClient);
     _profileApi = ProfileApi(apiClient: _apiClient);
+    _locationsApi = LocationsApi(apiClient: _apiClient);
     _initialDataFuture = _loadInitialData();
   }
 
@@ -82,6 +85,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
         types: const [],
         instruments: const [],
         styles: const [],
+        locations: const [],
         alerts: alerts,
       );
     }
@@ -89,11 +93,13 @@ class _AlertsScreenState extends State<AlertsScreen> {
     final typesFuture = _opportunitiesApi.listOpportunityTypes();
     final instrumentsFuture = _profileApi.listInstruments();
     final stylesFuture = _profileApi.listMusicStyles();
+    final locationsFuture = _locationsApi.listLocations();
     final preferencesFuture = _alertsApi.getPreferences(token);
 
     final types = await typesFuture;
     final instruments = await instrumentsFuture;
     final styles = await stylesFuture;
+    final locations = await locationsFuture;
     final preferencesResponse = await preferencesFuture;
 
     _applyPreferences(preferencesResponse.preferences);
@@ -102,6 +108,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
       types: types,
       instruments: instruments,
       styles: styles,
+      locations: locations,
       alerts: const [],
     );
   }
@@ -280,22 +287,14 @@ class _AlertsScreenState extends State<AlertsScreen> {
           title: 'Ubicacion',
           subtitle: 'Filtra por ciudad o provincia si quieres alertas locales',
           children: [
-            TextField(
-              controller: _cityController,
-              maxLength: InputLimits.shortText,
-              decoration: const InputDecoration(
-                labelText: 'Ciudad preferida',
-                counterText: '',
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _provinceController,
-              maxLength: InputLimits.shortText,
-              decoration: const InputDecoration(
-                labelText: 'Provincia preferida',
-                counterText: '',
-              ),
+            LocationSelector(
+              locations: data.locations,
+              provinceController: _provinceController,
+              cityController: _cityController,
+              provinceLabel: 'Provincia preferida',
+              cityLabel: 'Ciudad preferida',
+              requireProvince: false,
+              requireCity: false,
             ),
           ],
         ),
@@ -456,12 +455,14 @@ class _AlertsData {
     required this.types,
     required this.instruments,
     required this.styles,
+    required this.locations,
     required this.alerts,
   });
 
   final List<OpportunityType> types;
   final List<CatalogItem> instruments;
   final List<CatalogItem> styles;
+  final List<LocationProvince> locations;
   final List<GeneratedAlert> alerts;
 }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
+import 'package:musihub_front/core/catalog/locations_api.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/features/auth/auth_api.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
@@ -33,6 +34,7 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
   late final AuthApi _authApi;
   late final OpportunitiesApi _opportunitiesApi;
   late final ProfileApi _profileApi;
+  late final LocationsApi _locationsApi;
   late Future<OpportunityFilterData> _filterDataFuture;
   late Future<_OpportunityFeedData> _feedDataFuture;
 
@@ -48,6 +50,7 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
     _authApi = AuthApi(apiClient: _apiClient);
     _opportunitiesApi = OpportunitiesApi(apiClient: _apiClient);
     _profileApi = ProfileApi(apiClient: _apiClient);
+    _locationsApi = LocationsApi(apiClient: _apiClient);
     _filterDataFuture = _loadFilterData();
     _feedDataFuture = _loadFeedData();
   }
@@ -68,15 +71,18 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
     final typesFuture = _opportunitiesApi.listOpportunityTypes();
     final instrumentsFuture = _profileApi.listInstruments();
     final stylesFuture = _profileApi.listMusicStyles();
+    final locationsFuture = _locationsApi.listLocations();
 
     final types = await typesFuture;
     final instruments = await instrumentsFuture;
     final styles = await stylesFuture;
+    final locations = await locationsFuture;
 
     return OpportunityFilterData(
       types: types,
       instruments: instruments,
       styles: styles,
+      locations: locations,
     );
   }
 

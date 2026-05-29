@@ -120,6 +120,31 @@ class _MyOpportunitiesScreenState extends State<MyOpportunitiesScreen> {
     }
   }
 
+  Future<void> _reopenOpportunity(Opportunity opportunity) async {
+    final token = await widget.tokenStore.readAccessToken();
+
+    if (token == null || token.isEmpty) {
+      return;
+    }
+
+    try {
+      await _opportunitiesApi.reopenOpportunity(
+        token: token,
+        id: opportunity.id,
+      );
+
+      if (!mounted) return;
+
+      _refresh();
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo reabrir el anuncio.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -192,6 +217,9 @@ class _MyOpportunitiesScreenState extends State<MyOpportunitiesScreen> {
                       onClose: opportunity.isActive
                           ? () => _closeOpportunity(opportunity)
                           : null,
+                      onReopen: opportunity.isActive
+                          ? null
+                          : () => _reopenOpportunity(opportunity),
                     ),
                     const SizedBox(height: 14),
                   ],
@@ -288,12 +316,14 @@ class _MyOpportunityCard extends StatelessWidget {
     required this.onOpen,
     required this.onEdit,
     required this.onClose,
+    required this.onReopen,
   });
 
   final Opportunity opportunity;
   final VoidCallback onOpen;
   final VoidCallback? onEdit;
   final VoidCallback? onClose;
+  final VoidCallback? onReopen;
 
   @override
   Widget build(BuildContext context) {
@@ -388,6 +418,12 @@ class _MyOpportunityCard extends StatelessWidget {
                       onPressed: onClose,
                       icon: const Icon(Icons.lock_outline),
                       tooltip: 'Cerrar anuncio',
+                    ),
+                  if (onReopen != null)
+                    IconButton(
+                      onPressed: onReopen,
+                      icon: const Icon(Icons.lock_open_outlined),
+                      tooltip: 'Reabrir anuncio',
                     ),
                 ],
               ),

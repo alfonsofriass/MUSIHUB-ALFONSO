@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
+import 'package:musihub_front/core/catalog/locations_api.dart';
 import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
+import 'package:musihub_front/core/widgets/location_selector.dart';
 import 'package:musihub_front/features/bands/bands_api.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
 import 'package:musihub_front/features/opportunities/opportunity_display.dart';
@@ -42,6 +44,7 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
   late final OpportunitiesApi _opportunitiesApi;
   late final ProfileApi _profileApi;
   late final BandsApi _bandsApi;
+  late final LocationsApi _locationsApi;
   late Future<_OpportunityFormData> _initialData;
 
   String? _token;
@@ -59,6 +62,7 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
     _opportunitiesApi = OpportunitiesApi(apiClient: _apiClient);
     _profileApi = ProfileApi(apiClient: _apiClient);
     _bandsApi = BandsApi(apiClient: _apiClient);
+    _locationsApi = LocationsApi(apiClient: _apiClient);
     _applyOpportunity(widget.opportunity);
     _initialData = _loadInitialData();
   }
@@ -112,11 +116,13 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
     final instrumentsFuture = _profileApi.listInstruments();
     final stylesFuture = _profileApi.listMusicStyles();
     final bandsFuture = _bandsApi.listMyBands(token);
+    final locationsFuture = _locationsApi.listLocations();
 
     final types = await typesFuture;
     final instruments = await instrumentsFuture;
     final styles = await stylesFuture;
     final bands = await bandsFuture;
+    final locations = await locationsFuture;
 
     if (types.isNotEmpty) {
       _selectedTypeId ??= types.first.id;
@@ -127,6 +133,7 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
       instruments: instruments,
       styles: styles,
       bands: bands,
+      locations: locations,
     );
   }
 
@@ -178,7 +185,7 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
             title: _titleController.text.trim(),
             description: _descriptionController.text.trim(),
             city: _cityController.text.trim(),
-            province: _textOrNull(_provinceController.text),
+            province: _provinceController.text.trim(),
             eventDate: eventDate,
             priceAmount: priceAmount,
             contactMethod: _selectedContactMethod,
@@ -197,7 +204,7 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
             title: _titleController.text.trim(),
             description: _descriptionController.text.trim(),
             city: _cityController.text.trim(),
-            province: _textOrNull(_provinceController.text),
+            province: _provinceController.text.trim(),
             eventDate: eventDate,
             priceAmount: priceAmount,
             contactMethod: _selectedContactMethod,
@@ -238,8 +245,9 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
     if (_textOrNull(_titleController.text) == null ||
         _textOrNull(_descriptionController.text) == null ||
         _textOrNull(_cityController.text) == null ||
+        _textOrNull(_provinceController.text) == null ||
         _textOrNull(_contactValueController.text) == null) {
-      return 'Completa titulo, descripcion, ciudad y contacto.';
+      return 'Completa titulo, descripcion, ubicacion y contacto.';
     }
 
     if (template.showPrice &&
@@ -441,18 +449,12 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
               showCounter: true,
             ),
             const SizedBox(height: 12),
-            _buildTextField(
-              label: 'Ciudad',
-              controller: _cityController,
-              hintText: 'Ej: Madrid',
-              maxLength: InputLimits.shortText,
-            ),
-            const SizedBox(height: 12),
-            _buildTextField(
-              label: 'Provincia',
-              controller: _provinceController,
-              hintText: 'Ej: Madrid',
-              maxLength: InputLimits.shortText,
+            LocationSelector(
+              locations: data.locations,
+              provinceController: _provinceController,
+              cityController: _cityController,
+              requireProvince: true,
+              requireCity: true,
             ),
             if (template.showEventDate) ...[
               const SizedBox(height: 12),
@@ -973,10 +975,12 @@ class _OpportunityFormData {
     required this.instruments,
     required this.styles,
     required this.bands,
+    required this.locations,
   });
 
   final List<OpportunityType> types;
   final List<CatalogItem> instruments;
   final List<CatalogItem> styles;
   final List<Band> bands;
+  final List<LocationProvince> locations;
 }
