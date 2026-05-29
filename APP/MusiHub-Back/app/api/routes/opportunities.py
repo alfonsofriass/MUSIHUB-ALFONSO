@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.api.routes.auth import get_current_user
 from app.db import get_db
+from app.locations import normalize_location
 from app.models import (
     Alert,
     AlertPreference,
@@ -474,6 +475,11 @@ def create_opportunity(
 
     instruments = _load_instruments(db=db, instrument_ids=payload.instrument_ids)
     styles = _load_styles(db=db, style_ids=payload.style_ids)
+    city, province = normalize_location(
+        db=db,
+        city=payload.city,
+        province=payload.province,
+    )
     if payload.author_band_id is not None:
         _load_author_band_for_user(
             db=db,
@@ -487,8 +493,8 @@ def create_opportunity(
         author_band_id=payload.author_band_id,
         title=payload.title,
         description=payload.description,
-        city=payload.city,
-        province=payload.province,
+        city=city,
+        province=province,
         event_date=payload.event_date,
         price_amount=payload.price_amount,
         contact_method=contact_method,
@@ -621,6 +627,15 @@ def list_opportunities(
     max_price: Decimal | None = Query(default=None, ge=0),
     db: Session = Depends(get_db),
 ) -> OpportunityListResponse:
+    filter_city = city
+    filter_province = province
+    if city is not None or province is not None:
+        filter_city, filter_province = normalize_location(
+            db=db,
+            city=city,
+            province=province,
+        )
+
     if date_from is not None and date_to is not None and date_from > date_to:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -647,11 +662,11 @@ def list_opportunities(
     if type_id is not None:
         query = query.where(Opportunity.type_id == type_id)
 
-    if city is not None:
-        query = query.where(func.lower(Opportunity.city) == city.lower())
+    if filter_city is not None:
+        query = query.where(func.lower(Opportunity.city) == filter_city.lower())
 
-    if province is not None:
-        query = query.where(func.lower(Opportunity.province) == province.lower())
+    if filter_province is not None:
+        query = query.where(func.lower(Opportunity.province) == filter_province.lower())
 
     if date_from is not None:
         query = query.where(
@@ -799,6 +814,22 @@ def update_opportunity(
             current_user=current_user,
         )
 
+    if "city" in updates or "province" in updates:
+        final_city = updates.get("city", opportunity.city)
+        final_province = updates.get("province", opportunity.province)
+        normalized_city, normalized_province = normalize_location(
+            db=db,
+            city=final_city,
+            province=final_province,
+        )
+        if normalized_city is None or normalized_province is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="city and province are required",
+            )
+        updates["city"] = normalized_city
+        updates["province"] = normalized_province
+
     if payload.instrument_ids is not None:
         _validate_unique_positive_ids("instrument_ids", payload.instrument_ids)
         _load_instruments(db=db, instrument_ids=payload.instrument_ids)
@@ -910,7 +941,52 @@ def close_opportunity(
             detail="Only the author can close this opportunity",
         )
 
+    if opportunity.status != "active":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only active opportunities can be closed",
+        )
+
     opportunity.status = "closed"
+    opportunity.updated_at = datetime.now(timezone.utc)
+    db.commit()
+
+    return _build_opportunity_response(
+        opportunity=opportunity,
+        db=db,
+        current_user=current_user,
+    )
+
+
+@router.patch("/{opportunity_id}/reopen", response_model=OpportunityResponse)
+def reopen_opportunity(
+    opportunity_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> OpportunityResponse:
+    opportunity = db.scalar(
+        select(Opportunity).where(Opportunity.id == opportunity_id)
+    )
+
+    if opportunity is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Opportunity not found",
+        )
+
+    if opportunity.author_user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the author can reopen this opportunity",
+        )
+
+    if opportunity.status != "closed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only closed opportunities can be reopened",
+        )
+
+    opportunity.status = "active"
     opportunity.updated_at = datetime.now(timezone.utc)
     db.commit()
 

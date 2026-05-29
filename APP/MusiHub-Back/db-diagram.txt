@@ -37,6 +37,22 @@ Table music_styles {
   name varchar [not null, unique] // Rock, Jazz, Pop..
 }
 
+//Catalogo cerrado de ubicaciones MVP: Andalucia y ciudades principales
+Table provinces {
+  id integer [primary key, increment]
+  name varchar [not null, unique]
+}
+
+Table cities {
+  id integer [primary key, increment]
+  province_id integer [not null]
+  name varchar [not null]
+
+  indexes {
+    (province_id, name) [unique]
+  }
+}
+
 Table profile_styles {
   profile_id integer [not null]
   style_id integer [not null]
@@ -233,6 +249,8 @@ Table favorites {
 Ref: user_roles.user_id > users.id
 Ref: user_roles.role_id > roles.id
 Ref: profiles.user_id > users.id
+
+Ref: cities.province_id > provinces.id
 
 Ref: profile_styles.profile_id > profiles.id
 Ref: profile_styles.style_id > music_styles.id

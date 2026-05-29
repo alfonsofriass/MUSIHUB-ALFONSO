@@ -2,12 +2,13 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
 from app.api.routes.auth import get_current_user
 from app.db import get_db
-from app.models import Band, BandMember, BandStyle, MusicStyle, User
+from app.locations import normalize_location
+from app.models import Band, BandMember, BandStyle, MusicStyle, Opportunity, User
 
 router = APIRouter(prefix="/bands")
 
@@ -94,6 +95,10 @@ class BandVisibilityResponse(BaseModel):
     band_id: int
     user_id: int
     is_visible_in_profile: bool
+
+
+class BandDeleteResponse(BaseModel):
+    message: str
 
 
 def _validate_unique_positive_ids(field_name: str, ids: list[int]) -> None:
@@ -204,12 +209,17 @@ def create_band(
 ) -> BandResponse:
     _validate_unique_positive_ids("style_ids", payload.style_ids)
     _load_styles(db=db, style_ids=payload.style_ids)
+    city, province = normalize_location(
+        db=db,
+        city=payload.city,
+        province=payload.province,
+    )
 
     band = Band(
         name=payload.name,
         bio=payload.bio,
-        city=payload.city,
-        province=payload.province,
+        city=city,
+        province=province,
         photo_url=payload.photo_url,
         created_by_user_id=current_user.id,
     )
@@ -318,11 +328,16 @@ def update_band(
 
     _validate_unique_positive_ids("style_ids", payload.style_ids)
     _load_styles(db=db, style_ids=payload.style_ids)
+    city, province = normalize_location(
+        db=db,
+        city=payload.city,
+        province=payload.province,
+    )
 
     band.name = payload.name
     band.bio = payload.bio
-    band.city = payload.city
-    band.province = payload.province
+    band.city = city
+    band.province = province
     band.photo_url = payload.photo_url
 
     db.execute(
@@ -389,6 +404,38 @@ def add_band_member(
     db.commit()
 
     return _build_band_response(band=band, db=db)
+
+
+@router.delete("/{band_id}", response_model=BandDeleteResponse)
+def delete_band(
+    band_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> BandDeleteResponse:
+    band = _get_band_or_404(db=db, band_id=band_id)
+    _require_band_creator(band=band, current_user=current_user)
+
+    other_member = db.scalar(
+        select(BandMember).where(
+            BandMember.band_id == band.id,
+            BandMember.user_id != current_user.id,
+        )
+    )
+    if other_member is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Band must not have other members before deletion",
+        )
+
+    db.execute(
+        update(Opportunity)
+        .where(Opportunity.author_band_id == band.id)
+        .values(author_band_id=None)
+    )
+    db.delete(band)
+    db.commit()
+
+    return BandDeleteResponse(message="Band deleted")
 
 
 @router.delete("/{band_id}/members/{user_id}", response_model=BandResponse)

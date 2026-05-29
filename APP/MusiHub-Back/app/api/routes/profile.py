@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.api.routes.auth import get_current_user
 from app.db import get_db
+from app.locations import normalize_location
 from app.models import (
     Band,
     BandMember,
@@ -341,8 +342,14 @@ def update_my_profile(
         db.add(profile)
         db.flush()
 
-    profile.city = _empty_to_none(payload.city)
-    profile.province = _empty_to_none(payload.province)
+    city, province = normalize_location(
+        db=db,
+        city=payload.city,
+        province=payload.province,
+    )
+
+    profile.city = city
+    profile.province = province
     profile.bio = _empty_to_none(payload.bio)
     profile.photo_url = _empty_to_none(payload.photo_url)
     profile.contact_email = (

@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import Instrument, MusicStyle, OpportunityType
+from app.models import City, Instrument, MusicStyle, OpportunityType, Province
 
 router = APIRouter(prefix="/catalogs")
 
@@ -16,6 +16,16 @@ class CatalogItemResponse(BaseModel):
 
 class CatalogListResponse(BaseModel):
     items: list[CatalogItemResponse]
+
+
+class ProvinceResponse(BaseModel):
+    id: int
+    name: str
+    cities: list[CatalogItemResponse]
+
+
+class LocationCatalogResponse(BaseModel):
+    items: list[ProvinceResponse]
 
 
 class OpportunityTypeResponse(BaseModel):
@@ -70,5 +80,34 @@ def list_music_styles(db: Session = Depends(get_db)) -> CatalogListResponse:
         items=[
             CatalogItemResponse(id=music_style.id, name=music_style.name)
             for music_style in music_styles
+        ]
+    )
+
+
+@router.get("/locations", response_model=LocationCatalogResponse)
+def list_locations(db: Session = Depends(get_db)) -> LocationCatalogResponse:
+    provinces = db.scalars(
+        select(Province).order_by(Province.name)
+    ).all()
+    cities = db.scalars(
+        select(City).order_by(City.name)
+    ).all()
+    cities_by_province_id: dict[int, list[CatalogItemResponse]] = {
+        province.id: [] for province in provinces
+    }
+
+    for city in cities:
+        cities_by_province_id.setdefault(city.province_id, []).append(
+            CatalogItemResponse(id=city.id, name=city.name)
+        )
+
+    return LocationCatalogResponse(
+        items=[
+            ProvinceResponse(
+                id=province.id,
+                name=province.name,
+                cities=cities_by_province_id.get(province.id, []),
+            )
+            for province in provinces
         ]
     )

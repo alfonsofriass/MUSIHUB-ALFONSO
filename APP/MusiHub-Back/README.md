@@ -27,6 +27,7 @@ Backend FastAPI del TFG MusiHub.
 - `GET /api/v1/catalogs/instruments`
 - `GET /api/v1/catalogs/music-styles`
 - `GET /api/v1/catalogs/opportunity-types`
+- `GET /api/v1/catalogs/locations`
 - `GET /api/v1/profile/me`
 - `PUT /api/v1/profile/me`
 - `GET /api/v1/profile/{user_id}`
@@ -36,6 +37,7 @@ Backend FastAPI del TFG MusiHub.
 - `GET /api/v1/opportunities/{id}`
 - `PATCH /api/v1/opportunities/{id}`
 - `PATCH /api/v1/opportunities/{id}/close`
+- `PATCH /api/v1/opportunities/{id}/reopen`
 - `POST /api/v1/opportunities/{id}/contact-requests`
 - `POST /api/v1/opportunities/{id}/favorite`
 - `DELETE /api/v1/opportunities/{id}/favorite`
@@ -47,6 +49,7 @@ Backend FastAPI del TFG MusiHub.
 - `PUT /api/v1/bands/{id}`
 - `POST /api/v1/bands/{id}/members`
 - `DELETE /api/v1/bands/{id}/members/{user_id}`
+- `DELETE /api/v1/bands/{id}`
 - `GET /api/v1/alerts/preferences`
 - `PUT /api/v1/alerts/preferences`
 - `GET /api/v1/alerts/me`
@@ -58,6 +61,15 @@ Backend FastAPI del TFG MusiHub.
 - `PATCH /api/v1/contact-requests/{id}/reject`
 - `GET /api/v1/search/profiles`
 - `GET /api/v1/search/bands`
+
+## Catálogos
+- `GET /api/v1/catalogs/locations` devuelve provincias de Andalucía y varias
+  ciudades por provincia para que el front no use texto libre.
+- En payloads y filtros se siguen usando `city` y `province` como texto para no
+  romper el contrato existente.
+- El backend valida contra el catálogo y guarda los nombres canónicos.
+- Si se envía `city`, también debe enviarse `province`. `province` sola es válida
+  en perfil, bandas, búsqueda y preferencias de alertas.
 
 ## Filtros de anuncios
 `GET /api/v1/opportunities` acepta filtros opcionales combinables:
@@ -75,6 +87,7 @@ Backend FastAPI del TFG MusiHub.
 
 Las fechas usan formato `YYYY-MM-DD`. El listado público devuelve solo anuncios `active`.
 `q` busca texto en título, descripción, ciudad y provincia.
+Los filtros `city` y `province` se validan contra el catálogo de ubicaciones.
 El dato privado de contacto del anuncio no debería mostrarse a otros usuarios
 hasta que exista una solicitud de contacto aceptada.
 Las respuestas de anuncios incluyen `author_user` para poder navegar al perfil
@@ -114,6 +127,8 @@ combinables:
 - El usuario creador queda como `created_by_user_id`.
 - El creador se añade automáticamente como miembro `accepted`.
 - Solo el creador puede editar la banda y gestionar miembros.
+- Solo el creador puede eliminar la banda y únicamente si no quedan otros
+  miembros. Los anuncios asociados dejan de mostrarse como publicados por banda.
 - Los estilos de banda usan el catálogo `music_styles`.
 - Cada miembro puede decidir si muestra u oculta esa banda en su perfil.
 - Los anuncios siguen perteneciendo a un usuario, pero pueden indicar `author_band_id`
@@ -176,7 +191,7 @@ El `service-account.json` es secreto y no debe subirse a Git.
 Head esperado:
 
 ```text
-b8c9d0e1f2a3
+d0e1f2a3b4c5
 ```
 
 ## Ejecución local

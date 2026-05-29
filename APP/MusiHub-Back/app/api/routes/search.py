@@ -11,6 +11,7 @@ from app.api.routes.profile import (
     load_profile_style_responses,
 )
 from app.db import get_db
+from app.locations import normalize_location
 from app.models import (
     Band,
     BandStyle,
@@ -118,6 +119,15 @@ def search_profiles(
     _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ProfileSearchListResponse:
+    filter_city = city
+    filter_province = province
+    if city is not None or province is not None:
+        filter_city, filter_province = normalize_location(
+            db=db,
+            city=city,
+            province=province,
+        )
+
     query = select(Profile, User).join(User, User.id == Profile.user_id)
 
     if q is not None:
@@ -129,11 +139,11 @@ def search_profiles(
             | func.lower(Profile.province).like(search_text)
         )
 
-    if city is not None:
-        query = query.where(func.lower(Profile.city) == city.lower())
+    if filter_city is not None:
+        query = query.where(func.lower(Profile.city) == filter_city.lower())
 
-    if province is not None:
-        query = query.where(func.lower(Profile.province) == province.lower())
+    if filter_province is not None:
+        query = query.where(func.lower(Profile.province) == filter_province.lower())
 
     if instrument_id is not None:
         query = query.join(
@@ -168,6 +178,15 @@ def search_bands(
     _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> BandSearchListResponse:
+    filter_city = city
+    filter_province = province
+    if city is not None or province is not None:
+        filter_city, filter_province = normalize_location(
+            db=db,
+            city=city,
+            province=province,
+        )
+
     query = select(Band)
 
     if q is not None:
@@ -179,11 +198,11 @@ def search_bands(
             | func.lower(Band.province).like(search_text)
         )
 
-    if city is not None:
-        query = query.where(func.lower(Band.city) == city.lower())
+    if filter_city is not None:
+        query = query.where(func.lower(Band.city) == filter_city.lower())
 
-    if province is not None:
-        query = query.where(func.lower(Band.province) == province.lower())
+    if filter_province is not None:
+        query = query.where(func.lower(Band.province) == filter_province.lower())
 
     if style_id is not None:
         query = query.join(

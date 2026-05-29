@@ -11,6 +11,7 @@ from app.api.routes.opportunities import (
     _build_opportunity_response,
 )
 from app.db import get_db
+from app.locations import normalize_location
 from app.models import (
     Alert,
     AlertPreference,
@@ -81,12 +82,6 @@ class AlertResponse(BaseModel):
 
 class AlertListResponse(BaseModel):
     items: list[AlertResponse]
-
-
-def _empty_to_none(value: str | None) -> str | None:
-    if value == "":
-        return None
-    return value
 
 
 def _validate_unique_positive_ids(field_name: str, ids: list[int]) -> None:
@@ -343,6 +338,11 @@ def update_my_alert_preferences(
         db=db,
         style_ids=payload.style_ids,
     )
+    preferred_city, preferred_province = normalize_location(
+        db=db,
+        city=payload.preferred_city,
+        province=payload.preferred_province,
+    )
 
     alert_preference = db.scalar(
         select(AlertPreference).where(AlertPreference.user_id == current_user.id)
@@ -351,16 +351,16 @@ def update_my_alert_preferences(
         alert_preference = AlertPreference(
             user_id=current_user.id,
             frequency=frequency,
-            preferred_city=_empty_to_none(payload.preferred_city),
-            preferred_province=_empty_to_none(payload.preferred_province),
+            preferred_city=preferred_city,
+            preferred_province=preferred_province,
             notifications_enabled=payload.notifications_enabled,
         )
         db.add(alert_preference)
         db.flush()
     else:
         alert_preference.frequency = frequency
-        alert_preference.preferred_city = _empty_to_none(payload.preferred_city)
-        alert_preference.preferred_province = _empty_to_none(payload.preferred_province)
+        alert_preference.preferred_city = preferred_city
+        alert_preference.preferred_province = preferred_province
         alert_preference.notifications_enabled = payload.notifications_enabled
 
     db.execute(

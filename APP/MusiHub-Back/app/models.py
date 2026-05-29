@@ -186,6 +186,43 @@ class MusicStyle(Base):
     )
 
 
+class Province(Base):
+    __tablename__ = "provinces"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(
+        String(120),
+        unique=True,
+        index=True,
+        nullable=False,
+    )
+
+    cities: Mapped[list["City"]] = relationship(
+        back_populates="province",
+        cascade="all, delete-orphan",
+    )
+
+
+class City(Base):
+    __tablename__ = "cities"
+    __table_args__ = (
+        UniqueConstraint(
+            "province_id",
+            "name",
+            name="uq_cities_province_id_name",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    province_id: Mapped[int] = mapped_column(
+        ForeignKey("provinces.id"),
+        nullable=False,
+    )
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+
+    province: Mapped["Province"] = relationship(back_populates="cities")
+
+
 class ProfileInstrument(Base):
     __tablename__ = "profile_instruments"
 
