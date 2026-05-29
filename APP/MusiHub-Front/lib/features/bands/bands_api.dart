@@ -71,6 +71,22 @@ class BandsApi {
     return Band.fromJson(json);
   }
 
+  Future<void> deleteBand({required String token, required int bandId}) async {
+    final response = await _apiClient.delete('/bands/$bandId', token: token);
+
+    if (response.statusCode == 400) {
+      throw const BandHasMembersException();
+    }
+
+    if (response.statusCode == 403) {
+      throw const BandDeleteForbiddenException();
+    }
+
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception('No se pudo eliminar la banda.');
+    }
+  }
+
   Future<Band> addBandMember({
     required String token,
     required int bandId,
@@ -123,6 +139,14 @@ class BandsApi {
     final json = jsonDecode(response.body) as Map<String, dynamic>;
     return BandVisibility.fromJson(json);
   }
+}
+
+class BandHasMembersException implements Exception {
+  const BandHasMembersException();
+}
+
+class BandDeleteForbiddenException implements Exception {
+  const BandDeleteForbiddenException();
 }
 
 class Band {

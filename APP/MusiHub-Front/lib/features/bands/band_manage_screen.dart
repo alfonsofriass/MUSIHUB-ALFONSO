@@ -34,6 +34,7 @@ class _BandManageScreenState extends State<BandManageScreen> {
 
   String? _token;
   bool _isSaving = false;
+  bool _isDeleting = false;
   String? _errorMessage;
 
   @override
@@ -132,6 +133,84 @@ class _BandManageScreenState extends State<BandManageScreen> {
     }
   }
 
+  Future<void> _deleteBand() async {
+    final token = _token;
+
+    if (token == null || token.isEmpty) {
+      setState(() {
+        _errorMessage = 'No hay sesion activa.';
+      });
+      return;
+    }
+
+    final confirmed = await _confirmDeleteBand();
+    if (confirmed != true) {
+      return;
+    }
+
+    setState(() {
+      _isDeleting = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _bandsApi.deleteBand(token: token, bandId: widget.band.id);
+
+      if (!mounted) return;
+
+      Navigator.of(context).pop(true);
+    } on BandHasMembersException {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage =
+            'No puedes eliminar la banda mientras tenga otros miembros.';
+      });
+    } on BandDeleteForbiddenException {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = 'Solo el creador puede eliminar esta banda.';
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = 'No se pudo eliminar la banda.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDeleting = false;
+        });
+      }
+    }
+  }
+
+  Future<bool?> _confirmDeleteBand() {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Eliminar banda'),
+          content: const Text(
+            'Esta accion no se puede deshacer. Los anuncios asociados se conservaran sin banda.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Eliminar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   String? _validate() {
     if (_textOrNull(_nameController.text) == null ||
         _textOrNull(_cityController.text) == null ||
@@ -178,6 +257,8 @@ class _BandManageScreenState extends State<BandManageScreen> {
   }
 
   Widget _buildForm(List<CatalogItem> styles) {
+    final canDeleteBand = widget.band.members.length == 1;
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(28, 16, 28, 24),
       children: [
@@ -221,6 +302,10 @@ class _BandManageScreenState extends State<BandManageScreen> {
           onPressed: _isSaving ? null : _save,
           child: Text(_isSaving ? 'Guardando...' : 'Guardar cambios'),
         ),
+        if (canDeleteBand) ...[
+          const SizedBox(height: 18),
+          _DeleteBandCard(isDeleting: _isDeleting, onDelete: _deleteBand),
+        ],
         if (_errorMessage != null) ...[
           const SizedBox(height: 16),
           Text(
@@ -323,6 +408,62 @@ class _BandManageSection extends StatelessWidget {
           const SizedBox(height: 12),
           ...children,
         ],
+      ),
+    );
+  }
+}
+
+class _DeleteBandCard extends StatelessWidget {
+  const _DeleteBandCard({required this.isDeleting, required this.onDelete});
+
+  final bool isDeleting;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final errorColor = Theme.of(context).colorScheme.error;
+
+    return Material(
+      color: Colors.white,
+      elevation: 2,
+      shadowColor: Colors.black.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: errorColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.delete_outline, color: errorColor),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Eliminar banda',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    'Solo disponible si no hay otros miembros.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+            TextButton(
+              onPressed: isDeleting ? null : onDelete,
+              child: Text(isDeleting ? 'Eliminando...' : 'Eliminar'),
+            ),
+          ],
+        ),
       ),
     );
   }
