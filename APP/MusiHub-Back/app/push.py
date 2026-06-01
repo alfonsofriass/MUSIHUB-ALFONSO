@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.models import Alert, DeviceToken, Opportunity
+from app.models import DeviceToken, Notification
 
 logger = logging.getLogger(__name__)
 
@@ -46,10 +46,20 @@ def _get_firebase_app() -> Any | None:
         return None
 
 
-def send_alert_push(
+def _stringify_data(data: dict[str, Any] | None) -> dict[str, str]:
+    if data is None:
+        return {}
+
+    return {
+        key: str(value)
+        for key, value in data.items()
+        if value is not None
+    }
+
+
+def send_notification_push(
     db: Session,
-    alert: Alert,
-    opportunity: Opportunity,
+    notification: Notification,
 ) -> None:
     try:
         firebase_app = _get_firebase_app()
@@ -58,31 +68,41 @@ def send_alert_push(
 
         from firebase_admin import messaging
     except ImportError:
-        logger.warning("firebase-admin is not installed; alert push skipped")
+        logger.warning("firebase-admin is not installed; notification push skipped")
         return
     except Exception as exc:
-        logger.warning("Alert push setup failed for alert %s: %s", alert.id, exc)
+        logger.warning(
+            "Notification push setup failed for notification %s: %s",
+            notification.id,
+            exc,
+        )
         return
 
     try:
         device_tokens = db.scalars(
-            select(DeviceToken).where(DeviceToken.user_id == alert.user_id)
+            select(DeviceToken).where(DeviceToken.user_id == notification.user_id)
         ).all()
     except Exception as exc:
-        logger.warning("Could not load device tokens for alert %s: %s", alert.id, exc)
+        logger.warning(
+            "Could not load device tokens for notification %s: %s",
+            notification.id,
+            exc,
+        )
         return
+
+    message_data = {
+        "type": notification.type,
+        "notification_id": str(notification.id),
+        **_stringify_data(notification.data),
+    }
 
     for device_token in device_tokens:
         message = messaging.Message(
             notification=messaging.Notification(
-                title="Nueva oportunidad en MusiHub",
-                body=opportunity.title,
+                title=notification.title,
+                body=notification.body,
             ),
-            data={
-                "type": "alert",
-                "alert_id": str(alert.id),
-                "opportunity_id": str(opportunity.id),
-            },
+            data=message_data,
             token=device_token.token,
         )
 
@@ -90,7 +110,7 @@ def send_alert_push(
             messaging.send(message, app=firebase_app)
         except Exception as exc:
             logger.warning(
-                "Alert push failed for device token %s: %s",
+                "Notification push failed for device token %s: %s",
                 device_token.id,
                 exc,
             )

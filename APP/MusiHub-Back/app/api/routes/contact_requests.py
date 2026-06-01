@@ -12,6 +12,7 @@ from app.api.routes.opportunities import (
 )
 from app.db import get_db
 from app.models import ContactRequest, Notification, Opportunity, User
+from app.push import send_notification_push
 
 router = APIRouter(prefix="/contact-requests")
 
@@ -109,20 +110,20 @@ def _answer_contact_request(
         title = "Solicitud rechazada"
         body = "El anunciante no ha aceptado compartir el contacto"
 
-    db.add(
-        Notification(
-            user_id=contact_request.requester_user_id,
-            type=notification_type,
-            title=title,
-            body=body,
-            data={
-                "contact_request_id": contact_request.id,
-                "opportunity_id": contact_request.opportunity_id,
-            },
-        )
+    notification = Notification(
+        user_id=contact_request.requester_user_id,
+        type=notification_type,
+        title=title,
+        body=body,
+        data={
+            "contact_request_id": contact_request.id,
+            "opportunity_id": contact_request.opportunity_id,
+        },
     )
+    db.add(notification)
     db.commit()
     db.refresh(contact_request)
+    send_notification_push(db=db, notification=notification)
 
     return _build_contact_request_status_response(contact_request)
 

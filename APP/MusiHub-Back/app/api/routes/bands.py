@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
+from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
@@ -9,8 +10,11 @@ from app.api.routes.auth import get_current_user
 from app.db import get_db
 from app.locations import normalize_location
 from app.models import Band, BandMember, BandStyle, MusicStyle, Opportunity, User
+from app.uploads import save_uploaded_image
 
 router = APIRouter(prefix="/bands")
+
+BAND_PHOTO_UPLOAD_DIR = Path("uploads/bands")
 
 
 class BandStyleResponse(BaseModel):
@@ -95,6 +99,10 @@ class BandVisibilityResponse(BaseModel):
     band_id: int
     user_id: int
     is_visible_in_profile: bool
+
+
+class BandPhotoResponse(BaseModel):
+    photo_url: str
 
 
 class BandDeleteResponse(BaseModel):
@@ -282,6 +290,27 @@ def read_band(
     band = _get_band_or_404(db=db, band_id=band_id)
 
     return _build_band_response(band=band, db=db)
+
+
+@router.post("/{band_id}/photo", response_model=BandPhotoResponse)
+def upload_band_photo(
+    band_id: int,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> BandPhotoResponse:
+    band = _get_band_or_404(db=db, band_id=band_id)
+    _require_band_creator(band=band, current_user=current_user)
+
+    photo_url = save_uploaded_image(
+        file=file,
+        upload_dir=BAND_PHOTO_UPLOAD_DIR,
+        filename_prefix=f"band_{band.id}",
+    )
+    band.photo_url = photo_url
+    db.commit()
+
+    return BandPhotoResponse(photo_url=photo_url)
 
 
 @router.patch("/{band_id}/me/visibility", response_model=BandVisibilityResponse)

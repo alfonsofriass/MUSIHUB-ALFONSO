@@ -46,6 +46,7 @@ Backend FastAPI del TFG MusiHub.
 - `POST /api/v1/bands`
 - `GET /api/v1/bands/me`
 - `GET /api/v1/bands/{id}`
+- `POST /api/v1/bands/{id}/photo`
 - `PATCH /api/v1/bands/{id}/me/visibility`
 - `PUT /api/v1/bands/{id}`
 - `POST /api/v1/bands/{id}/members`
@@ -137,6 +138,8 @@ combinables:
 - La banda no tiene login propio.
 - El usuario creador queda como `created_by_user_id`.
 - El creador se añade automáticamente como miembro `accepted`.
+- `POST /api/v1/bands/{id}/photo` permite al creador subir una imagen de banda
+  con `multipart/form-data`, campo `file`, y devuelve `photo_url`.
 - Solo el creador puede editar la banda y gestionar miembros.
 - Solo el creador puede eliminar la banda y únicamente si no quedan otros
   miembros. Los anuncios asociados dejan de mostrarse como publicados por banda.
@@ -161,7 +164,8 @@ combinables:
   usuario y anuncio.
 - En el MVP solo se acepta `frequency: "immediate"`; las frecuencias diaria y
   semanal quedan como mejora futura.
-- El backend intenta enviar push por FCM tras guardar la alerta.
+- El backend intenta enviar push por FCM tras guardar la alerta o una
+  notificación de contacto.
 - Si FCM falla, no debe fallar la creación del anuncio ni la alerta en BD.
 
 ## FCM

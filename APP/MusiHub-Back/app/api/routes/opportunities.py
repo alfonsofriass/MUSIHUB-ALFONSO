@@ -27,7 +27,7 @@ from app.models import (
     OpportunityType,
     User,
 )
-from app.push import send_alert_push
+from app.push import send_notification_push
 
 router = APIRouter(prefix="/opportunities")
 
@@ -243,8 +243,8 @@ def _generate_alerts_for_opportunity(
     current_user: User,
     instrument_ids: list[int],
     style_ids: list[int],
-) -> list[Alert]:
-    immediate_alerts: list[Alert] = []
+) -> list[Notification]:
+    immediate_notifications: list[Notification] = []
     alert_preferences = db.scalars(
         select(AlertPreference)
         .join(
@@ -333,19 +333,18 @@ def _generate_alerts_for_opportunity(
             reason=", ".join(reasons),
         )
         db.add(alert)
-        db.add(
-            Notification(
-                user_id=alert_preference.user_id,
-                type="alert_match",
-                title="Nueva oportunidad en MusiHub",
-                body=opportunity.title,
-                data={"opportunity_id": opportunity.id},
-            )
+        notification = Notification(
+            user_id=alert_preference.user_id,
+            type="alert_match",
+            title="Nueva oportunidad en MusiHub",
+            body=opportunity.title,
+            data={"opportunity_id": opportunity.id},
         )
+        db.add(notification)
         if alert_preference.frequency == "immediate":
-            immediate_alerts.append(alert)
+            immediate_notifications.append(notification)
 
-    return immediate_alerts
+    return immediate_notifications
 
 
 def _can_view_opportunity_contact(
@@ -535,7 +534,7 @@ def create_opportunity(
             )
         )
 
-    immediate_alerts = _generate_alerts_for_opportunity(
+    immediate_notifications = _generate_alerts_for_opportunity(
         db=db,
         opportunity=opportunity,
         opportunity_type=opportunity_type,
@@ -546,11 +545,10 @@ def create_opportunity(
 
     db.commit()
 
-    for alert in immediate_alerts:
-        send_alert_push(
+    for notification in immediate_notifications:
+        send_notification_push(
             db=db,
-            alert=alert,
-            opportunity=opportunity,
+            notification=notification,
         )
 
     return _build_opportunity_response(
@@ -610,20 +608,20 @@ def create_contact_request(
     )
     db.add(contact_request)
     db.flush()
-    db.add(
-        Notification(
-            user_id=opportunity.author_user_id,
-            type="contact_request_received",
-            title="Nueva solicitud de contacto",
-            body=f"{current_user.full_name} quiere contactar por tu anuncio",
-            data={
-                "contact_request_id": contact_request.id,
-                "opportunity_id": opportunity.id,
-            },
-        )
+    notification = Notification(
+        user_id=opportunity.author_user_id,
+        type="contact_request_received",
+        title="Nueva solicitud de contacto",
+        body=f"{current_user.full_name} quiere contactar por tu anuncio",
+        data={
+            "contact_request_id": contact_request.id,
+            "opportunity_id": opportunity.id,
+        },
     )
+    db.add(notification)
     db.commit()
     db.refresh(contact_request)
+    send_notification_push(db=db, notification=notification)
 
     return ContactRequestResponse(
         id=contact_request.id,

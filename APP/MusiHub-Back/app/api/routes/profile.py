@@ -1,6 +1,5 @@
 from pathlib import Path
 from urllib.parse import urlparse
-from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
@@ -23,10 +22,10 @@ from app.models import (
     User,
     UserRole,
 )
+from app.uploads import save_uploaded_image
 
 router = APIRouter(prefix="/profile")
 
-PROFILE_PHOTO_MAX_BYTES = 5 * 1024 * 1024
 PROFILE_PHOTO_UPLOAD_DIR = Path("uploads/profiles")
 
 
@@ -156,19 +155,6 @@ def _validate_unique_positive_ids(field_name: str, ids: list[int]) -> None:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"{field_name} must not contain duplicate ids",
         )
-
-
-def _detect_profile_photo_extension(content: bytes) -> str | None:
-    if content.startswith(b"\xff\xd8\xff"):
-        return ".jpg"
-
-    if content.startswith(b"\x89PNG\r\n\x1a\n"):
-        return ".png"
-
-    if content.startswith(b"RIFF") and content[8:12] == b"WEBP":
-        return ".webp"
-
-    return None
 
 
 def load_profile_instrument_responses(
@@ -333,31 +319,11 @@ def upload_my_profile_photo(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ProfilePhotoResponse:
-    content = file.file.read(PROFILE_PHOTO_MAX_BYTES + 1)
-    if len(content) > PROFILE_PHOTO_MAX_BYTES:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Image is too large",
-        )
-
-    if len(content) == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Image is empty",
-        )
-
-    extension = _detect_profile_photo_extension(content)
-    if extension is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid image format",
-        )
-
-    PROFILE_PHOTO_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    filename = f"user_{current_user.id}_{uuid4().hex}{extension}"
-    photo_path = PROFILE_PHOTO_UPLOAD_DIR / filename
-    photo_path.write_bytes(content)
-    photo_url = f"/{photo_path.as_posix()}"
+    photo_url = save_uploaded_image(
+        file=file,
+        upload_dir=PROFILE_PHOTO_UPLOAD_DIR,
+        filename_prefix=f"user_{current_user.id}",
+    )
 
     profile = db.scalar(
         select(Profile).where(Profile.user_id == current_user.id)
