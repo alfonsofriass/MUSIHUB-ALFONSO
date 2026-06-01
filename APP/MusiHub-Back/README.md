@@ -104,6 +104,7 @@ público del autor.
 - `GET /api/v1/profile/{user_id}` permite consultar el perfil público de otro
   usuario autenticado.
 - No devuelve `contact_email` ni `contact_phone`.
+- Devuelve `website_url` como enlace público opcional del usuario.
 - Devuelve las bandas visibles del usuario según `band_members.is_visible_in_profile`.
 
 ## Búsqueda de perfiles

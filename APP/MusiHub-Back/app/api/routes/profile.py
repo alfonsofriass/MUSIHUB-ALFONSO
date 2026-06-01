@@ -1,4 +1,5 @@
 from pathlib import Path
+from urllib.parse import urlparse
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
@@ -46,6 +47,7 @@ class ProfileResponse(BaseModel):
     province: str | None
     bio: str | None
     photo_url: str | None
+    website_url: str | None
     contact_email: EmailStr | None
     contact_phone: str | None
     instruments: list[ProfileInstrumentResponse]
@@ -73,6 +75,7 @@ class PublicProfileResponse(BaseModel):
     province: str | None
     bio: str | None
     photo_url: str | None
+    website_url: str | None
     instruments: list[ProfileInstrumentResponse]
     styles: list[ProfileStyleResponse]
 
@@ -103,6 +106,7 @@ class ProfileUpdateRequest(BaseModel):
     province: str | None = Field(default=None, max_length=120)
     bio: str | None = None
     photo_url: str | None = Field(default=None, max_length=500)
+    website_url: str | None = Field(default=None, max_length=500)
     contact_email: EmailStr | None = None
     contact_phone: str | None = Field(default=None, max_length=30)
     instrument_ids: list[int] = Field(default_factory=list)
@@ -113,6 +117,30 @@ class ProfileUpdateRequest(BaseModel):
 def _empty_to_none(value: str | None) -> str | None:
     if value == "":
         return None
+    return value
+
+
+def _normalize_website_url(value: str | None) -> str | None:
+    value = _empty_to_none(value)
+    if value is None:
+        return None
+
+    if "://" not in value:
+        value = f"https://{value}"
+
+    parsed_url = urlparse(value)
+    if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="website_url must be a valid http or https URL",
+        )
+
+    if len(value) > 500:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="website_url must be at most 500 characters",
+        )
+
     return value
 
 
@@ -196,6 +224,7 @@ def _build_profile_me_response(
             province=profile.province,
             bio=profile.bio,
             photo_url=profile.photo_url,
+            website_url=profile.website_url,
             contact_email=profile.contact_email,
             contact_phone=profile.contact_phone,
             instruments=load_profile_instrument_responses(profile=profile, db=db),
@@ -218,6 +247,7 @@ def _build_public_profile_response(
             province=profile.province,
             bio=profile.bio,
             photo_url=profile.photo_url,
+            website_url=profile.website_url,
             instruments=load_profile_instrument_responses(profile=profile, db=db),
             styles=load_profile_style_responses(profile=profile, db=db),
         )
@@ -439,6 +469,7 @@ def update_my_profile(
     profile.province = province
     profile.bio = _empty_to_none(payload.bio)
     profile.photo_url = _empty_to_none(payload.photo_url)
+    profile.website_url = _normalize_website_url(payload.website_url)
     profile.contact_email = (
         str(payload.contact_email) if payload.contact_email is not None else None
     )

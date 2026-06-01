@@ -126,6 +126,7 @@ class Profile(Base):
     province: Mapped[str | None] = mapped_column(String(120))
     bio: Mapped[str | None] = mapped_column(Text)
     photo_url: Mapped[str | None] = mapped_column(String(500))
+    website_url: Mapped[str | None] = mapped_column(String(500))
     contact_email: Mapped[str | None] = mapped_column(String(255))
     contact_phone: Mapped[str | None] = mapped_column(String(30))
     created_at: Mapped[datetime] = mapped_column(

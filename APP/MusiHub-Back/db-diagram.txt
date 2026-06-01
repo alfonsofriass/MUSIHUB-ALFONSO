@@ -26,6 +26,7 @@ Table roles {
   province varchar
   bio text
   photo_url varchar
+  website_url varchar
   contact_email varchar
   contact_phone varchar
   //red social?

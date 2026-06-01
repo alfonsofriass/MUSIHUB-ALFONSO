@@ -37,6 +37,7 @@ class ProfileSearchResponse(BaseModel):
     province: str | None
     bio: str | None
     photo_url: str | None
+    website_url: str | None
     instruments: list[ProfileInstrumentResponse]
     styles: list[ProfileStyleResponse]
 
@@ -79,6 +80,7 @@ def _build_profile_search_response(
         province=profile.province,
         bio=profile.bio,
         photo_url=profile.photo_url,
+        website_url=profile.website_url,
         instruments=load_profile_instrument_responses(profile=profile, db=db),
         styles=load_profile_style_responses(profile=profile, db=db),
     )
