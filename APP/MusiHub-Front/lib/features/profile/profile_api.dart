@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
 import 'package:musihub_front/core/config/api_config.dart';
+import 'package:musihub_front/core/uploads/image_upload_rules.dart';
 
 class ProfileApi {
   ProfileApi({required ApiClient apiClient}) : _apiClient = apiClient;
@@ -89,13 +89,13 @@ class ProfileApi {
     required String token,
     required File file,
   }) async {
-    final contentType = _profilePhotoContentType(file.path);
+    final contentType = ImageUploadRules.contentTypeForPath(file.path);
 
     if (contentType == null) {
       throw const UnsupportedProfilePhotoTypeException();
     }
 
-    if (await file.length() > 5 * 1024 * 1024) {
+    if (await ImageUploadRules.isTooLarge(file)) {
       throw const ProfilePhotoTooLargeException();
     }
 
@@ -125,24 +125,6 @@ class ProfileApi {
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
     return ProfilePhotoUploadResponse.fromJson(json);
-  }
-
-  MediaType? _profilePhotoContentType(String path) {
-    final normalizedPath = path.toLowerCase();
-
-    if (normalizedPath.endsWith('.jpg') || normalizedPath.endsWith('.jpeg')) {
-      return MediaType('image', 'jpeg');
-    }
-
-    if (normalizedPath.endsWith('.png')) {
-      return MediaType('image', 'png');
-    }
-
-    if (normalizedPath.endsWith('.webp')) {
-      return MediaType('image', 'webp');
-    }
-
-    return null;
   }
 }
 

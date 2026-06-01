@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
 import 'package:musihub_front/core/catalog/locations_api.dart';
@@ -30,6 +33,7 @@ class _BandManageScreenState extends State<BandManageScreen> {
   final _provinceController = TextEditingController();
   final _selectedStyleIds = <int>{};
   final _apiClient = ApiClient();
+  final _imagePicker = ImagePicker();
 
   late final BandsApi _bandsApi;
   late final ProfileApi _profileApi;
@@ -37,8 +41,10 @@ class _BandManageScreenState extends State<BandManageScreen> {
   late Future<_BandManageData> _initialDataFuture;
 
   String? _token;
+  String? _currentPhotoUrl;
   bool _isSaving = false;
   bool _isDeleting = false;
+  bool _isUploadingPhoto = false;
   String? _errorMessage;
 
   @override
@@ -66,6 +72,7 @@ class _BandManageScreenState extends State<BandManageScreen> {
     _bioController.text = band.bio ?? '';
     _cityController.text = band.city ?? '';
     _provinceController.text = band.province ?? '';
+    _currentPhotoUrl = band.photoUrl;
     _selectedStyleIds
       ..clear()
       ..addAll(band.styles.map((style) => style.id));
@@ -120,7 +127,7 @@ class _BandManageScreenState extends State<BandManageScreen> {
           bio: _textOrNull(_bioController.text),
           city: _cityController.text.trim(),
           province: _provinceController.text.trim(),
-          photoUrl: widget.band.photoUrl,
+          photoUrl: _currentPhotoUrl,
           styleIds: _selectedStyleIds.toList(),
         ),
       );
@@ -139,6 +146,80 @@ class _BandManageScreenState extends State<BandManageScreen> {
       if (mounted) {
         setState(() {
           _isSaving = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _pickAndUploadBandPhoto() async {
+    final token = _token;
+
+    if (token == null || token.isEmpty) {
+      setState(() {
+        _errorMessage = 'No hay sesion activa.';
+      });
+      return;
+    }
+
+    try {
+      final image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1200,
+        imageQuality: 82,
+      );
+
+      if (image == null) {
+        return;
+      }
+
+      setState(() {
+        _isUploadingPhoto = true;
+        _errorMessage = null;
+      });
+
+      final response = await _bandsApi.uploadBandPhoto(
+        token: token,
+        bandId: widget.band.id,
+        file: File(image.path),
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _currentPhotoUrl = response.photoUrl;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Foto de banda actualizada.')),
+      );
+    } on UnsupportedBandPhotoTypeException {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = 'Formato no valido. Usa JPG, PNG o WebP.';
+      });
+    } on BandPhotoTooLargeException {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = 'La foto no puede superar 5 MB.';
+      });
+    } on BandPhotoForbiddenException {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = 'Solo el creador puede cambiar la foto de la banda.';
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = 'No se pudo subir la foto de la banda.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingPhoto = false;
         });
       }
     }
@@ -273,7 +354,11 @@ class _BandManageScreenState extends State<BandManageScreen> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(28, 16, 28, 24),
       children: [
-        _BandManageAvatar(photoUrl: widget.band.photoUrl),
+        _BandManageAvatar(
+          photoUrl: _currentPhotoUrl,
+          isUploading: _isUploadingPhoto,
+          onTap: _isUploadingPhoto ? null : _pickAndUploadBandPhoto,
+        ),
         const SizedBox(height: 26),
         _BandManageSection(
           title: 'Informacion basica',
@@ -372,9 +457,15 @@ class _BandManageScreenState extends State<BandManageScreen> {
 }
 
 class _BandManageAvatar extends StatelessWidget {
-  const _BandManageAvatar({required this.photoUrl});
+  const _BandManageAvatar({
+    required this.photoUrl,
+    required this.isUploading,
+    required this.onTap,
+  });
 
   final String? photoUrl;
+  final bool isUploading;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -382,19 +473,49 @@ class _BandManageAvatar extends StatelessWidget {
 
     return Column(
       children: [
-        CircleAvatar(
-          radius: 40,
-          backgroundColor: const Color(0xFFD9D9D9),
-          backgroundImage: resolvedPhotoUrl.isEmpty
-              ? null
-              : NetworkImage(resolvedPhotoUrl),
-          child: resolvedPhotoUrl.isEmpty
-              ? const Icon(Icons.camera_alt_outlined, size: 30)
-              : null,
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            CircleAvatar(
+              radius: 40,
+              backgroundColor: const Color(0xFFD9D9D9),
+              backgroundImage: resolvedPhotoUrl.isEmpty
+                  ? null
+                  : NetworkImage(resolvedPhotoUrl),
+              child: resolvedPhotoUrl.isEmpty
+                  ? const Icon(Icons.camera_alt_outlined, size: 30)
+                  : null,
+            ),
+            if (isUploading)
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.28),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: onTap,
+          icon: const Icon(Icons.photo_library_outlined),
+          label: Text(isUploading ? 'Subiendo...' : 'Elegir foto'),
+        ),
+        const SizedBox(height: 6),
         Text(
-          'La foto se editara mas adelante.',
+          'JPG, PNG o WebP. Maximo 5 MB.',
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ],

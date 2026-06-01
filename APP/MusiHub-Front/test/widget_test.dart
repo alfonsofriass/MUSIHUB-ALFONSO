@@ -263,6 +263,14 @@ void main() {
     });
   });
 
+  test('parses band photo upload response', () {
+    final response = BandPhotoUploadResponse.fromJson({
+      'photo_url': '/uploads/bands/band_3_test.jpg',
+    });
+
+    expect(response.photoUrl, '/uploads/bands/band_3_test.jpg');
+  });
+
   test('builds band member create payload', () {
     const request = BandMemberSaveRequest(
       userId: 8,

@@ -1,7 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:http/http.dart' as http;
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
+import 'package:musihub_front/core/config/api_config.dart';
+import 'package:musihub_front/core/uploads/image_upload_rules.dart';
 
 class BandsApi {
   BandsApi({required ApiClient apiClient}) : _apiClient = apiClient;
@@ -87,6 +91,53 @@ class BandsApi {
     }
   }
 
+  Future<BandPhotoUploadResponse> uploadBandPhoto({
+    required String token,
+    required int bandId,
+    required File file,
+  }) async {
+    final contentType = ImageUploadRules.contentTypeForPath(file.path);
+
+    if (contentType == null) {
+      throw const UnsupportedBandPhotoTypeException();
+    }
+
+    if (await ImageUploadRules.isTooLarge(file)) {
+      throw const BandPhotoTooLargeException();
+    }
+
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('${ApiConfig.baseUrl}/bands/$bandId/photo'),
+    );
+
+    request.headers.addAll({
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $token',
+    });
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'file',
+        file.path,
+        contentType: contentType,
+      ),
+    );
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 403) {
+      throw const BandPhotoForbiddenException();
+    }
+
+    if (response.statusCode != 200) {
+      throw Exception('No se pudo subir la foto de la banda.');
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    return BandPhotoUploadResponse.fromJson(json);
+  }
+
   Future<Band> addBandMember({
     required String token,
     required int bandId,
@@ -147,6 +198,28 @@ class BandHasMembersException implements Exception {
 
 class BandDeleteForbiddenException implements Exception {
   const BandDeleteForbiddenException();
+}
+
+class UnsupportedBandPhotoTypeException implements Exception {
+  const UnsupportedBandPhotoTypeException();
+}
+
+class BandPhotoTooLargeException implements Exception {
+  const BandPhotoTooLargeException();
+}
+
+class BandPhotoForbiddenException implements Exception {
+  const BandPhotoForbiddenException();
+}
+
+class BandPhotoUploadResponse {
+  const BandPhotoUploadResponse({required this.photoUrl});
+
+  factory BandPhotoUploadResponse.fromJson(Map<String, dynamic> json) {
+    return BandPhotoUploadResponse(photoUrl: json['photo_url'] as String);
+  }
+
+  final String photoUrl;
 }
 
 class Band {
