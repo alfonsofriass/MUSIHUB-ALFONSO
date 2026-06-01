@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
+import 'package:musihub_front/core/widgets/contact_action_tile.dart';
 import 'package:musihub_front/features/auth/auth_api.dart';
 import 'package:musihub_front/features/bands/band_detail_screen.dart';
 import 'package:musihub_front/features/contact_requests/contact_requests_api.dart';
@@ -755,8 +756,8 @@ class _ContactAction extends StatelessWidget {
     final contactValue = opportunity.contactValue;
 
     if (contactValue != null && contactValue.trim().isNotEmpty) {
-      return _ContactInfoCard(
-        method: _contactMethodLabel(opportunity.contactMethod),
+      return ContactActionTile(
+        method: opportunity.contactMethod,
         value: contactValue,
       );
     }
@@ -808,19 +809,6 @@ class _ContactAction extends StatelessWidget {
       ),
     );
   }
-
-  String _contactMethodLabel(String method) {
-    switch (method) {
-      case 'whatsapp':
-        return 'WhatsApp';
-      case 'email':
-        return 'Email';
-      case 'phone':
-        return 'Telefono';
-      default:
-        return 'Contacto';
-    }
-  }
 }
 
 class _ContactStateNotice extends StatelessWidget {
@@ -868,58 +856,6 @@ class _ContactStateNotice extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ContactInfoCard extends StatelessWidget {
-  const _ContactInfoCard({required this.method, required this.value});
-
-  final String method;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      elevation: 3,
-      shadowColor: Colors.black.withValues(alpha: 0.14),
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: MusiHubColors.primary.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.mark_email_read_outlined,
-                color: MusiHubColors.primary,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(method, style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 2),
-                  Text(
-                    value,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

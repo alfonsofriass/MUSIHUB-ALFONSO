@@ -3,6 +3,7 @@ import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/config/api_config.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
+import 'package:musihub_front/core/widgets/contact_action_tile.dart';
 import 'package:musihub_front/features/bands/band_detail_screen.dart';
 import 'package:musihub_front/features/profile/profile_api.dart';
 
@@ -102,6 +103,7 @@ class _PublicProfileView extends StatelessWidget {
     final profile = data.profile;
     final location = _locationText(profile?.city, profile?.province);
     final bio = _textOrNull(profile?.bio);
+    final websiteUrl = _textOrNull(profile?.websiteUrl);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
@@ -138,6 +140,13 @@ class _PublicProfileView extends StatelessWidget {
         else ...[
           if (bio != null)
             _PublicSection(title: 'Sobre mi', children: [Text(bio)]),
+          if (websiteUrl != null)
+            _PublicSection(
+              title: 'Enlace',
+              children: [
+                ContactActionTile(method: 'website', value: websiteUrl),
+              ],
+            ),
           _PublicSection(
             title: 'Informacion musical',
             children: [

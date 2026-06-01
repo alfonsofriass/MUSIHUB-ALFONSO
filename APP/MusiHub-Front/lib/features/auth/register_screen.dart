@@ -237,6 +237,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             province: _textOrNull(_provinceController.text),
             bio: _textOrNull(_bioController.text),
             photoUrl: null,
+            websiteUrl: null,
             contactEmail: null,
             contactPhone: null,
             instrumentIds: _selectedInstrumentIds.toList(),

@@ -77,7 +77,7 @@ void main() {
     expect(opportunity.authorUser?.fullName, 'Usuario Test');
   });
 
-  test('parses public profile without contact data', () {
+  test('parses public profile without private contact data', () {
     final profile = PublicProfile.fromJson({
       'user': {'id': 7, 'full_name': 'Usuario Test'},
       'profile': {
@@ -86,6 +86,7 @@ void main() {
         'province': 'Granada',
         'bio': 'Bio publica',
         'photo_url': null,
+        'website_url': 'https://instagram.com/musihub',
         'instruments': [
           {'id': 2, 'name': 'Guitarra', 'is_primary': true},
         ],
@@ -107,6 +108,7 @@ void main() {
     });
 
     expect(profile.user.fullName, 'Usuario Test');
+    expect(profile.profile?.websiteUrl, 'https://instagram.com/musihub');
     expect(profile.profile?.contactEmail, isNull);
     expect(profile.profile?.contactPhone, isNull);
     expect(profile.bands.single.name, 'Nombre Banda');
@@ -120,6 +122,7 @@ void main() {
       'province': 'Granada',
       'bio': 'Bio publica',
       'photo_url': null,
+      'website_url': 'https://musihub.app',
       'instruments': [
         {'id': 2, 'name': 'Guitarra'},
       ],
@@ -140,9 +143,38 @@ void main() {
     });
 
     expect(profile.user.fullName, 'Usuario Test');
+    expect(profile.websiteUrl, 'https://musihub.app');
     expect(profile.instruments.single.name, 'Guitarra');
     expect(band.name, 'Nombre Banda');
     expect(band.styles.single.name, 'Rock');
+  });
+
+  test('builds profile payload with website url', () {
+    const request = ProfileSaveRequest(
+      city: 'Granada',
+      province: 'Granada',
+      bio: 'Bio publica',
+      photoUrl: null,
+      websiteUrl: 'https://instagram.com/musihub',
+      contactEmail: null,
+      contactPhone: null,
+      instrumentIds: [2],
+      primaryInstrumentId: 2,
+      styleIds: [1],
+    );
+
+    expect(request.toJson(), {
+      'city': 'Granada',
+      'province': 'Granada',
+      'bio': 'Bio publica',
+      'photo_url': null,
+      'website_url': 'https://instagram.com/musihub',
+      'contact_email': null,
+      'contact_phone': null,
+      'instrument_ids': [2],
+      'primary_instrument_id': 2,
+      'style_ids': [1],
+    });
   });
 
   test('builds band create payload', () {

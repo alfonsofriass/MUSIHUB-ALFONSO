@@ -6,6 +6,7 @@ import 'package:musihub_front/core/catalog/locations_api.dart';
 import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
+import 'package:musihub_front/core/widgets/contact_action_tile.dart';
 import 'package:musihub_front/core/widgets/location_selector.dart';
 import 'package:musihub_front/features/bands/bands_api.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
@@ -117,12 +118,14 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
     final stylesFuture = _profileApi.listMusicStyles();
     final bandsFuture = _bandsApi.listMyBands(token);
     final locationsFuture = _locationsApi.listLocations();
+    final profileFuture = _profileApi.getMyProfile(token);
 
     final types = await typesFuture;
     final instruments = await instrumentsFuture;
     final styles = await stylesFuture;
     final bands = await bandsFuture;
     final locations = await locationsFuture;
+    final profileMe = await profileFuture;
 
     if (types.isNotEmpty) {
       _selectedTypeId ??= types.first.id;
@@ -134,6 +137,7 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
       styles: styles,
       bands: bands,
       locations: locations,
+      profile: profileMe.profile,
     );
   }
 
@@ -511,7 +515,10 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
         _OpportunitySection(
           title: 'Contacto',
           children: [
+            _buildProfileContactShortcuts(data.profile),
+            const SizedBox(height: 12),
             DropdownButtonFormField<String>(
+              key: ValueKey(_selectedContactMethod),
               initialValue: _selectedContactMethod,
               decoration: const InputDecoration(labelText: 'Metodo'),
               items: _contactMethods
@@ -616,6 +623,54 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
         });
       },
     );
+  }
+
+  Widget _buildProfileContactShortcuts(UserProfile? profile) {
+    final contactEmail = _textOrNull(profile?.contactEmail ?? '');
+    final contactPhone = _textOrNull(profile?.contactPhone ?? '');
+
+    if (contactEmail == null && contactPhone == null) {
+      return Text(
+        'Puedes guardar email o telefono en tu perfil para rellenarlo aqui.',
+        style: Theme.of(context).textTheme.bodySmall,
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Usar contacto del perfil',
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        const SizedBox(height: 8),
+        if (contactEmail != null)
+          ContactActionTile(
+            method: 'email',
+            value: contactEmail,
+            title: 'Usar email del perfil',
+            trailingIcon: Icons.add_circle_outline,
+            onTap: () => _useProfileContact('email', contactEmail),
+          ),
+        if (contactEmail != null && contactPhone != null)
+          const SizedBox(height: 8),
+        if (contactPhone != null)
+          ContactActionTile(
+            method: 'phone',
+            value: contactPhone,
+            title: 'Usar telefono del perfil',
+            trailingIcon: Icons.add_circle_outline,
+            onTap: () => _useProfileContact('phone', contactPhone),
+          ),
+      ],
+    );
+  }
+
+  void _useProfileContact(String method, String value) {
+    setState(() {
+      _selectedContactMethod = method;
+      _contactValueController.text = value;
+    });
   }
 
   Widget _buildTextField({
@@ -976,6 +1031,7 @@ class _OpportunityFormData {
     required this.styles,
     required this.bands,
     required this.locations,
+    required this.profile,
   });
 
   final List<OpportunityType> types;
@@ -983,4 +1039,5 @@ class _OpportunityFormData {
   final List<CatalogItem> styles;
   final List<Band> bands;
   final List<LocationProvince> locations;
+  final UserProfile? profile;
 }

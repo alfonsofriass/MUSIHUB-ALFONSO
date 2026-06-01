@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
+import 'package:musihub_front/core/widgets/contact_action_tile.dart';
 import 'package:musihub_front/core/widgets/musihub_empty_state.dart';
 import 'package:musihub_front/features/contact_requests/contact_requests_api.dart';
 import 'package:musihub_front/features/opportunities/opportunity_detail_screen.dart';
@@ -323,8 +324,8 @@ class _ContactRequestCard extends StatelessWidget {
                   request.isAccepted &&
                   opportunity.contactValue != null) ...[
                 const SizedBox(height: 12),
-                _AcceptedContactInfo(
-                  method: _contactMethodLabel(opportunity.contactMethod),
+                ContactActionTile(
+                  method: opportunity.contactMethod,
                   value: opportunity.contactValue!,
                 ),
               ],
@@ -368,19 +369,6 @@ class _ContactRequestCard extends StatelessWidget {
   String _twoDigits(int value) {
     return value.toString().padLeft(2, '0');
   }
-
-  String _contactMethodLabel(String method) {
-    switch (method) {
-      case 'whatsapp':
-        return 'WhatsApp';
-      case 'email':
-        return 'Email';
-      case 'phone':
-        return 'Telefono';
-      default:
-        return 'Contacto';
-    }
-  }
 }
 
 class _RequestStatusBadge extends StatelessWidget {
@@ -414,33 +402,6 @@ class _RequestStatusBadge extends StatelessWidget {
           fontSize: 11,
           fontWeight: FontWeight.w700,
         ),
-      ),
-    );
-  }
-}
-
-class _AcceptedContactInfo extends StatelessWidget {
-  const _AcceptedContactInfo({required this.method, required this.value});
-
-  final String method;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: MusiHubColors.primary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(method, style: Theme.of(context).textTheme.titleSmall),
-          const SizedBox(height: 3),
-          Text(value, style: Theme.of(context).textTheme.bodyMedium),
-        ],
       ),
     );
   }

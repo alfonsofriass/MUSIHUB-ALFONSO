@@ -72,6 +72,7 @@ class ProfileSearchResult {
     required this.province,
     required this.bio,
     required this.photoUrl,
+    required this.websiteUrl,
     required this.instruments,
     required this.styles,
   });
@@ -88,6 +89,7 @@ class ProfileSearchResult {
       province: json['province'] as String?,
       bio: json['bio'] as String?,
       photoUrl: json['photo_url'] as String?,
+      websiteUrl: json['website_url'] as String?,
       instruments: instruments
           .map((item) => CatalogItem.fromJson(item as Map<String, dynamic>))
           .toList(),
@@ -103,6 +105,7 @@ class ProfileSearchResult {
   final String? province;
   final String? bio;
   final String? photoUrl;
+  final String? websiteUrl;
   final List<CatalogItem> instruments;
   final List<CatalogItem> styles;
 }

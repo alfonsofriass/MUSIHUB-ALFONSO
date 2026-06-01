@@ -10,6 +10,7 @@ import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/push/push_notifications_service.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
+import 'package:musihub_front/core/widgets/contact_action_tile.dart';
 import 'package:musihub_front/core/widgets/location_selector.dart';
 import 'package:musihub_front/features/alerts/alerts_screen.dart';
 import 'package:musihub_front/features/auth/auth_api.dart';
@@ -37,6 +38,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _provinceController = TextEditingController();
   final _bioController = TextEditingController();
   final _photoUrlController = TextEditingController();
+  final _websiteUrlController = TextEditingController();
   final _contactEmailController = TextEditingController();
   final _contactPhoneController = TextEditingController();
   final _apiClient = ApiClient();
@@ -75,6 +77,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _provinceController.dispose();
     _bioController.dispose();
     _photoUrlController.dispose();
+    _websiteUrlController.dispose();
     _contactEmailController.dispose();
     _contactPhoneController.dispose();
     _apiClient.close();
@@ -121,6 +124,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _provinceController.text = profile?.province ?? '';
     _bioController.text = profile?.bio ?? '';
     _photoUrlController.text = profile?.photoUrl ?? '';
+    _websiteUrlController.text = profile?.websiteUrl ?? '';
     _contactEmailController.text = profile?.contactEmail ?? '';
     _contactPhoneController.text = profile?.contactPhone ?? '';
 
@@ -166,6 +170,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           province: _textOrNull(_provinceController.text),
           bio: _textOrNull(_bioController.text),
           photoUrl: _textOrNull(_photoUrlController.text),
+          websiteUrl: _textOrNull(_websiteUrlController.text),
           contactEmail: _textOrNull(_contactEmailController.text),
           contactPhone: _textOrNull(_contactPhoneController.text),
           instrumentIds: _selectedInstrumentIds.toList(),
@@ -503,6 +508,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final headline = _summaryHeadline(primaryInstrument, location);
     final bio = _textOrNull(_bioController.text);
     final photoUrl = _textOrNull(_photoUrlController.text);
+    final websiteUrl = _textOrNull(_websiteUrlController.text);
     final contactEmail = _textOrNull(_contactEmailController.text);
     final contactPhone = _textOrNull(_contactPhoneController.text);
     final selectedInstruments = _selectedCatalogNames(
@@ -586,16 +592,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
           _ProfileSection(
-            title: 'Contacto',
+            title: 'Contacto y enlaces',
             children: [
               if (contactEmail != null)
-                _InfoRow(icon: Icons.mail_outline, text: contactEmail),
+                ContactActionTile(method: 'email', value: contactEmail),
               if (contactPhone != null) ...[
                 if (contactEmail != null) const SizedBox(height: 8),
-                _InfoRow(icon: Icons.phone_outlined, text: contactPhone),
+                ContactActionTile(method: 'phone', value: contactPhone),
               ],
-              if (contactEmail == null && contactPhone == null)
-                const Text('Sin datos de contacto visibles.'),
+              if (websiteUrl != null) ...[
+                if (contactEmail != null || contactPhone != null)
+                  const SizedBox(height: 8),
+                ContactActionTile(method: 'website', value: websiteUrl),
+              ],
+              if (contactEmail == null &&
+                  contactPhone == null &&
+                  websiteUrl == null)
+                const Text('Sin contacto ni enlaces visibles.'),
             ],
           ),
         ],
@@ -716,7 +729,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
         _ProfileSection(
-          title: 'Contacto',
+          title: 'Contacto y enlaces',
           children: [
             TextField(
               controller: _contactEmailController,
@@ -735,6 +748,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
               inputFormatters: InputLimits.phoneFormatters,
               decoration: const InputDecoration(
                 labelText: 'Telefono de contacto',
+                counterText: '',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _websiteUrlController,
+              keyboardType: TextInputType.url,
+              maxLength: InputLimits.url,
+              decoration: const InputDecoration(
+                labelText: 'Web o red social',
+                hintText: 'instagram.com/usuario',
                 counterText: '',
               ),
             ),
@@ -1090,24 +1114,6 @@ class _ProfileEmptyState extends StatelessWidget {
           FilledButton(onPressed: onCreate, child: const Text('Crear perfil')),
         ],
       ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: MusiHubColors.textGrey),
-        const SizedBox(width: 8),
-        Expanded(child: Text(text)),
-      ],
     );
   }
 }

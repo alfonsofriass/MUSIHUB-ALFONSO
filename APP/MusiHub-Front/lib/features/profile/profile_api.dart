@@ -274,6 +274,7 @@ class UserProfile {
     required this.province,
     required this.bio,
     required this.photoUrl,
+    required this.websiteUrl,
     required this.contactEmail,
     required this.contactPhone,
     required this.instruments,
@@ -291,6 +292,7 @@ class UserProfile {
       province: json['province'] as String?,
       bio: json['bio'] as String?,
       photoUrl: json['photo_url'] as String?,
+      websiteUrl: json['website_url'] as String?,
       contactEmail: json['contact_email'] as String?,
       contactPhone: json['contact_phone'] as String?,
       instruments: instruments
@@ -309,6 +311,7 @@ class UserProfile {
   final String? province;
   final String? bio;
   final String? photoUrl;
+  final String? websiteUrl;
   final String? contactEmail;
   final String? contactPhone;
   final List<ProfileInstrument> instruments;
@@ -352,6 +355,7 @@ class ProfileSaveRequest {
     required this.province,
     required this.bio,
     required this.photoUrl,
+    required this.websiteUrl,
     required this.contactEmail,
     required this.contactPhone,
     required this.instrumentIds,
@@ -363,6 +367,7 @@ class ProfileSaveRequest {
   final String? province;
   final String? bio;
   final String? photoUrl;
+  final String? websiteUrl;
   final String? contactEmail;
   final String? contactPhone;
   final List<int> instrumentIds;
@@ -375,6 +380,7 @@ class ProfileSaveRequest {
       'province': province,
       'bio': bio,
       'photo_url': photoUrl,
+      'website_url': websiteUrl,
       'contact_email': contactEmail,
       'contact_phone': contactPhone,
       'instrument_ids': instrumentIds,

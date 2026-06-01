@@ -9,7 +9,7 @@ abstract final class InputLimits {
   static const bandBio = 600;
   static const opportunityTitle = 90;
   static const opportunityDescription = 800;
-  static const url = 300;
+  static const url = 500;
   static const phone = 20;
   static const contactValue = 120;
   static const date = 10;
