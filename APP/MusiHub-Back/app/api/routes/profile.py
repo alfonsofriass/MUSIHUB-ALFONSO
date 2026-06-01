@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from pathlib import Path
+from uuid import uuid4
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
@@ -15,10 +18,15 @@ from app.models import (
     Profile,
     ProfileInstrument,
     ProfileStyle,
+    Role,
     User,
+    UserRole,
 )
 
 router = APIRouter(prefix="/profile")
+
+PROFILE_PHOTO_MAX_BYTES = 5 * 1024 * 1024
+PROFILE_PHOTO_UPLOAD_DIR = Path("uploads/profiles")
 
 
 class ProfileInstrumentResponse(BaseModel):
@@ -49,9 +57,14 @@ class ProfileMeResponse(BaseModel):
     profile: ProfileResponse | None
 
 
+class ProfilePhotoResponse(BaseModel):
+    photo_url: str
+
+
 class PublicUserResponse(BaseModel):
     id: int
     full_name: str
+    role: str
 
 
 class PublicProfileResponse(BaseModel):
@@ -115,6 +128,19 @@ def _validate_unique_positive_ids(field_name: str, ids: list[int]) -> None:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"{field_name} must not contain duplicate ids",
         )
+
+
+def _detect_profile_photo_extension(content: bytes) -> str | None:
+    if content.startswith(b"\xff\xd8\xff"):
+        return ".jpg"
+
+    if content.startswith(b"\x89PNG\r\n\x1a\n"):
+        return ".png"
+
+    if content.startswith(b"RIFF") and content[8:12] == b"WEBP":
+        return ".webp"
+
+    return None
 
 
 def load_profile_instrument_responses(
@@ -231,10 +257,25 @@ def _build_public_profile_response(
             )
         )
 
+    role = db.scalar(
+        select(Role)
+        .join(UserRole, UserRole.role_id == Role.id)
+        .where(
+            UserRole.user_id == user.id,
+            UserRole.is_primary.is_(True),
+        )
+    )
+    if role is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User role not found",
+        )
+
     return PublicProfileDetailResponse(
         user=PublicUserResponse(
             id=user.id,
             full_name=user.full_name,
+            role=role.code,
         ),
         profile=public_profile,
         bands=bands,
@@ -254,6 +295,52 @@ def read_my_profile(
         return ProfileMeResponse(exists=False, profile=None)
 
     return _build_profile_me_response(profile=profile, db=db)
+
+
+@router.post("/me/photo", response_model=ProfilePhotoResponse)
+def upload_my_profile_photo(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ProfilePhotoResponse:
+    content = file.file.read(PROFILE_PHOTO_MAX_BYTES + 1)
+    if len(content) > PROFILE_PHOTO_MAX_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Image is too large",
+        )
+
+    if len(content) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Image is empty",
+        )
+
+    extension = _detect_profile_photo_extension(content)
+    if extension is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid image format",
+        )
+
+    PROFILE_PHOTO_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    filename = f"user_{current_user.id}_{uuid4().hex}{extension}"
+    photo_path = PROFILE_PHOTO_UPLOAD_DIR / filename
+    photo_path.write_bytes(content)
+    photo_url = f"/{photo_path.as_posix()}"
+
+    profile = db.scalar(
+        select(Profile).where(Profile.user_id == current_user.id)
+    )
+    if profile is None:
+        profile = Profile(user_id=current_user.id)
+        db.add(profile)
+        db.flush()
+
+    profile.photo_url = photo_url
+    db.commit()
+
+    return ProfilePhotoResponse(photo_url=photo_url)
 
 
 @router.get("/{user_id}", response_model=PublicProfileDetailResponse)

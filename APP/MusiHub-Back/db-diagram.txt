@@ -159,7 +159,7 @@ Table opportunity_instruments {
 Table alert_preferences {
   id integer [primary key, increment]
   user_id integer [not null, unique]
-  frequency varchar [not null] // immediate, daily, weekly
+  frequency varchar [not null] // immediate; daily/weekly quedan como mejora futura
   preferred_city varchar
   preferred_province varchar //rellenada automaticamente si elige ciudad
   notifications_enabled boolean [not null, default: true]

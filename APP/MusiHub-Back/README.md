@@ -30,6 +30,7 @@ Backend FastAPI del TFG MusiHub.
 - `GET /api/v1/catalogs/locations`
 - `GET /api/v1/profile/me`
 - `PUT /api/v1/profile/me`
+- `POST /api/v1/profile/me/photo`
 - `GET /api/v1/profile/{user_id}`
 - `POST /api/v1/opportunities`
 - `GET /api/v1/opportunities`
@@ -94,6 +95,12 @@ Las respuestas de anuncios incluyen `author_user` para poder navegar al perfil
 público del autor.
 
 ## Perfil público
+- `POST /api/v1/profile/me/photo` permite subir una imagen de perfil con
+  `multipart/form-data`, campo `file`.
+- Formatos aceptados: `image/jpeg`, `image/png`, `image/webp`.
+- Tamaño máximo: 5 MB.
+- La respuesta devuelve `photo_url` como ruta relativa, por ejemplo
+  `/uploads/profiles/user_7_xxxxx.jpg`.
 - `GET /api/v1/profile/{user_id}` permite consultar el perfil público de otro
   usuario autenticado.
 - No devuelve `contact_email` ni `contact_phone`.
@@ -148,10 +155,9 @@ combinables:
   usuario.
 - Las alertas se guardan en BD y se evita duplicar la misma alerta para el mismo
   usuario y anuncio.
-- Si la preferencia es `immediate`, el backend intenta enviar push por FCM tras
-  guardar la alerta.
-- Las frecuencias `daily` y `weekly` guardan la alerta en BD, pero el envío
-  programado queda para una fase posterior.
+- En el MVP solo se acepta `frequency: "immediate"`; las frecuencias diaria y
+  semanal quedan como mejora futura.
+- El backend intenta enviar push por FCM tras guardar la alerta.
 - Si FCM falla, no debe fallar la creación del anuncio ni la alerta en BD.
 
 ## FCM

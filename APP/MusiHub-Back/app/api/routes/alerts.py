@@ -27,7 +27,7 @@ from app.models import (
 
 router = APIRouter(prefix="/alerts")
 
-ALERT_FREQUENCIES = {"immediate", "daily", "weekly"}
+ALERT_FREQUENCIES = {"immediate"}
 
 
 class AlertPreferenceTypeResponse(BaseModel):
