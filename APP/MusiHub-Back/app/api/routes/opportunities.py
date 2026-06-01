@@ -20,6 +20,7 @@ from app.models import (
     ContactRequest,
     Instrument,
     MusicStyle,
+    Notification,
     Opportunity,
     OpportunityInstrument,
     OpportunityStyle,
@@ -332,6 +333,15 @@ def _generate_alerts_for_opportunity(
             reason=", ".join(reasons),
         )
         db.add(alert)
+        db.add(
+            Notification(
+                user_id=alert_preference.user_id,
+                type="alert_match",
+                title="Nueva oportunidad en MusiHub",
+                body=opportunity.title,
+                data={"opportunity_id": opportunity.id},
+            )
+        )
         if alert_preference.frequency == "immediate":
             immediate_alerts.append(alert)
 
@@ -599,6 +609,19 @@ def create_contact_request(
         owner_user_id=opportunity.author_user_id,
     )
     db.add(contact_request)
+    db.flush()
+    db.add(
+        Notification(
+            user_id=opportunity.author_user_id,
+            type="contact_request_received",
+            title="Nueva solicitud de contacto",
+            body=f"{current_user.full_name} quiere contactar por tu anuncio",
+            data={
+                "contact_request_id": contact_request.id,
+                "opportunity_id": opportunity.id,
+            },
+        )
+    )
     db.commit()
     db.refresh(contact_request)
 

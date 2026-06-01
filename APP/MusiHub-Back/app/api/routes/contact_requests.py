@@ -11,7 +11,7 @@ from app.api.routes.opportunities import (
     _build_opportunity_response,
 )
 from app.db import get_db
-from app.models import ContactRequest, Opportunity, User
+from app.models import ContactRequest, Notification, Opportunity, User
 
 router = APIRouter(prefix="/contact-requests")
 
@@ -100,6 +100,27 @@ def _answer_contact_request(
 
     contact_request.status = new_status
     contact_request.responded_at = datetime.now(timezone.utc)
+    if new_status == "accepted":
+        notification_type = "contact_request_accepted"
+        title = "Solicitud aceptada"
+        body = "Ya puedes ver el contacto del anuncio"
+    else:
+        notification_type = "contact_request_rejected"
+        title = "Solicitud rechazada"
+        body = "El anunciante no ha aceptado compartir el contacto"
+
+    db.add(
+        Notification(
+            user_id=contact_request.requester_user_id,
+            type=notification_type,
+            title=title,
+            body=body,
+            data={
+                "contact_request_id": contact_request.id,
+                "opportunity_id": contact_request.opportunity_id,
+            },
+        )
+    )
     db.commit()
     db.refresh(contact_request)
 

@@ -221,6 +221,22 @@ Table alerts {
   }
 }
 
+//Bandeja simple de notificaciones in-app para la campana del usuario
+Table notifications {
+  id integer [primary key, increment]
+  user_id integer [not null]
+  type varchar [not null] // alert_match, contact_request_received, contact_request_accepted, contact_request_rejected
+  title varchar [not null]
+  body text [not null]
+  data json
+  created_at timestamp [not null]
+  read_at timestamp
+
+  indexes {
+    (user_id)
+  }
+}
+
 //Solicitudes privadas para contactar por un anuncio; no son alertas de matching
 Table contact_requests {
   id integer [primary key, increment]
@@ -284,6 +300,7 @@ Ref: alert_preference_styles.style_id > music_styles.id
 Ref: device_tokens.user_id > users.id
 Ref: alerts.user_id > users.id
 Ref: alerts.opportunity_id > opportunities.id
+Ref: notifications.user_id > users.id
 
 Ref: contact_requests.opportunity_id > opportunities.id
 Ref: contact_requests.requester_user_id > users.id

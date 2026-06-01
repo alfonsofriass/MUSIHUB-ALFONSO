@@ -60,6 +60,9 @@ Backend FastAPI del TFG MusiHub.
 - `GET /api/v1/contact-requests/sent`
 - `PATCH /api/v1/contact-requests/{id}/accept`
 - `PATCH /api/v1/contact-requests/{id}/reject`
+- `GET /api/v1/notifications`
+- `PATCH /api/v1/notifications/{id}/read`
+- `PATCH /api/v1/notifications/read-all`
 - `GET /api/v1/search/profiles`
 - `GET /api/v1/search/bands`
 
@@ -194,11 +197,23 @@ FIREBASE_PROJECT_ID=musihub
 
 El `service-account.json` es secreto y no debe subirse a Git.
 
+## Notificaciones In-App
+- `GET /api/v1/notifications` devuelve la bandeja del usuario autenticado,
+  ordenada por `created_at desc`, junto a `unread_count`.
+- `PATCH /api/v1/notifications/{id}/read` marca una notificación propia como
+  leída. Si ya estaba leída, no falla.
+- `PATCH /api/v1/notifications/read-all` marca todas las notificaciones propias
+  pendientes como leídas.
+- Tipos iniciales: `alert_match`, `contact_request_received`,
+  `contact_request_accepted`, `contact_request_rejected`.
+- El campo `data` es opcional y se usa solo como apoyo futuro para enlazar con
+  recursos como `opportunity_id` o `contact_request_id`.
+
 ## Migraciones
 Head esperado:
 
 ```text
-d0e1f2a3b4c5
+f2a3b4c5d6e7
 ```
 
 ## Ejecución local
