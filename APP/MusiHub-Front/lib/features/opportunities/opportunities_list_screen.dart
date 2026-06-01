@@ -4,6 +4,8 @@ import 'package:musihub_front/core/catalog/locations_api.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/features/auth/auth_api.dart';
+import 'package:musihub_front/features/notifications/notifications_api.dart';
+import 'package:musihub_front/features/notifications/notifications_sheet.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
 import 'package:musihub_front/features/opportunities/favorite_opportunities_screen.dart';
 import 'package:musihub_front/features/opportunities/opportunity_detail_screen.dart';
@@ -33,11 +35,13 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
   final _apiClient = ApiClient();
 
   late final AuthApi _authApi;
+  late final NotificationsApi _notificationsApi;
   late final OpportunitiesApi _opportunitiesApi;
   late final ProfileApi _profileApi;
   late final LocationsApi _locationsApi;
   late Future<OpportunityFilterData> _filterDataFuture;
   late Future<_OpportunityFeedData> _feedDataFuture;
+  late Future<int> _unreadNotificationsFuture;
 
   OpportunityFilters _filters = const OpportunityFilters();
   int? _selectedTypeId;
@@ -49,11 +53,13 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
   void initState() {
     super.initState();
     _authApi = AuthApi(apiClient: _apiClient);
+    _notificationsApi = NotificationsApi(apiClient: _apiClient);
     _opportunitiesApi = OpportunitiesApi(apiClient: _apiClient);
     _profileApi = ProfileApi(apiClient: _apiClient);
     _locationsApi = LocationsApi(apiClient: _apiClient);
     _filterDataFuture = _loadFilterData();
     _feedDataFuture = _loadFeedData();
+    _unreadNotificationsFuture = _loadUnreadNotificationsCount();
   }
 
   @override
@@ -113,9 +119,21 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
     );
   }
 
+  Future<int> _loadUnreadNotificationsCount() async {
+    final token = await widget.tokenStore.readAccessToken();
+
+    if (token == null || token.isEmpty) {
+      throw Exception('No hay sesion activa.');
+    }
+
+    final response = await _notificationsApi.listNotifications(token);
+    return response.unreadCount;
+  }
+
   void _refresh() {
     setState(() {
       _feedDataFuture = _loadFeedData();
+      _unreadNotificationsFuture = _loadUnreadNotificationsCount();
     });
   }
 
@@ -179,6 +197,19 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
         builder: (_) => SearchScreen(tokenStore: widget.tokenStore),
       ),
     );
+  }
+
+  Future<void> _openNotifications() async {
+    await showNotificationsSheet(
+      context: context,
+      tokenStore: widget.tokenStore,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _unreadNotificationsFuture = _loadUnreadNotificationsCount();
+    });
   }
 
   Future<void> _toggleFavorite(Opportunity opportunity, bool isFavorite) async {
@@ -365,9 +396,14 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(26, 24, 26, 96),
           children: [
-            Text(
-              'Oportunidades',
-              style: Theme.of(context).textTheme.headlineLarge,
+            FutureBuilder<int>(
+              future: _unreadNotificationsFuture,
+              builder: (context, snapshot) {
+                return _FeedTitleRow(
+                  unreadNotificationsCount: snapshot.data ?? 0,
+                  onNotificationsTap: _openNotifications,
+                );
+              },
             ),
             const SizedBox(height: 10),
             OpportunitySearchPlaceholder(onTap: _openSearch),
@@ -488,6 +524,80 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
         const SizedBox(height: 14),
         const _FeedSectionDivider(),
       ],
+    );
+  }
+}
+
+class _FeedTitleRow extends StatelessWidget {
+  const _FeedTitleRow({
+    required this.unreadNotificationsCount,
+    required this.onNotificationsTap,
+  });
+
+  final int unreadNotificationsCount;
+  final VoidCallback onNotificationsTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            'Oportunidades',
+            style: Theme.of(context).textTheme.headlineLarge,
+          ),
+        ),
+        _NotificationsBellButton(
+          unreadCount: unreadNotificationsCount,
+          onTap: onNotificationsTap,
+        ),
+      ],
+    );
+  }
+}
+
+class _NotificationsBellButton extends StatelessWidget {
+  const _NotificationsBellButton({
+    required this.unreadCount,
+    required this.onTap,
+  });
+
+  final int unreadCount;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: onTap,
+      tooltip: 'Notificaciones',
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Icon(Icons.notifications_none, size: 27),
+          if (unreadCount > 0)
+            Positioned(
+              right: -7,
+              top: -7,
+              child: Container(
+                constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                padding: const EdgeInsets.symmetric(horizontal: 5),
+                decoration: BoxDecoration(
+                  color: MusiHubColors.primary,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  unreadCount > 9 ? '9+' : '$unreadCount',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

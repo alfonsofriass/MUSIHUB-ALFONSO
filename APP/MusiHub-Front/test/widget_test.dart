@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:musihub_front/features/alerts/alerts_api.dart';
 import 'package:musihub_front/features/auth/login_screen.dart';
 import 'package:musihub_front/features/bands/bands_api.dart';
+import 'package:musihub_front/features/notifications/notifications_api.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
 import 'package:musihub_front/features/profile/profile_api.dart';
 import 'package:musihub_front/features/search/search_api.dart';
@@ -175,6 +176,47 @@ void main() {
       'primary_instrument_id': 2,
       'style_ids': [1],
     });
+  });
+
+  test('parses notifications response', () {
+    final response = NotificationsResponse.fromJson({
+      'unread_count': 1,
+      'items': [
+        {
+          'id': 1,
+          'type': 'alert_match',
+          'title': 'Nueva oportunidad en MusiHub',
+          'body': 'Clases de guitarra',
+          'created_at': '2026-06-01T10:00:00Z',
+          'read_at': null,
+          'data': {'opportunity_id': 34},
+        },
+        {
+          'id': 2,
+          'type': 'contact_request_accepted',
+          'title': 'Solicitud aceptada',
+          'body': 'Ya puedes ver el contacto del anuncio',
+          'created_at': '2026-06-01T11:00:00Z',
+          'read_at': '2026-06-01T11:05:00Z',
+          'data': null,
+        },
+      ],
+    });
+
+    expect(response.unreadCount, 1);
+    expect(response.items.first.isUnread, isTrue);
+    expect(response.items.first.data?['opportunity_id'], 34);
+    expect(response.items.last.isUnread, isFalse);
+  });
+
+  test('parses notification read response', () {
+    final response = NotificationReadResponse.fromJson({
+      'id': 1,
+      'read_at': '2026-06-01T10:05:00Z',
+    });
+
+    expect(response.id, 1);
+    expect(response.readAt, '2026-06-01T10:05:00Z');
   });
 
   test('builds band create payload', () {
