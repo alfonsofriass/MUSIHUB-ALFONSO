@@ -6,6 +6,7 @@ import 'package:musihub_front/core/widgets/musihub_empty_state.dart';
 import 'package:musihub_front/features/contact_requests/contact_requests_api.dart';
 import 'package:musihub_front/features/opportunities/opportunity_detail_screen.dart';
 import 'package:musihub_front/features/opportunities/opportunity_display.dart';
+import 'package:musihub_front/features/profile/public_profile_screen.dart';
 
 enum ContactRequestsScreenMode { received, sent }
 
@@ -80,6 +81,17 @@ class _ContactRequestsScreenState extends State<ContactRequestsScreen> {
     if (!mounted) return;
 
     _refresh();
+  }
+
+  Future<void> _openRequesterProfile(ContactRequestUser requester) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => PublicProfileScreen(
+          tokenStore: widget.tokenStore,
+          userId: requester.id,
+        ),
+      ),
+    );
   }
 
   Future<void> _respond(ContactRequestItem request, bool accept) async {
@@ -168,6 +180,9 @@ class _ContactRequestsScreenState extends State<ContactRequestsScreen> {
                       isReceivedMode: _isReceivedMode,
                       isUpdating: _updatingRequestId == request.id,
                       onOpen: () => _openOpportunity(request),
+                      onOpenRequesterProfile: request.requester == null
+                          ? null
+                          : () => _openRequesterProfile(request.requester!),
                       onAccept: request.isPending
                           ? () => _respond(request, true)
                           : null,
@@ -199,6 +214,7 @@ class _ContactRequestCard extends StatelessWidget {
     required this.isReceivedMode,
     required this.isUpdating,
     required this.onOpen,
+    required this.onOpenRequesterProfile,
     required this.onAccept,
     required this.onReject,
   });
@@ -207,6 +223,7 @@ class _ContactRequestCard extends StatelessWidget {
   final bool isReceivedMode;
   final bool isUpdating;
   final VoidCallback onOpen;
+  final VoidCallback? onOpenRequesterProfile;
   final VoidCallback? onAccept;
   final VoidCallback? onReject;
 
@@ -277,11 +294,11 @@ class _ContactRequestCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               if (isReceivedMode && requester != null) ...[
-                _SmallInfo(
-                  icon: Icons.person_outline,
-                  text: 'Solicita: ${requester.fullName}',
+                _RequesterProfileTile(
+                  requesterName: requester.fullName,
+                  onTap: onOpenRequesterProfile,
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 10),
               ],
               Wrap(
                 spacing: 14,
@@ -468,27 +485,67 @@ class _ContactRequestsHint extends StatelessWidget {
   }
 }
 
-class _SmallInfo extends StatelessWidget {
-  const _SmallInfo({required this.icon, required this.text});
+class _RequesterProfileTile extends StatelessWidget {
+  const _RequesterProfileTile({
+    required this.requesterName,
+    required this.onTap,
+  });
 
-  final IconData icon;
-  final String text;
+  final String requesterName;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 14, color: MusiHubColors.textGrey),
-        const SizedBox(width: 4),
-        Expanded(
-          child: Text(
-            text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall,
+    return Material(
+      color: MusiHubColors.fieldGrey,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+          child: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: MusiHubColors.primary.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.person_outline,
+                  size: 18,
+                  color: MusiHubColors.primary,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Solicitado por',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      requesterName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: MusiHubColors.textGrey,
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 }

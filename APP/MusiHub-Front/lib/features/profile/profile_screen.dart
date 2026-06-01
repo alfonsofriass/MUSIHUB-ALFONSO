@@ -1,13 +1,18 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
 import 'package:musihub_front/core/catalog/locations_api.dart';
+import 'package:musihub_front/core/config/api_config.dart';
 import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/push/push_notifications_service.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/core/widgets/location_selector.dart';
 import 'package:musihub_front/features/alerts/alerts_screen.dart';
+import 'package:musihub_front/features/auth/auth_api.dart';
 import 'package:musihub_front/features/auth/login_screen.dart';
 import 'package:musihub_front/features/bands/bands_api.dart';
 import 'package:musihub_front/features/bands/my_bands_screen.dart';
@@ -35,9 +40,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _contactEmailController = TextEditingController();
   final _contactPhoneController = TextEditingController();
   final _apiClient = ApiClient();
+  final _imagePicker = ImagePicker();
   final _selectedInstrumentIds = <int>{};
   final _selectedStyleIds = <int>{};
 
+  late final AuthApi _authApi;
   late final ProfileApi _profileApi;
   late final BandsApi _bandsApi;
   late final LocationsApi _locationsApi;
@@ -48,12 +55,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _profileExists = false;
   bool _isEditingProfile = false;
   bool _isSaving = false;
+  bool _isUploadingPhoto = false;
   String? _errorMessage;
   String? _successMessage;
 
   @override
   void initState() {
     super.initState();
+    _authApi = AuthApi(apiClient: _apiClient);
     _profileApi = ProfileApi(apiClient: _apiClient);
     _bandsApi = BandsApi(apiClient: _apiClient);
     _locationsApi = LocationsApi(apiClient: _apiClient);
@@ -81,12 +90,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     _token = token;
 
+    final userFuture = _authApi.me(token);
     final instrumentsFuture = _profileApi.listInstruments();
     final stylesFuture = _profileApi.listMusicStyles();
     final profileFuture = _profileApi.getMyProfile(token);
     final bandsFuture = _bandsApi.listMyBands(token);
     final locationsFuture = _locationsApi.listLocations();
 
+    final user = await userFuture;
     final instruments = await instrumentsFuture;
     final styles = await stylesFuture;
     final profileMe = await profileFuture;
@@ -97,6 +108,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _profileExists = profileMe.exists;
 
     return _ProfileInitialData(
+      user: user,
       instruments: instruments,
       styles: styles,
       bands: bands,
@@ -217,6 +229,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _successMessage = null;
       _initialData = _loadInitialData();
     });
+  }
+
+  Future<void> _pickAndUploadProfilePhoto() async {
+    final token = _token;
+
+    if (token == null || token.isEmpty) {
+      setState(() {
+        _errorMessage = 'No hay sesion activa.';
+        _successMessage = null;
+      });
+      return;
+    }
+
+    try {
+      final image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1200,
+        imageQuality: 82,
+      );
+
+      if (image == null) {
+        return;
+      }
+
+      setState(() {
+        _isUploadingPhoto = true;
+        _errorMessage = null;
+        _successMessage = null;
+      });
+
+      final response = await _profileApi.uploadMyProfilePhoto(
+        token: token,
+        file: File(image.path),
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _photoUrlController.text = response.photoUrl;
+        _profileExists = true;
+        _successMessage = 'Foto de perfil actualizada.';
+      });
+    } on UnsupportedProfilePhotoTypeException {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = 'La foto debe ser JPG, PNG o WebP.';
+      });
+    } on ProfilePhotoTooLargeException {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = 'La foto no puede superar 5 MB.';
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = 'No se pudo subir la foto.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingPhoto = false;
+        });
+      }
+    }
   }
 
   Future<void> _openMyOpportunities() async {
@@ -347,7 +426,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 _ProfileSettingsAction(
                   icon: Icons.notifications_outlined,
                   title: 'Configurar alertas',
-                  subtitle: 'Ajusta tipos, frecuencia y ubicacion',
+                  subtitle: 'Ajusta tipos, instrumentos, estilos y ubicacion',
                   onTap: () {
                     Navigator.of(context).pop();
                     _openAlertSettings();
@@ -449,10 +528,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Perfil musical',
+                    data.user.fullName,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
+                  _RoleBadge(role: data.user.role),
+                  const SizedBox(height: 6),
                   Text(headline, style: Theme.of(context).textTheme.bodyMedium),
                 ],
               ),
@@ -484,16 +565,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
             title: 'Musica',
             children: [
               if (selectedInstruments.isNotEmpty) ...[
-                Text(
-                  'Instrumentos',
-                  style: Theme.of(context).textTheme.titleSmall,
+                const _MusicalInfoLabel(
+                  icon: Icons.music_note_outlined,
+                  label: 'Instrumentos',
                 ),
                 const SizedBox(height: 8),
                 _ChipWrap(items: selectedInstruments),
               ],
               if (selectedStyles.isNotEmpty) ...[
                 if (selectedInstruments.isNotEmpty) const SizedBox(height: 16),
-                Text('Estilos', style: Theme.of(context).textTheme.titleSmall),
+                const _MusicalInfoLabel(
+                  icon: Icons.library_music_outlined,
+                  label: 'Estilos',
+                ),
                 const SizedBox(height: 8),
                 _ChipWrap(items: selectedStyles),
               ],
@@ -594,11 +678,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildForm(BuildContext context, _ProfileInitialData data) {
+    final photoUrl = _textOrNull(_photoUrlController.text);
+
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
         _buildCurrentSummary(context, data),
         const SizedBox(height: 16),
+        _ProfileSection(
+          title: 'Foto de perfil',
+          children: [
+            _ProfilePhotoEditor(
+              photoUrl: photoUrl,
+              isUploading: _isUploadingPhoto,
+              onTap: _isUploadingPhoto ? null : _pickAndUploadProfilePhoto,
+            ),
+          ],
+        ),
         _ProfileSection(
           title: 'Datos basicos',
           children: [
@@ -639,16 +735,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               inputFormatters: InputLimits.phoneFormatters,
               decoration: const InputDecoration(
                 labelText: 'Telefono de contacto',
-                counterText: '',
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _photoUrlController,
-              keyboardType: TextInputType.url,
-              maxLength: InputLimits.url,
-              decoration: const InputDecoration(
-                labelText: 'URL de foto',
                 counterText: '',
               ),
             ),
@@ -895,6 +981,64 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
+class _ProfilePhotoEditor extends StatelessWidget {
+  const _ProfilePhotoEditor({
+    required this.photoUrl,
+    required this.isUploading,
+    required this.onTap,
+  });
+
+  final String? photoUrl;
+  final bool isUploading;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        children: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              _ProfileAvatar(photoUrl: photoUrl),
+              if (isUploading)
+                Container(
+                  width: 76,
+                  height: 76,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.28),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: onTap,
+            icon: const Icon(Icons.photo_library_outlined),
+            label: Text(isUploading ? 'Subiendo...' : 'Elegir foto'),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'JPG, PNG o WebP. Maximo 5 MB.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ProfileAvatar extends StatelessWidget {
   const _ProfileAvatar({required this.photoUrl});
 
@@ -902,11 +1046,15 @@ class _ProfileAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resolvedPhotoUrl = ApiConfig.publicFileUrl(photoUrl);
+
     return CircleAvatar(
       radius: 38,
       backgroundColor: MusiHubColors.fieldGrey,
-      backgroundImage: photoUrl == null ? null : NetworkImage(photoUrl!),
-      child: photoUrl == null
+      backgroundImage: resolvedPhotoUrl.isEmpty
+          ? null
+          : NetworkImage(resolvedPhotoUrl),
+      child: resolvedPhotoUrl.isEmpty
           ? const Icon(Icons.person_outline, size: 38, color: Colors.black54)
           : null,
     );
@@ -961,6 +1109,44 @@ class _InfoRow extends StatelessWidget {
         Expanded(child: Text(text)),
       ],
     );
+  }
+}
+
+class _RoleBadge extends StatelessWidget {
+  const _RoleBadge({required this.role});
+
+  final String role;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: MusiHubColors.primary.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: MusiHubColors.primary.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Text(
+        _roleLabel(role),
+        style: const TextStyle(
+          color: MusiHubColors.primary,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  String _roleLabel(String role) {
+    return switch (role) {
+      'musico' => 'Musico',
+      'venta' => 'Venta',
+      'sala_bar' => 'Sala/bar',
+      'academia_profesor' => 'Academia/Profesor',
+      _ => role,
+    };
   }
 }
 
@@ -1147,9 +1333,30 @@ class _ProfileSection extends StatelessWidget {
           const SizedBox(height: 12),
           ...children,
           const SizedBox(height: 8),
-          const Divider(),
+          Divider(
+            color: MusiHubColors.primary.withValues(alpha: 0.38),
+            thickness: 1,
+          ),
         ],
       ),
+    );
+  }
+}
+
+class _MusicalInfoLabel extends StatelessWidget {
+  const _MusicalInfoLabel({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: MusiHubColors.primary),
+        const SizedBox(width: 6),
+        Text(label, style: Theme.of(context).textTheme.titleSmall),
+      ],
     );
   }
 }
@@ -1182,12 +1389,14 @@ class _ChipWrap extends StatelessWidget {
 
 class _ProfileInitialData {
   const _ProfileInitialData({
+    required this.user,
     required this.instruments,
     required this.styles,
     required this.bands,
     required this.locations,
   });
 
+  final AuthUser user;
   final List<CatalogItem> instruments;
   final List<CatalogItem> styles;
   final List<Band> bands;

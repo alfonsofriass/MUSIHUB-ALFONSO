@@ -29,7 +29,7 @@ class AlertsScreen extends StatefulWidget {
 }
 
 class _AlertsScreenState extends State<AlertsScreen> {
-  static const _frequencies = ['immediate', 'daily', 'weekly'];
+  static const _immediateFrequency = 'immediate';
 
   final _cityController = TextEditingController();
   final _provinceController = TextEditingController();
@@ -45,7 +45,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
   late Future<_AlertsData> _initialDataFuture;
 
   String? _token;
-  String _selectedFrequency = _frequencies.first;
   bool _notificationsEnabled = true;
   bool _isSaving = false;
   String? _errorMessage;
@@ -117,7 +116,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
     _cityController.text = preferences?.preferredCity ?? '';
     _provinceController.text = preferences?.preferredProvince ?? '';
     _notificationsEnabled = preferences?.notificationsEnabled ?? true;
-    _selectedFrequency = preferences?.frequency ?? _frequencies.first;
     _selectedTypeIds
       ..clear()
       ..addAll(
@@ -155,7 +153,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
       final preferences = await _alertsApi.savePreferences(
         token: token,
         request: AlertPreferencesSaveRequest(
-          frequency: _selectedFrequency,
+          frequency: _immediateFrequency,
           preferredCity: _textOrNull(_cityController.text),
           preferredProvince: _textOrNull(_provinceController.text),
           notificationsEnabled: _notificationsEnabled,
@@ -264,25 +262,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
           },
         ),
         const SizedBox(height: 22),
-        Text(
-          'Frecuencia de alertas',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: 12),
-        for (final frequency in _frequencies) ...[
-          _FrequencyOption(
-            title: _frequencyLabel(frequency),
-            subtitle: _frequencySubtitle(frequency),
-            selected: _selectedFrequency == frequency,
-            onTap: () {
-              setState(() {
-                _selectedFrequency = frequency;
-              });
-            },
-          ),
-          const SizedBox(height: 8),
-        ],
-        const SizedBox(height: 14),
         _AlertConfigCard(
           title: 'Ubicacion',
           subtitle: 'Filtra por ciudad o provincia si quieres alertas locales',
@@ -426,28 +405,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
       }).toList(),
     );
   }
-
-  String _frequencyLabel(String frequency) {
-    switch (frequency) {
-      case 'daily':
-        return 'Diaria';
-      case 'weekly':
-        return 'Semanal';
-      default:
-        return 'Inmediata';
-    }
-  }
-
-  String _frequencySubtitle(String frequency) {
-    switch (frequency) {
-      case 'daily':
-        return 'Recibe un resumen diario';
-      case 'weekly':
-        return 'Recibe un resumen semanal';
-      default:
-        return 'Justo en el momento';
-    }
-  }
 }
 
 class _AlertsData {
@@ -510,54 +467,6 @@ class _ActivationCard extends StatelessWidget {
               ),
             ),
             Switch(value: enabled, onChanged: onChanged),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FrequencyOption extends StatelessWidget {
-  const _FrequencyOption({
-    required this.title,
-    required this.subtitle,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String title;
-  final String subtitle;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(
-            color: selected ? MusiHubColors.primary : MusiHubColors.borderGrey,
-          ),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 3),
-                  Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
-                ],
-              ),
-            ),
-            if (selected)
-              const Icon(Icons.check, size: 20, color: MusiHubColors.primary),
           ],
         ),
       ),

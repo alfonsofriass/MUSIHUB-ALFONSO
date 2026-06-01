@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
+import 'package:musihub_front/core/config/api_config.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/features/bands/band_detail_screen.dart';
@@ -117,8 +118,10 @@ class _PublicProfileView extends StatelessWidget {
                     data.user.fullName,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
+                  const SizedBox(height: 6),
+                  _PublicRoleBadge(role: data.user.role),
                   if (location != null) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
                       location,
                       style: Theme.of(context).textTheme.bodySmall,
@@ -209,14 +212,56 @@ class _PublicAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resolvedPhotoUrl = ApiConfig.publicFileUrl(photoUrl);
+
     return CircleAvatar(
       radius: 38,
       backgroundColor: MusiHubColors.fieldGrey,
-      backgroundImage: photoUrl == null ? null : NetworkImage(photoUrl!),
-      child: photoUrl == null
+      backgroundImage: resolvedPhotoUrl.isEmpty
+          ? null
+          : NetworkImage(resolvedPhotoUrl),
+      child: resolvedPhotoUrl.isEmpty
           ? const Icon(Icons.person_outline, size: 38, color: Colors.black54)
           : null,
     );
+  }
+}
+
+class _PublicRoleBadge extends StatelessWidget {
+  const _PublicRoleBadge({required this.role});
+
+  final String role;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: MusiHubColors.primary.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: MusiHubColors.primary.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Text(
+        _roleLabel(role),
+        style: const TextStyle(
+          color: MusiHubColors.primary,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  String _roleLabel(String role) {
+    return switch (role) {
+      'musico' => 'Musico',
+      'venta' => 'Venta',
+      'sala_bar' => 'Sala/bar',
+      'academia_profesor' => 'Academia/Profesor',
+      _ => role,
+    };
   }
 }
 
@@ -269,6 +314,7 @@ class _PublicBandTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resolvedPhotoUrl = ApiConfig.publicFileUrl(band.photoUrl);
     final location = [
       band.city,
       band.province,
@@ -289,10 +335,10 @@ class _PublicBandTile extends StatelessWidget {
               CircleAvatar(
                 radius: 21,
                 backgroundColor: MusiHubColors.fieldGrey,
-                backgroundImage: band.photoUrl == null
+                backgroundImage: resolvedPhotoUrl.isEmpty
                     ? null
-                    : NetworkImage(band.photoUrl!),
-                child: band.photoUrl == null
+                    : NetworkImage(resolvedPhotoUrl),
+                child: resolvedPhotoUrl.isEmpty
                     ? const Icon(Icons.groups_outlined, color: Colors.black54)
                     : null,
               ),

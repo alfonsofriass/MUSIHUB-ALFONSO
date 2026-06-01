@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
+import 'package:musihub_front/core/config/api_config.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/features/bands/band_detail_screen.dart';
@@ -143,6 +144,7 @@ class _BandCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final location = _locationLabel(band);
+    final resolvedPhotoUrl = ApiConfig.publicFileUrl(band.photoUrl);
 
     return Material(
       color: Colors.white,
@@ -159,10 +161,10 @@ class _BandCard extends StatelessWidget {
               CircleAvatar(
                 radius: 28,
                 backgroundColor: MusiHubColors.fieldGrey,
-                backgroundImage: band.photoUrl == null
+                backgroundImage: resolvedPhotoUrl.isEmpty
                     ? null
-                    : NetworkImage(band.photoUrl!),
-                child: band.photoUrl == null
+                    : NetworkImage(resolvedPhotoUrl),
+                child: resolvedPhotoUrl.isEmpty
                     ? const Icon(Icons.groups_outlined, color: Colors.black54)
                     : null,
               ),

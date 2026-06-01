@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
+import 'package:musihub_front/core/config/api_config.dart';
 import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
@@ -434,6 +435,7 @@ class _ProfileInviteTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resolvedPhotoUrl = ApiConfig.publicFileUrl(profile.photoUrl);
     final tags = [
       if (_locationText(profile.city, profile.province) != null)
         _locationText(profile.city, profile.province)!,
@@ -454,10 +456,10 @@ class _ProfileInviteTile extends StatelessWidget {
             CircleAvatar(
               radius: 22,
               backgroundColor: MusiHubColors.fieldGrey,
-              backgroundImage: profile.photoUrl == null
+              backgroundImage: resolvedPhotoUrl.isEmpty
                   ? null
-                  : NetworkImage(profile.photoUrl!),
-              child: profile.photoUrl == null
+                  : NetworkImage(resolvedPhotoUrl),
+              child: resolvedPhotoUrl.isEmpty
                   ? const Icon(
                       Icons.person_outline,
                       color: MusiHubColors.primary,

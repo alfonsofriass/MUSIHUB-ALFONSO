@@ -53,7 +53,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     ),
   ];
 
-  static const _frequencies = ['immediate', 'daily', 'weekly'];
+  static const _immediateFrequency = 'immediate';
 
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -79,12 +79,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   _RegisterStep _step = _RegisterStep.account;
   String _selectedRole = _roles.first.code;
-  String _selectedFrequency = _frequencies.first;
   bool _notificationsEnabled = true;
   bool _isLoading = false;
   bool _catalogDefaultsApplied = false;
   bool _profileSaved = false;
   bool _alertsSaved = false;
+  bool _privacyAccepted = false;
   int? _primaryInstrumentId;
   String? _authToken;
   String? _errorMessage;
@@ -188,6 +188,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
         });
       case _RegisterStep.alerts:
         if (catalogs == null) return;
+        if (!_privacyAccepted) {
+          setState(() {
+            _errorMessage =
+                'Acepta los terminos y la politica de privacidad para continuar.';
+          });
+          return;
+        }
         await _finishOnboarding();
       case _RegisterStep.done:
         await _enterApp();
@@ -244,7 +251,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         await _alertsApi.savePreferences(
           token: token,
           request: AlertPreferencesSaveRequest(
-            frequency: _selectedFrequency,
+            frequency: _immediateFrequency,
             preferredCity: _textOrNull(_cityController.text),
             preferredProvince: _textOrNull(_provinceController.text),
             notificationsEnabled: _notificationsEnabled,
@@ -315,6 +322,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
         builder: (_) => OpportunitiesListScreen(tokenStore: _tokenStore),
       ),
       (_) => false,
+    );
+  }
+
+  Future<void> _showPrivacyInfo() async {
+    if (_isLoading) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const _PrivacyInfoSheet(),
     );
   }
 
@@ -692,25 +709,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
           selectedIds: _selectedAlertStyleIds,
           onTap: _toggleAlertStyle,
         ),
-        const SizedBox(height: 14),
-        Text(
-          'Frecuencia de alertas',
-          style: Theme.of(context).textTheme.titleLarge,
+        const SizedBox(height: 10),
+        _PrivacyConsentCard(
+          accepted: _privacyAccepted,
+          onChanged: (value) {
+            setState(() {
+              _privacyAccepted = value;
+              if (value) {
+                _errorMessage = null;
+              }
+            });
+          },
+          onOpenPrivacy: _showPrivacyInfo,
         ),
-        const SizedBox(height: 12),
-        for (final frequency in _frequencies) ...[
-          _FrequencyOption(
-            title: _frequencyLabel(frequency),
-            subtitle: _frequencySubtitle(frequency),
-            selected: _selectedFrequency == frequency,
-            onTap: () {
-              setState(() {
-                _selectedFrequency = frequency;
-              });
-            },
-          ),
-          const SizedBox(height: 8),
-        ],
         _StepError(message: _errorMessage),
         const SizedBox(height: 18),
         FilledButton(
@@ -751,24 +762,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ],
       ),
     );
-  }
-
-  String _frequencyLabel(String frequency) {
-    return switch (frequency) {
-      'immediate' => 'Inmediata',
-      'daily' => 'Diaria',
-      'weekly' => 'Semanalmente',
-      _ => frequency,
-    };
-  }
-
-  String _frequencySubtitle(String frequency) {
-    return switch (frequency) {
-      'immediate' => 'Justo en el momento',
-      'daily' => 'Recibe un resumen cada dia',
-      'weekly' => 'Recibe un resumen semanal',
-      _ => '',
-    };
   }
 }
 

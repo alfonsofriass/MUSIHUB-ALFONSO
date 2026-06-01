@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
 import 'package:musihub_front/core/catalog/locations_api.dart';
+import 'package:musihub_front/core/config/api_config.dart';
 import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/widgets/location_selector.dart';
@@ -377,13 +378,17 @@ class _BandManageAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resolvedPhotoUrl = ApiConfig.publicFileUrl(photoUrl);
+
     return Column(
       children: [
         CircleAvatar(
           radius: 40,
           backgroundColor: const Color(0xFFD9D9D9),
-          backgroundImage: photoUrl == null ? null : NetworkImage(photoUrl!),
-          child: photoUrl == null
+          backgroundImage: resolvedPhotoUrl.isEmpty
+              ? null
+              : NetworkImage(resolvedPhotoUrl),
+          child: resolvedPhotoUrl.isEmpty
               ? const Icon(Icons.camera_alt_outlined, size: 30)
               : null,
         ),

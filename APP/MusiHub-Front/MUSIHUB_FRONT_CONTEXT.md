@@ -220,7 +220,7 @@ Ya esta implementado de forma minima:
 - alertas V1 sin FCM:
   - lectura y guardado de preferencias con `/alerts/preferences`,
   - activacion/desactivacion,
-  - frecuencia `immediate`, `daily`, `weekly`,
+  - frecuencia fija `immediate` en el MVP; `daily` y `weekly` quedan como mejora futura,
   - ciudad/provincia opcional,
   - tipos de anuncio de interes,
   - listado de alertas generadas con `/alerts/me`,

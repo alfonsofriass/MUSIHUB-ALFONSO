@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/locations_api.dart';
 import 'package:musihub_front/core/session/token_store.dart';
+import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/features/auth/auth_api.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
 import 'package:musihub_front/features/opportunities/favorite_opportunities_screen.dart';
@@ -484,7 +485,24 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
             onClear: _clearFilters,
           ),
         ],
+        const SizedBox(height: 14),
+        const _FeedSectionDivider(),
       ],
+    );
+  }
+}
+
+class _FeedSectionDivider extends StatelessWidget {
+  const _FeedSectionDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 1,
+      decoration: BoxDecoration(
+        color: MusiHubColors.primary.withValues(alpha: 0.38),
+        borderRadius: BorderRadius.circular(999),
+      ),
     );
   }
 }

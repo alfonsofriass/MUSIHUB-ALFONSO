@@ -8,6 +8,7 @@ import 'package:musihub_front/features/contact_requests/contact_requests_api.dar
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
 import 'package:musihub_front/features/opportunities/opportunity_display.dart';
 import 'package:musihub_front/features/profile/public_profile_screen.dart';
+import 'package:share_plus/share_plus.dart';
 
 class OpportunityDetailScreen extends StatefulWidget {
   const OpportunityDetailScreen({
@@ -192,10 +193,72 @@ class _OpportunityDetailScreenState extends State<OpportunityDetailScreen> {
     );
   }
 
-  void _showFutureFeature(String label) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$label estara disponible mas adelante.')),
+  Future<void> _shareOpportunity(
+    BuildContext shareContext,
+    Opportunity opportunity,
+  ) async {
+    final box = shareContext.findRenderObject() as RenderBox?;
+
+    await SharePlus.instance.share(
+      ShareParams(
+        title: opportunity.title,
+        subject: opportunity.title,
+        text: _shareTextForOpportunity(opportunity),
+        sharePositionOrigin: box == null
+            ? null
+            : box.localToGlobal(Offset.zero) & box.size,
+      ),
     );
+  }
+
+  String _shareTextForOpportunity(Opportunity opportunity) {
+    final lines = <String>[
+      'Mira esta oportunidad en MusiHub:',
+      '',
+      opportunity.title,
+      opportunity.type.name,
+      _locationLabel(opportunity),
+    ];
+
+    if (opportunity.eventDate != null) {
+      lines.add('Fecha: ${opportunityLongDateLabel(opportunity.eventDate!)}');
+    }
+
+    if (opportunity.priceAmount != null) {
+      lines.add('Precio: ${opportunityPriceLabel(opportunity.priceAmount!)}');
+    }
+
+    lines
+      ..add('')
+      ..add(_shortShareDescription(opportunity.description))
+      ..add('')
+      ..add('Abre MusiHub para ver el anuncio completo.');
+
+    return lines.join('\n');
+  }
+
+  String _locationLabel(Opportunity opportunity) {
+    final province = opportunity.province;
+
+    if (province == null || province.trim().isEmpty) {
+      return opportunity.city;
+    }
+
+    if (province == opportunity.city) {
+      return opportunity.city;
+    }
+
+    return '${opportunity.city}, $province';
+  }
+
+  String _shortShareDescription(String description) {
+    final normalized = description.trim().replaceAll(RegExp(r'\s+'), ' ');
+
+    if (normalized.length <= 180) {
+      return normalized;
+    }
+
+    return '${normalized.substring(0, 177)}...';
   }
 
   @override
@@ -204,11 +267,29 @@ class _OpportunityDetailScreenState extends State<OpportunityDetailScreen> {
       appBar: AppBar(
         title: const Text('Detalles Anuncio'),
         centerTitle: true,
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, color: MusiHubColors.borderGrey),
+        ),
         actions: [
-          IconButton(
-            onPressed: () => _showFutureFeature('Compartir'),
-            icon: const Icon(Icons.share_outlined),
-            tooltip: 'Compartir',
+          FutureBuilder<_OpportunityDetailData>(
+            future: _detailFuture,
+            builder: (context, snapshot) {
+              final data = snapshot.data;
+
+              return Builder(
+                builder: (shareContext) {
+                  return IconButton(
+                    onPressed: data == null
+                        ? null
+                        : () =>
+                              _shareOpportunity(shareContext, data.opportunity),
+                    icon: const Icon(Icons.share_outlined),
+                    tooltip: 'Compartir',
+                  );
+                },
+              );
+            },
           ),
           FutureBuilder<_OpportunityDetailData>(
             future: _detailFuture,

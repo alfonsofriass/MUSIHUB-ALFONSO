@@ -348,49 +348,168 @@ class _OpportunityTypeTile extends StatelessWidget {
   }
 }
 
-class _FrequencyOption extends StatelessWidget {
-  const _FrequencyOption({
-    required this.title,
-    required this.subtitle,
-    required this.selected,
-    required this.onTap,
+class _PrivacyConsentCard extends StatelessWidget {
+  const _PrivacyConsentCard({
+    required this.accepted,
+    required this.onChanged,
+    required this.onOpenPrivacy,
   });
 
-  final String title;
-  final String subtitle;
-  final bool selected;
-  final VoidCallback onTap;
+  final bool accepted;
+  final ValueChanged<bool> onChanged;
+  final VoidCallback onOpenPrivacy;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: selected ? MusiHubColors.primary : MusiHubColors.borderGrey,
+    return Container(
+      padding: const EdgeInsets.fromLTRB(8, 12, 14, 12),
+      decoration: _cardDecoration(
+        borderColor: accepted
+            ? MusiHubColors.primary
+            : MusiHubColors.borderGrey,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Checkbox(
+            value: accepted,
+            onChanged: (value) => onChanged(value ?? false),
           ),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: Theme.of(context).textTheme.titleSmall),
-                  const SizedBox(height: 3),
-                  Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
-                ],
-              ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Acepto los terminos y la politica de privacidad',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'MusiHub usara tus datos para crear tu cuenta, perfil, anuncios, bandas, favoritos, alertas y solicitudes de contacto.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: onOpenPrivacy,
+                    child: const Text('Ver informacion sobre privacidad'),
+                  ),
+                ),
+              ],
             ),
-            if (selected)
-              const Icon(Icons.check_rounded, color: MusiHubColors.primary),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PrivacyInfoSheet extends StatelessWidget {
+  const _PrivacyInfoSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.86;
+
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.privacy_tip_outlined,
+                  color: MusiHubColors.primary,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Privacidad y datos',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'MusiHub utiliza tus datos para ofrecer las funciones principales de la app y mostrar informacion musical relevante a otros usuarios.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 20),
+            const _PrivacyInfoSection(
+              title: 'Datos que usamos',
+              items: [
+                'Nombre, email y rol de usuario.',
+                'Ciudad, provincia, instrumentos, estilos y biografia.',
+                'Bandas, anuncios, favoritos, alertas y solicitudes de contacto.',
+                'Token del dispositivo para notificaciones push si activas alertas.',
+              ],
+            ),
+            const _PrivacyInfoSection(
+              title: 'Visibilidad',
+              items: [
+                'Tu perfil publico puede mostrar nombre, ubicacion, instrumentos, estilos y bandas visibles.',
+                'Tus datos de contacto no se muestran publicamente.',
+                'El contacto de anuncios se comparte solo si aceptas una solicitud.',
+              ],
+            ),
+            const _PrivacyInfoSection(
+              title: 'Uso de los datos',
+              items: [
+                'No usamos tus datos para publicidad.',
+                'No vendemos tus datos a terceros.',
+                'Puedes cerrar sesion y solicitar la modificacion o eliminacion de tus datos.',
+              ],
+            ),
+            const SizedBox(height: 8),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Entendido'),
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PrivacyInfoSection extends StatelessWidget {
+  const _PrivacyInfoSection({required this.title, required this.items});
+
+  final String title;
+  final List<String> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          for (final item in items) ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('- '),
+                Expanded(
+                  child: Text(
+                    item,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 5),
+          ],
+        ],
       ),
     );
   }

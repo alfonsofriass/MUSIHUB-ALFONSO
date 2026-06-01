@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
+import 'package:musihub_front/core/config/api_config.dart';
 import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
@@ -409,6 +410,8 @@ class _SearchCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resolvedPhotoUrl = ApiConfig.publicFileUrl(photoUrl);
+
     return Material(
       color: Colors.white,
       elevation: 3,
@@ -425,10 +428,10 @@ class _SearchCard extends StatelessWidget {
               CircleAvatar(
                 radius: 23,
                 backgroundColor: MusiHubColors.fieldGrey,
-                backgroundImage: photoUrl == null
+                backgroundImage: resolvedPhotoUrl.isEmpty
                     ? null
-                    : NetworkImage(photoUrl!),
-                child: photoUrl == null
+                    : NetworkImage(resolvedPhotoUrl),
+                child: resolvedPhotoUrl.isEmpty
                     ? Icon(icon, color: MusiHubColors.primary)
                     : null,
               ),

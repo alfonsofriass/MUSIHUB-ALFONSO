@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
+import 'package:musihub_front/core/config/api_config.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/features/auth/auth_api.dart';
@@ -376,11 +377,15 @@ class _BandAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resolvedPhotoUrl = ApiConfig.publicFileUrl(photoUrl);
+
     return CircleAvatar(
       radius: 38,
       backgroundColor: const Color(0xFFD9D9D9),
-      backgroundImage: photoUrl == null ? null : NetworkImage(photoUrl!),
-      child: photoUrl == null
+      backgroundImage: resolvedPhotoUrl.isEmpty
+          ? null
+          : NetworkImage(resolvedPhotoUrl),
+      child: resolvedPhotoUrl.isEmpty
           ? const Icon(
               Icons.camera_alt_outlined,
               size: 28,
