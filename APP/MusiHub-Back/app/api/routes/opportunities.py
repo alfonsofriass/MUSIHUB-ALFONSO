@@ -7,6 +7,11 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.api.routes.auth import get_current_user
+from app.catalog_utils import (
+    load_instruments,
+    load_music_styles,
+    validate_unique_positive_ids,
+)
 from app.db import get_db
 from app.locations import normalize_location
 from app.models import (
@@ -144,62 +149,56 @@ class ContactRequestResponse(BaseModel):
     responded_at: datetime | None
 
 
-def _validate_unique_positive_ids(field_name: str, ids: list[int]) -> None:
-    if any(item_id <= 0 for item_id in ids):
+def _get_opportunity_or_404(db: Session, opportunity_id: int) -> Opportunity:
+    opportunity = db.scalar(
+        select(Opportunity).where(Opportunity.id == opportunity_id)
+    )
+
+    if opportunity is None:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"{field_name} must contain positive ids",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Opportunity not found",
         )
 
-    if len(ids) != len(set(ids)):
+    return opportunity
+
+
+def _require_opportunity_author(
+    opportunity: Opportunity,
+    current_user: User,
+    action: str,
+) -> None:
+    if opportunity.author_user_id != current_user.id:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"{field_name} must not contain duplicate ids",
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Only the author can {action} this opportunity",
         )
 
 
-def _load_instruments(db: Session, instrument_ids: list[int]) -> list[Instrument]:
-    if not instrument_ids:
-        return []
-
-    instruments = db.scalars(
-        select(Instrument).where(Instrument.id.in_(instrument_ids))
-    ).all()
-    found_ids = {instrument.id for instrument in instruments}
-    missing_ids = sorted(set(instrument_ids) - found_ids)
-
-    if missing_ids:
+def _validate_opportunity_required_fields(
+    *,
+    opportunity_type_code: str,
+    event_date: datetime | None,
+    has_instruments: bool,
+    price_amount: Decimal | None,
+) -> None:
+    if opportunity_type_code in EVENT_DATE_REQUIRED_TYPES and event_date is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "message": "Invalid instrument_ids",
-                "ids": missing_ids,
-            },
+            detail="event_date is required for this opportunity type",
         )
 
-    return instruments
-
-
-def _load_styles(db: Session, style_ids: list[int]) -> list[MusicStyle]:
-    if not style_ids:
-        return []
-
-    styles = db.scalars(
-        select(MusicStyle).where(MusicStyle.id.in_(style_ids))
-    ).all()
-    found_ids = {style.id for style in styles}
-    missing_ids = sorted(set(style_ids) - found_ids)
-
-    if missing_ids:
+    if opportunity_type_code in INSTRUMENT_REQUIRED_TYPES and not has_instruments:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "message": "Invalid style_ids",
-                "ids": missing_ids,
-            },
+            detail="At least one instrument is required for this opportunity type",
         )
 
-    return styles
+    if opportunity_type_code in PRICE_REQUIRED_TYPES and price_amount is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="price_amount is required for this opportunity type",
+        )
 
 
 def _load_author_band_for_user(
@@ -445,8 +444,8 @@ def create_opportunity(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> OpportunityResponse:
-    _validate_unique_positive_ids("instrument_ids", payload.instrument_ids)
-    _validate_unique_positive_ids("style_ids", payload.style_ids)
+    validate_unique_positive_ids("instrument_ids", payload.instrument_ids)
+    validate_unique_positive_ids("style_ids", payload.style_ids)
 
     opportunity_type = db.scalar(
         select(OpportunityType).where(OpportunityType.id == payload.type_id)
@@ -464,26 +463,15 @@ def create_opportunity(
             detail="Invalid contact_method",
         )
 
-    if opportunity_type.code in EVENT_DATE_REQUIRED_TYPES and payload.event_date is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="event_date is required for this opportunity type",
-        )
+    _validate_opportunity_required_fields(
+        opportunity_type_code=opportunity_type.code,
+        event_date=payload.event_date,
+        has_instruments=bool(payload.instrument_ids),
+        price_amount=payload.price_amount,
+    )
 
-    if opportunity_type.code in INSTRUMENT_REQUIRED_TYPES and not payload.instrument_ids:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="At least one instrument is required for this opportunity type",
-        )
-
-    if opportunity_type.code in PRICE_REQUIRED_TYPES and payload.price_amount is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="price_amount is required for this opportunity type",
-        )
-
-    instruments = _load_instruments(db=db, instrument_ids=payload.instrument_ids)
-    styles = _load_styles(db=db, style_ids=payload.style_ids)
+    load_instruments(db=db, instrument_ids=payload.instrument_ids)
+    load_music_styles(db=db, style_ids=payload.style_ids)
     city, province = normalize_location(
         db=db,
         city=payload.city,
@@ -512,10 +500,7 @@ def create_opportunity(
     db.add(opportunity)
     db.flush()
 
-    valid_instrument_ids = {instrument.id for instrument in instruments}
     for instrument_id in payload.instrument_ids:
-        if instrument_id not in valid_instrument_ids:
-            continue
         db.add(
             OpportunityInstrument(
                 opportunity_id=opportunity.id,
@@ -523,10 +508,7 @@ def create_opportunity(
             )
         )
 
-    valid_style_ids = {style.id for style in styles}
     for style_id in payload.style_ids:
-        if style_id not in valid_style_ids:
-            continue
         db.add(
             OpportunityStyle(
                 opportunity_id=opportunity.id,
@@ -568,14 +550,7 @@ def create_contact_request(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ContactRequestResponse:
-    opportunity = db.scalar(
-        select(Opportunity).where(Opportunity.id == opportunity_id)
-    )
-    if opportunity is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Opportunity not found",
-        )
+    opportunity = _get_opportunity_or_404(db=db, opportunity_id=opportunity_id)
 
     if opportunity.status != "active":
         raise HTTPException(
@@ -798,21 +773,12 @@ def update_opportunity(
             },
         )
 
-    opportunity = db.scalar(
-        select(Opportunity).where(Opportunity.id == opportunity_id)
+    opportunity = _get_opportunity_or_404(db=db, opportunity_id=opportunity_id)
+    _require_opportunity_author(
+        opportunity=opportunity,
+        current_user=current_user,
+        action="update",
     )
-
-    if opportunity is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Opportunity not found",
-        )
-
-    if opportunity.author_user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the author can update this opportunity",
-        )
 
     if opportunity.status != "active":
         raise HTTPException(
@@ -852,12 +818,12 @@ def update_opportunity(
         updates["province"] = normalized_province
 
     if payload.instrument_ids is not None:
-        _validate_unique_positive_ids("instrument_ids", payload.instrument_ids)
-        _load_instruments(db=db, instrument_ids=payload.instrument_ids)
+        validate_unique_positive_ids("instrument_ids", payload.instrument_ids)
+        load_instruments(db=db, instrument_ids=payload.instrument_ids)
 
     if payload.style_ids is not None:
-        _validate_unique_positive_ids("style_ids", payload.style_ids)
-        _load_styles(db=db, style_ids=payload.style_ids)
+        validate_unique_positive_ids("style_ids", payload.style_ids)
+        load_music_styles(db=db, style_ids=payload.style_ids)
 
     final_event_date = updates.get("event_date", opportunity.event_date)
     final_price_amount = updates.get("price_amount", opportunity.price_amount)
@@ -870,23 +836,12 @@ def update_opportunity(
     else:
         has_instruments = bool(payload.instrument_ids)
 
-    if opportunity.type.code in EVENT_DATE_REQUIRED_TYPES and final_event_date is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="event_date is required for this opportunity type",
-        )
-
-    if opportunity.type.code in INSTRUMENT_REQUIRED_TYPES and not has_instruments:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="At least one instrument is required for this opportunity type",
-        )
-
-    if opportunity.type.code in PRICE_REQUIRED_TYPES and final_price_amount is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="price_amount is required for this opportunity type",
-        )
+    _validate_opportunity_required_fields(
+        opportunity_type_code=opportunity.type.code,
+        event_date=final_event_date,
+        has_instruments=has_instruments,
+        price_amount=final_price_amount,
+    )
 
     for field_name in (
         "title",
@@ -946,21 +901,12 @@ def close_opportunity(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> OpportunityResponse:
-    opportunity = db.scalar(
-        select(Opportunity).where(Opportunity.id == opportunity_id)
+    opportunity = _get_opportunity_or_404(db=db, opportunity_id=opportunity_id)
+    _require_opportunity_author(
+        opportunity=opportunity,
+        current_user=current_user,
+        action="close",
     )
-
-    if opportunity is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Opportunity not found",
-        )
-
-    if opportunity.author_user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the author can close this opportunity",
-        )
 
     if opportunity.status != "active":
         raise HTTPException(
@@ -985,21 +931,12 @@ def reopen_opportunity(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> OpportunityResponse:
-    opportunity = db.scalar(
-        select(Opportunity).where(Opportunity.id == opportunity_id)
+    opportunity = _get_opportunity_or_404(db=db, opportunity_id=opportunity_id)
+    _require_opportunity_author(
+        opportunity=opportunity,
+        current_user=current_user,
+        action="reopen",
     )
-
-    if opportunity is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Opportunity not found",
-        )
-
-    if opportunity.author_user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the author can reopen this opportunity",
-        )
 
     if opportunity.status != "closed":
         raise HTTPException(
@@ -1021,16 +958,13 @@ def reopen_opportunity(
 @router.get("/{opportunity_id}", response_model=OpportunityResponse)
 def read_opportunity(
     opportunity_id: int,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> OpportunityResponse:
-    opportunity = db.scalar(
-        select(Opportunity).where(Opportunity.id == opportunity_id)
+    opportunity = _get_opportunity_or_404(db=db, opportunity_id=opportunity_id)
+
+    return _build_opportunity_response(
+        opportunity=opportunity,
+        db=db,
+        current_user=current_user,
     )
-
-    if opportunity is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Opportunity not found",
-        )
-
-    return _build_opportunity_response(opportunity=opportunity, db=db)

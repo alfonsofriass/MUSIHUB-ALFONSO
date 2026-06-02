@@ -7,6 +7,11 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.api.routes.auth import get_current_user
+from app.catalog_utils import (
+    load_instruments,
+    load_music_styles,
+    validate_unique_positive_ids,
+)
 from app.db import get_db
 from app.locations import normalize_location
 from app.models import (
@@ -141,20 +146,6 @@ def _normalize_website_url(value: str | None) -> str | None:
         )
 
     return value
-
-
-def _validate_unique_positive_ids(field_name: str, ids: list[int]) -> None:
-    if any(item_id <= 0 for item_id in ids):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"{field_name} must contain positive ids",
-        )
-
-    if len(ids) != len(set(ids)):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"{field_name} must not contain duplicate ids",
-        )
 
 
 def load_profile_instrument_responses(
@@ -371,8 +362,8 @@ def update_my_profile(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ProfileMeResponse:
-    _validate_unique_positive_ids("instrument_ids", payload.instrument_ids)
-    _validate_unique_positive_ids("style_ids", payload.style_ids)
+    validate_unique_positive_ids("instrument_ids", payload.instrument_ids)
+    validate_unique_positive_ids("style_ids", payload.style_ids)
 
     if (
         payload.primary_instrument_id is not None
@@ -383,39 +374,8 @@ def update_my_profile(
             detail="primary_instrument_id must be included in instrument_ids",
         )
 
-    instruments = []
-    if payload.instrument_ids:
-        instruments = db.scalars(
-            select(Instrument).where(Instrument.id.in_(payload.instrument_ids))
-        ).all()
-        found_instrument_ids = {instrument.id for instrument in instruments}
-        missing_instrument_ids = sorted(
-            set(payload.instrument_ids) - found_instrument_ids
-        )
-        if missing_instrument_ids:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail={
-                    "message": "Invalid instrument_ids",
-                    "ids": missing_instrument_ids,
-                },
-            )
-
-    styles = []
-    if payload.style_ids:
-        styles = db.scalars(
-            select(MusicStyle).where(MusicStyle.id.in_(payload.style_ids))
-        ).all()
-        found_style_ids = {style.id for style in styles}
-        missing_style_ids = sorted(set(payload.style_ids) - found_style_ids)
-        if missing_style_ids:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail={
-                    "message": "Invalid style_ids",
-                    "ids": missing_style_ids,
-                },
-            )
+    load_instruments(db=db, instrument_ids=payload.instrument_ids)
+    load_music_styles(db=db, style_ids=payload.style_ids)
 
     profile = db.scalar(
         select(Profile).where(Profile.user_id == current_user.id)
@@ -434,7 +394,8 @@ def update_my_profile(
     profile.city = city
     profile.province = province
     profile.bio = _empty_to_none(payload.bio)
-    profile.photo_url = _empty_to_none(payload.photo_url)
+    if "photo_url" in payload.model_fields_set:
+        profile.photo_url = _empty_to_none(payload.photo_url)
     profile.website_url = _normalize_website_url(payload.website_url)
     profile.contact_email = (
         str(payload.contact_email) if payload.contact_email is not None else None
@@ -448,10 +409,7 @@ def update_my_profile(
         delete(ProfileStyle).where(ProfileStyle.profile_id == profile.id)
     )
 
-    instrument_ids = {instrument.id for instrument in instruments}
     for instrument_id in payload.instrument_ids:
-        if instrument_id not in instrument_ids:
-            continue
         db.add(
             ProfileInstrument(
                 profile_id=profile.id,
@@ -460,10 +418,7 @@ def update_my_profile(
             )
         )
 
-    style_ids = {style.id for style in styles}
     for style_id in payload.style_ids:
-        if style_id not in style_ids:
-            continue
         db.add(
             ProfileStyle(
                 profile_id=profile.id,

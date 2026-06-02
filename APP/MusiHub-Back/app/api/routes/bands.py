@@ -7,6 +7,7 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
 from app.api.routes.auth import get_current_user
+from app.catalog_utils import load_music_styles, validate_unique_positive_ids
 from app.db import get_db
 from app.locations import normalize_location
 from app.models import Band, BandMember, BandStyle, MusicStyle, Opportunity, User
@@ -109,42 +110,6 @@ class BandDeleteResponse(BaseModel):
     message: str
 
 
-def _validate_unique_positive_ids(field_name: str, ids: list[int]) -> None:
-    if any(item_id <= 0 for item_id in ids):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"{field_name} must contain positive ids",
-        )
-
-    if len(ids) != len(set(ids)):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"{field_name} must not contain duplicate ids",
-        )
-
-
-def _load_styles(db: Session, style_ids: list[int]) -> list[MusicStyle]:
-    if not style_ids:
-        return []
-
-    styles = db.scalars(
-        select(MusicStyle).where(MusicStyle.id.in_(style_ids))
-    ).all()
-    found_ids = {style.id for style in styles}
-    missing_ids = sorted(set(style_ids) - found_ids)
-
-    if missing_ids:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "message": "Invalid style_ids",
-                "ids": missing_ids,
-            },
-        )
-
-    return styles
-
-
 def _get_band_or_404(db: Session, band_id: int) -> Band:
     band = db.scalar(
         select(Band).where(Band.id == band_id)
@@ -215,8 +180,8 @@ def create_band(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> BandResponse:
-    _validate_unique_positive_ids("style_ids", payload.style_ids)
-    _load_styles(db=db, style_ids=payload.style_ids)
+    validate_unique_positive_ids("style_ids", payload.style_ids)
+    load_music_styles(db=db, style_ids=payload.style_ids)
     city, province = normalize_location(
         db=db,
         city=payload.city,
@@ -355,8 +320,8 @@ def update_band(
     band = _get_band_or_404(db=db, band_id=band_id)
     _require_band_creator(band=band, current_user=current_user)
 
-    _validate_unique_positive_ids("style_ids", payload.style_ids)
-    _load_styles(db=db, style_ids=payload.style_ids)
+    validate_unique_positive_ids("style_ids", payload.style_ids)
+    load_music_styles(db=db, style_ids=payload.style_ids)
     city, province = normalize_location(
         db=db,
         city=payload.city,
@@ -367,7 +332,8 @@ def update_band(
     band.bio = payload.bio
     band.city = city
     band.province = province
-    band.photo_url = payload.photo_url
+    if "photo_url" in payload.model_fields_set:
+        band.photo_url = payload.photo_url
 
     db.execute(
         delete(BandStyle).where(BandStyle.band_id == band.id)
@@ -475,7 +441,14 @@ def remove_band_member(
     db: Session = Depends(get_db),
 ) -> BandResponse:
     band = _get_band_or_404(db=db, band_id=band_id)
-    _require_band_creator(band=band, current_user=current_user)
+    is_creator = band.created_by_user_id == current_user.id
+    is_self_removal = user_id == current_user.id
+
+    if not is_creator and not is_self_removal:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the band creator can remove other members",
+        )
 
     if user_id == band.created_by_user_id:
         raise HTTPException(

@@ -10,6 +10,12 @@ from app.api.routes.opportunities import (
     OpportunityResponse,
     _build_opportunity_response,
 )
+from app.catalog_utils import (
+    load_instruments,
+    load_music_styles,
+    load_opportunity_types,
+    validate_unique_positive_ids,
+)
 from app.db import get_db
 from app.locations import normalize_location
 from app.models import (
@@ -82,95 +88,6 @@ class AlertResponse(BaseModel):
 
 class AlertListResponse(BaseModel):
     items: list[AlertResponse]
-
-
-def _validate_unique_positive_ids(field_name: str, ids: list[int]) -> None:
-    if any(item_id <= 0 for item_id in ids):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"{field_name} must contain positive ids",
-        )
-
-    if len(ids) != len(set(ids)):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"{field_name} must not contain duplicate ids",
-        )
-
-
-def _load_opportunity_types(
-    db: Session,
-    opportunity_type_ids: list[int],
-) -> list[OpportunityType]:
-    if not opportunity_type_ids:
-        return []
-
-    opportunity_types = db.scalars(
-        select(OpportunityType).where(OpportunityType.id.in_(opportunity_type_ids))
-    ).all()
-    found_ids = {opportunity_type.id for opportunity_type in opportunity_types}
-    missing_ids = sorted(set(opportunity_type_ids) - found_ids)
-
-    if missing_ids:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "message": "Invalid opportunity_type_ids",
-                "ids": missing_ids,
-            },
-        )
-
-    return opportunity_types
-
-
-def _load_instruments(
-    db: Session,
-    instrument_ids: list[int],
-) -> list[Instrument]:
-    if not instrument_ids:
-        return []
-
-    instruments = db.scalars(
-        select(Instrument).where(Instrument.id.in_(instrument_ids))
-    ).all()
-    found_ids = {instrument.id for instrument in instruments}
-    missing_ids = sorted(set(instrument_ids) - found_ids)
-
-    if missing_ids:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "message": "Invalid instrument_ids",
-                "ids": missing_ids,
-            },
-        )
-
-    return instruments
-
-
-def _load_music_styles(
-    db: Session,
-    style_ids: list[int],
-) -> list[MusicStyle]:
-    if not style_ids:
-        return []
-
-    styles = db.scalars(
-        select(MusicStyle).where(MusicStyle.id.in_(style_ids))
-    ).all()
-    found_ids = {style.id for style in styles}
-    missing_ids = sorted(set(style_ids) - found_ids)
-
-    if missing_ids:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "message": "Invalid style_ids",
-                "ids": missing_ids,
-            },
-        )
-
-    return styles
 
 
 def _build_alert_preferences_response(
@@ -314,27 +231,27 @@ def update_my_alert_preferences(
             detail="Invalid frequency",
         )
 
-    _validate_unique_positive_ids(
+    validate_unique_positive_ids(
         "opportunity_type_ids",
         payload.opportunity_type_ids,
     )
-    _validate_unique_positive_ids(
+    validate_unique_positive_ids(
         "instrument_ids",
         payload.instrument_ids,
     )
-    _validate_unique_positive_ids(
+    validate_unique_positive_ids(
         "style_ids",
         payload.style_ids,
     )
-    opportunity_types = _load_opportunity_types(
+    load_opportunity_types(
         db=db,
         opportunity_type_ids=payload.opportunity_type_ids,
     )
-    instruments = _load_instruments(
+    load_instruments(
         db=db,
         instrument_ids=payload.instrument_ids,
     )
-    styles = _load_music_styles(
+    load_music_styles(
         db=db,
         style_ids=payload.style_ids,
     )
@@ -379,22 +296,15 @@ def update_my_alert_preferences(
         )
     )
 
-    valid_opportunity_type_ids = {
-        opportunity_type.id for opportunity_type in opportunity_types
-    }
     for opportunity_type_id in payload.opportunity_type_ids:
-        if opportunity_type_id not in valid_opportunity_type_ids:
-            continue
         db.add(
             AlertPreferenceType(
                 alert_preference_id=alert_preference.id,
                 opportunity_type_id=opportunity_type_id,
             )
         )
-    valid_instrument_ids = {instrument.id for instrument in instruments}
+
     for instrument_id in payload.instrument_ids:
-        if instrument_id not in valid_instrument_ids:
-            continue
         db.add(
             AlertPreferenceInstrument(
                 alert_preference_id=alert_preference.id,
@@ -402,10 +312,7 @@ def update_my_alert_preferences(
             )
         )
 
-    valid_style_ids = {style.id for style in styles}
     for style_id in payload.style_ids:
-        if style_id not in valid_style_ids:
-            continue
         db.add(
             AlertPreferenceStyle(
                 alert_preference_id=alert_preference.id,
