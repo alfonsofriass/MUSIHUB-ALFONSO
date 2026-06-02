@@ -155,19 +155,6 @@ class _RoleCard extends StatelessWidget {
   }
 }
 
-class _ProfilePhotoPlaceholder extends StatelessWidget {
-  const _ProfilePhotoPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return const CircleAvatar(
-      radius: 42,
-      backgroundColor: MusiHubColors.borderGrey,
-      child: Icon(Icons.photo_camera_outlined, color: Colors.black, size: 34),
-    );
-  }
-}
-
 class _ChipSection extends StatelessWidget {
   const _ChipSection({
     required this.title,

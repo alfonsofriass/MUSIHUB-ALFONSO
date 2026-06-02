@@ -99,6 +99,6 @@ Quedan fuera del MVP actual:
 - paginacion avanzada;
 - orden avanzado;
 - envio agrupado real para alertas `daily`/`weekly`;
-- gestion avanzada de notificaciones en foreground o deep links desde push.
+- deep links o navegacion automatica al tocar una push.
 
 Antes de refactorizar, mantener la prioridad del proyecto: app sencilla, entendible y funcional para el TFG.

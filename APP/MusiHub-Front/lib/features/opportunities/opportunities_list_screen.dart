@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/locations_api.dart';
+import 'package:musihub_front/core/push/push_notifications_service.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/features/auth/auth_api.dart';
@@ -42,6 +45,7 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
   late Future<OpportunityFilterData> _filterDataFuture;
   late Future<_OpportunityFeedData> _feedDataFuture;
   late Future<int> _unreadNotificationsFuture;
+  StreamSubscription<ForegroundPushMessage>? _foregroundPushSubscription;
 
   OpportunityFilters _filters = const OpportunityFilters();
   int? _selectedTypeId;
@@ -60,6 +64,8 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
     _filterDataFuture = _loadFilterData();
     _feedDataFuture = _loadFeedData();
     _unreadNotificationsFuture = _loadUnreadNotificationsCount();
+    _foregroundPushSubscription = PushNotificationsService.foregroundMessages
+        .listen(_handleForegroundPush);
   }
 
   @override
@@ -70,8 +76,31 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
     _dateToController.dispose();
     _minPriceController.dispose();
     _maxPriceController.dispose();
+    _foregroundPushSubscription?.cancel();
     _apiClient.close();
     super.dispose();
+  }
+
+  void _handleForegroundPush(ForegroundPushMessage message) {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _unreadNotificationsFuture = _loadUnreadNotificationsCount();
+    });
+
+    final messageText = message.displayText;
+    if (messageText == null) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(messageText),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   Future<OpportunityFilterData> _loadFilterData() async {

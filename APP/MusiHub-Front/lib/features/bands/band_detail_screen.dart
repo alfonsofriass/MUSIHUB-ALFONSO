@@ -459,44 +459,58 @@ class _BandMemberTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isCreator = member.userId == band.createdByUserId;
 
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: MusiHubColors.fieldGrey,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: MusiHubColors.borderGrey),
-        ),
-        child: const Icon(Icons.music_note_outlined),
-      ),
-      title: Row(
-        children: [
-          Expanded(
-            child: Text(
-              member.fullName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: Colors.white,
+        elevation: 2,
+        shadowColor: Colors.black.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(8),
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 4,
           ),
-          if (isCreator)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: MusiHubColors.primary,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text(
-                'Admin',
-                style: TextStyle(color: Colors.white, fontSize: 10),
-              ),
+          leading: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: MusiHubColors.fieldGrey,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: MusiHubColors.borderGrey),
             ),
-        ],
+            child: const Icon(Icons.music_note_outlined),
+          ),
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  member.fullName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              if (isCreator)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: MusiHubColors.primary,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Admin',
+                    style: TextStyle(color: Colors.white, fontSize: 10),
+                  ),
+                ),
+            ],
+          ),
+          subtitle: Text(member.roleInBand),
+        ),
       ),
-      subtitle: Text(member.roleInBand),
-      trailing: const Icon(Icons.chevron_right),
     );
   }
 }

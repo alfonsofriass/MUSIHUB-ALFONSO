@@ -9,8 +9,16 @@ import 'package:musihub_front/core/push/device_tokens_api.dart';
 class PushNotificationsService {
   const PushNotificationsService._();
 
+  static final _foregroundMessagesController =
+      StreamController<ForegroundPushMessage>.broadcast();
+
   static StreamSubscription<String>? _tokenRefreshSubscription;
+  static StreamSubscription<RemoteMessage>? _foregroundMessageSubscription;
   static bool _firebaseInitialized = false;
+
+  static Stream<ForegroundPushMessage> get foregroundMessages {
+    return _foregroundMessagesController.stream;
+  }
 
   static bool get _isSupportedPlatform {
     return !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
@@ -23,6 +31,7 @@ class PushNotificationsService {
 
     await Firebase.initializeApp();
     _firebaseInitialized = true;
+    _startListeningForForegroundMessages();
   }
 
   static Future<void> registerDevice({required String authToken}) async {
@@ -115,5 +124,55 @@ class PushNotificationsService {
   static Future<void> _stopListeningForTokenRefresh() async {
     await _tokenRefreshSubscription?.cancel();
     _tokenRefreshSubscription = null;
+  }
+
+  static void _startListeningForForegroundMessages() {
+    if (_foregroundMessageSubscription != null) {
+      return;
+    }
+
+    _foregroundMessageSubscription = FirebaseMessaging.onMessage.listen((
+      message,
+    ) {
+      _foregroundMessagesController.add(
+        ForegroundPushMessage.fromRemoteMessage(message),
+      );
+    });
+  }
+}
+
+class ForegroundPushMessage {
+  const ForegroundPushMessage({this.title, this.body});
+
+  factory ForegroundPushMessage.fromRemoteMessage(RemoteMessage message) {
+    return ForegroundPushMessage(
+      title: message.notification?.title,
+      body: message.notification?.body,
+    );
+  }
+
+  final String? title;
+  final String? body;
+
+  String? get displayText {
+    final normalizedTitle = title?.trim();
+    final normalizedBody = body?.trim();
+
+    if (normalizedTitle != null &&
+        normalizedTitle.isNotEmpty &&
+        normalizedBody != null &&
+        normalizedBody.isNotEmpty) {
+      return '$normalizedTitle: $normalizedBody';
+    }
+
+    if (normalizedTitle != null && normalizedTitle.isNotEmpty) {
+      return normalizedTitle;
+    }
+
+    if (normalizedBody != null && normalizedBody.isNotEmpty) {
+      return normalizedBody;
+    }
+
+    return null;
   }
 }

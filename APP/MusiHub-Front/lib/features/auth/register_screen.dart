@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
 import 'package:musihub_front/core/catalog/locations_api.dart';
@@ -6,7 +9,9 @@ import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/push/push_notifications_service.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
+import 'package:musihub_front/core/uploads/image_upload_rules.dart';
 import 'package:musihub_front/core/widgets/location_selector.dart';
+import 'package:musihub_front/core/widgets/photo_picker_panel.dart';
 import 'package:musihub_front/features/alerts/alerts_api.dart';
 import 'package:musihub_front/features/auth/auth_api.dart';
 import 'package:musihub_front/features/auth/widgets/auth_logo.dart';
@@ -62,8 +67,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _cityController = TextEditingController();
   final _provinceController = TextEditingController();
   final _bioController = TextEditingController();
+  final _contactPhoneController = TextEditingController();
   final _apiClient = ApiClient();
   final _tokenStore = TokenStore();
+  final _imagePicker = ImagePicker();
   final _selectedInstrumentIds = <int>{};
   final _selectedStyleIds = <int>{};
   final _selectedOpportunityTypeIds = <int>{};
@@ -83,11 +90,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isLoading = false;
   bool _catalogDefaultsApplied = false;
   bool _profileSaved = false;
+  bool _profilePhotoUploaded = false;
   bool _alertsSaved = false;
   bool _privacyAccepted = false;
   int? _primaryInstrumentId;
   String? _authToken;
   String? _errorMessage;
+  File? _selectedProfilePhotoFile;
 
   @override
   void initState() {
@@ -109,6 +118,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _cityController.dispose();
     _provinceController.dispose();
     _bioController.dispose();
+    _contactPhoneController.dispose();
     _apiClient.close();
     super.dispose();
   }
@@ -227,6 +237,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
+      await _validateSelectedProfilePhoto();
+
       final token = await _ensureRegisteredAndLoggedIn();
 
       if (!_profileSaved) {
@@ -238,14 +250,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
             bio: _textOrNull(_bioController.text),
             photoUrl: null,
             websiteUrl: null,
-            contactEmail: null,
-            contactPhone: null,
+            contactEmail: _textOrNull(_emailController.text),
+            contactPhone: _textOrNull(_contactPhoneController.text),
             instrumentIds: _selectedInstrumentIds.toList(),
             primaryInstrumentId: _resolvedPrimaryInstrumentId(),
             styleIds: _selectedStyleIds.toList(),
           ),
         );
+
+        if (_selectedProfilePhotoFile != null && !_profilePhotoUploaded) {
+          await _uploadSelectedProfilePhoto(token);
+          _profilePhotoUploaded = true;
+        }
+
         _profileSaved = true;
+      } else if (_selectedProfilePhotoFile != null && !_profilePhotoUploaded) {
+        await _uploadSelectedProfilePhoto(token);
+        _profilePhotoUploaded = true;
       }
 
       if (!_alertsSaved) {
@@ -278,6 +299,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       setState(() {
         _step = _RegisterStep.account;
         _errorMessage = 'Ya existe una cuenta con ese email.';
+      });
+    } on _OnboardingPhotoException catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = error.message;
       });
     } catch (_) {
       if (!mounted) return;
@@ -315,6 +342,68 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _authToken = token;
 
     return token;
+  }
+
+  Future<void> _pickProfilePhoto() async {
+    try {
+      final image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1200,
+        imageQuality: 82,
+      );
+
+      if (image == null) {
+        return;
+      }
+
+      setState(() {
+        _selectedProfilePhotoFile = File(image.path);
+        _profilePhotoUploaded = false;
+        _errorMessage = null;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = 'No se pudo seleccionar la foto.';
+      });
+    }
+  }
+
+  Future<void> _uploadSelectedProfilePhoto(String token) async {
+    final file = _selectedProfilePhotoFile;
+
+    if (file == null) {
+      return;
+    }
+
+    try {
+      await _profileApi.uploadMyProfilePhoto(token: token, file: file);
+    } on UnsupportedProfilePhotoTypeException {
+      throw const _OnboardingPhotoException(
+        'Formato no valido. Usa JPG, PNG o WebP.',
+      );
+    } on ProfilePhotoTooLargeException {
+      throw const _OnboardingPhotoException('La foto no puede superar 5 MB.');
+    }
+  }
+
+  Future<void> _validateSelectedProfilePhoto() async {
+    final file = _selectedProfilePhotoFile;
+
+    if (file == null) {
+      return;
+    }
+
+    if (ImageUploadRules.contentTypeForPath(file.path) == null) {
+      throw const _OnboardingPhotoException(
+        'Formato no valido. Usa JPG, PNG o WebP.',
+      );
+    }
+
+    if (await ImageUploadRules.isTooLarge(file)) {
+      throw const _OnboardingPhotoException('La foto no puede superar 5 MB.');
+    }
   }
 
   Future<void> _enterApp() async {
@@ -601,7 +690,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: 24),
-        const Center(child: _ProfilePhotoPlaceholder()),
+        PhotoPickerPanel(
+          localPhotoPath: _selectedProfilePhotoFile?.path,
+          onTap: _isLoading ? null : _pickProfilePhoto,
+          placeholderIcon: Icons.person_outline,
+        ),
         const SizedBox(height: 26),
         _LabeledField(
           label: 'Ubicacion',
@@ -626,6 +719,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
           items: catalogs.styles,
           selectedIds: _selectedStyleIds,
           onTap: _toggleStyle,
+        ),
+        const SizedBox(height: 18),
+        _LabeledField(
+          label: 'Telefono de contacto',
+          child: TextField(
+            controller: _contactPhoneController,
+            keyboardType: TextInputType.phone,
+            maxLength: InputLimits.phone,
+            inputFormatters: InputLimits.phoneFormatters,
+            decoration: const InputDecoration(
+              hintText: 'Opcional',
+              counterText: '',
+            ),
+          ),
+        ),
+        Text(
+          'Tu email de cuenta se guardara como contacto por defecto. Podras cambiarlo desde Perfil.',
+          style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: 18),
         _LabeledField(
@@ -792,4 +903,10 @@ class _RoleOption {
   final String title;
   final String subtitle;
   final IconData icon;
+}
+
+class _OnboardingPhotoException implements Exception {
+  const _OnboardingPhotoException(this.message);
+
+  final String message;
 }

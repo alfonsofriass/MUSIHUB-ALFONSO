@@ -1,10 +1,15 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
 import 'package:musihub_front/core/catalog/locations_api.dart';
 import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/session/token_store.dart';
+import 'package:musihub_front/core/uploads/image_upload_rules.dart';
 import 'package:musihub_front/core/widgets/location_selector.dart';
+import 'package:musihub_front/core/widgets/photo_picker_panel.dart';
 import 'package:musihub_front/features/bands/bands_api.dart';
 import 'package:musihub_front/features/profile/profile_api.dart';
 
@@ -25,6 +30,7 @@ class _BandFormScreenState extends State<BandFormScreen> {
   final _selectedInstrumentIds = <int>{};
   final _selectedStyleIds = <int>{};
   final _apiClient = ApiClient();
+  final _imagePicker = ImagePicker();
 
   late final BandsApi _bandsApi;
   late final ProfileApi _profileApi;
@@ -34,6 +40,7 @@ class _BandFormScreenState extends State<BandFormScreen> {
   String? _token;
   bool _isSaving = false;
   String? _errorMessage;
+  File? _selectedBandPhotoFile;
 
   @override
   void initState() {
@@ -89,9 +96,12 @@ class _BandFormScreenState extends State<BandFormScreen> {
     }
 
     final validationError = _validate();
-    if (validationError != null) {
+    final photoValidationError = await _validateSelectedPhoto();
+    final error = validationError ?? photoValidationError;
+
+    if (error != null) {
       setState(() {
-        _errorMessage = validationError;
+        _errorMessage = error;
       });
       return;
     }
@@ -102,7 +112,7 @@ class _BandFormScreenState extends State<BandFormScreen> {
     });
 
     try {
-      await _bandsApi.createBand(
+      final band = await _bandsApi.createBand(
         token: token,
         request: BandSaveRequest(
           name: _nameController.text.trim(),
@@ -115,6 +125,8 @@ class _BandFormScreenState extends State<BandFormScreen> {
           styleIds: _selectedStyleIds.toList(),
         ),
       );
+
+      await _uploadSelectedBandPhoto(token: token, bandId: band.id);
 
       if (!mounted) return;
 
@@ -134,6 +146,54 @@ class _BandFormScreenState extends State<BandFormScreen> {
     }
   }
 
+  Future<void> _pickBandPhoto() async {
+    try {
+      final image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1200,
+        imageQuality: 82,
+      );
+
+      if (image == null) {
+        return;
+      }
+
+      setState(() {
+        _selectedBandPhotoFile = File(image.path);
+        _errorMessage = null;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = 'No se pudo seleccionar la foto.';
+      });
+    }
+  }
+
+  Future<void> _uploadSelectedBandPhoto({
+    required String token,
+    required int bandId,
+  }) async {
+    final file = _selectedBandPhotoFile;
+
+    if (file == null) {
+      return;
+    }
+
+    try {
+      await _bandsApi.uploadBandPhoto(token: token, bandId: bandId, file: file);
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Banda creada, pero no se pudo subir la foto.'),
+        ),
+      );
+    }
+  }
+
   String? _validate() {
     if (_textOrNull(_nameController.text) == null ||
         _textOrNull(_cityController.text) == null ||
@@ -143,6 +203,24 @@ class _BandFormScreenState extends State<BandFormScreen> {
 
     if (_selectedInstrumentIds.isEmpty) {
       return 'Selecciona al menos un instrumento en la banda.';
+    }
+
+    return null;
+  }
+
+  Future<String?> _validateSelectedPhoto() async {
+    final file = _selectedBandPhotoFile;
+
+    if (file == null) {
+      return null;
+    }
+
+    if (ImageUploadRules.contentTypeForPath(file.path) == null) {
+      return 'Formato no valido. Usa JPG, PNG o WebP.';
+    }
+
+    if (await ImageUploadRules.isTooLarge(file)) {
+      return 'La foto no puede superar 5 MB.';
     }
 
     return null;
@@ -187,18 +265,11 @@ class _BandFormScreenState extends State<BandFormScreen> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(28, 16, 28, 24),
       children: [
-        const Center(
-          child: CircleAvatar(
-            radius: 40,
-            backgroundColor: Color(0xFFD9D9D9),
-            child: Icon(Icons.camera_alt_outlined, size: 30),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Podras anadir la foto desde Configuracion cuando crees la banda.',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodySmall,
+        PhotoPickerPanel(
+          localPhotoPath: _selectedBandPhotoFile?.path,
+          onTap: _isSaving ? null : _pickBandPhoto,
+          isUploading: _isSaving && _selectedBandPhotoFile != null,
+          placeholderIcon: Icons.camera_alt_outlined,
         ),
         const SizedBox(height: 26),
         _BandFormSection(

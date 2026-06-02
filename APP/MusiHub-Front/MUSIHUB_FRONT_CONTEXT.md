@@ -117,6 +117,7 @@ El frontend ya integra:
   - registro en backend con `POST /device-tokens`;
   - reenvio en `onTokenRefresh`;
   - desregistro en logout con `POST /device-tokens/unregister`;
+  - escucha de FCM en foreground con refresco automatico de la campana;
 - notificaciones in-app:
   - campana en feed;
   - panel inferior con notificaciones;
@@ -259,7 +260,6 @@ flutter run -d <ID_DISPOSITIVO> --dart-define=API_BASE_URL=https://musihub-back.
 - pagos;
 - envio agrupado real daily/weekly de alertas;
 - deep link completo al tocar push;
-- notificacion visual propia cuando la app esta en foreground;
 - paginacion avanzada;
 - orden avanzado;
 - multiples fotos por anuncio;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/config/api_config.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
+import 'package:musihub_front/core/widgets/photo_picker_panel.dart';
 import 'package:musihub_front/features/bands/bands_api.dart';
 
 class ProfilePhotoEditor extends StatelessWidget {
@@ -17,47 +18,12 @@ class ProfilePhotoEditor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        children: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              ProfileAvatar(photoUrl: photoUrl),
-              if (isUploading)
-                Container(
-                  width: 76,
-                  height: 76,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.28),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Center(
-                    child: SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: onTap,
-            icon: const Icon(Icons.photo_library_outlined),
-            label: Text(isUploading ? 'Subiendo...' : 'Elegir foto'),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'JPG, PNG o WebP. Maximo 5 MB.',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        ],
-      ),
+    return PhotoPickerPanel(
+      photoUrl: photoUrl,
+      isUploading: isUploading,
+      onTap: onTap,
+      radius: 38,
+      placeholderIcon: Icons.person_outline,
     );
   }
 }
