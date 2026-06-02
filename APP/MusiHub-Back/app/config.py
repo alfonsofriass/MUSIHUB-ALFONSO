@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     push_notifications_enabled: bool = False
     firebase_credentials_path: str | None = None
     firebase_project_id: str | None = None
+    supabase_url: str | None = None
+    supabase_service_role_key: str | None = None
+    supabase_storage_bucket: str | None = None
 
 
 settings = Settings()

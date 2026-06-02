@@ -201,6 +201,21 @@ FIREBASE_PROJECT_ID=musihub
 
 El `service-account.json` es secreto y no debe subirse a Git.
 
+## Subida de imágenes
+- En local, si no hay Supabase Storage configurado, las fotos se guardan en
+  `/uploads`.
+- En nube, las fotos de perfil y banda se suben a Supabase Storage y `photo_url`
+  devuelve una URL pública estable.
+- Variables de entorno para Supabase Storage:
+
+```env
+SUPABASE_URL=https://tu-proyecto.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=clave-service-role
+SUPABASE_STORAGE_BUCKET=musihub-uploads
+```
+
+`SUPABASE_SERVICE_ROLE_KEY` es secreto y solo debe configurarse en backend.
+
 ## Notificaciones In-App
 - `GET /api/v1/notifications` devuelve la bandeja del usuario autenticado,
   ordenada por `created_at desc`, junto a `unread_count`.
