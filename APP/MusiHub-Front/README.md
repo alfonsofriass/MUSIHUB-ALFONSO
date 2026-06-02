@@ -55,27 +55,31 @@ Idea general:
 
 ## Configuracion de backend
 
-La URL base se define con `API_BASE_URL`.
+La URL base por defecto apunta al backend desplegado en Render:
 
-Chrome o escritorio local:
-
-```bash
-flutter run -d chrome --dart-define=API_BASE_URL=http://127.0.0.1:8000/api/v1
+```text
+https://musihub-back.onrender.com/api/v1
 ```
 
-Emulador Android:
+Ejecucion normal contra nube:
 
 ```bash
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api/v1
+flutter run -d <ID_DISPOSITIVO>
 ```
 
-Movil Android fisico:
+APK debug contra nube:
 
 ```bash
-flutter run --dart-define=API_BASE_URL=http://IP_DEL_PC:8000/api/v1
+flutter build apk --debug
 ```
 
-En movil fisico, el backend debe escuchar en `0.0.0.0` y el movil debe estar en la misma red que el PC.
+Tambien se puede sobrescribir la URL con `API_BASE_URL` si hace falta probar otro backend:
+
+```bash
+flutter run -d <ID_DISPOSITIVO> --dart-define=API_BASE_URL=https://musihub-back.onrender.com/api/v1
+```
+
+Nota: la primera peticion puede tardar si Render free estaba dormido por inactividad.
 
 ## Comandos utiles
 

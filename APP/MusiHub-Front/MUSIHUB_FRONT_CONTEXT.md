@@ -123,21 +123,22 @@ El frontend ya integra:
   - contador de no leidas;
   - marcar una o todas como leidas.
 
-## Backend local
+## Backend cloud
 
 Base URL por defecto del front:
 
 ```text
-http://10.0.2.2:8000/api/v1
+https://musihub-back.onrender.com/api/v1
 ```
 
-Uso segun entorno:
+Estado:
 
-- Chrome/escritorio: `http://127.0.0.1:8000/api/v1`
-- Emulador Android: `http://10.0.2.2:8000/api/v1`
-- Movil Android fisico: `http://IP_DEL_PC:8000/api/v1`
+- Backend desplegado en Render.
+- PostgreSQL cloud en Supabase.
+- Front apunta a nube por defecto desde `ApiConfig.defaultBaseUrl`.
+- La primera peticion puede tardar si Render free estaba dormido.
 
-En movil fisico, backend debe escuchar en `0.0.0.0`.
+Para probar otro backend de forma puntual, usar `--dart-define=API_BASE_URL=...`.
 
 ## Estructura actual
 
@@ -234,22 +235,22 @@ flutter analyze
 flutter test
 ```
 
-Ejecucion Chrome:
+Ejecucion contra nube:
 
 ```bash
-flutter run -d chrome --dart-define=API_BASE_URL=http://127.0.0.1:8000/api/v1
+flutter run -d <ID_DISPOSITIVO>
 ```
 
-Ejecucion emulador Android:
+APK debug contra nube:
 
 ```bash
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api/v1
+flutter build apk --debug
 ```
 
-Ejecucion movil fisico:
+Override manual de URL si hace falta:
 
 ```bash
-flutter run --dart-define=API_BASE_URL=http://IP_DEL_PC:8000/api/v1
+flutter run -d <ID_DISPOSITIVO> --dart-define=API_BASE_URL=https://musihub-back.onrender.com/api/v1
 ```
 
 ## Fuera del MVP actual
