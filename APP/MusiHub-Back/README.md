@@ -217,7 +217,7 @@ El `service-account.json` es secreto y no debe subirse a Git.
 Head esperado:
 
 ```text
-f2a3b4c5d6e7
+a3b4c5d6e7f8
 ```
 
 ## Ejecución local
