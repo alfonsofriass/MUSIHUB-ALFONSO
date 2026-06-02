@@ -90,6 +90,13 @@ def send_notification_push(
         )
         return
 
+    logger.info(
+        "Notification push: notification=%s user=%s tokens=%s",
+        notification.id,
+        notification.user_id,
+        len(device_tokens),
+    )
+
     message_data = {
         "type": notification.type,
         "notification_id": str(notification.id),
@@ -108,6 +115,11 @@ def send_notification_push(
 
         try:
             messaging.send(message, app=firebase_app)
+            logger.info(
+                "Notification push sent: notification=%s device_token=%s",
+                notification.id,
+                device_token.id,
+            )
         except Exception as exc:
             logger.warning(
                 "Notification push failed for device token %s: %s",
