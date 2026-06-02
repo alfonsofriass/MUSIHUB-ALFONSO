@@ -1,4 +1,5 @@
 from pathlib import Path
+import logging
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
@@ -9,6 +10,7 @@ from fastapi import HTTPException, UploadFile, status
 from app.config import settings
 
 IMAGE_MAX_BYTES = 5 * 1024 * 1024
+logger = logging.getLogger(__name__)
 
 
 def _detect_image_metadata(content: bytes) -> tuple[str, str] | None:
@@ -24,12 +26,23 @@ def _detect_image_metadata(content: bytes) -> tuple[str, str] | None:
     return None
 
 
-def _is_supabase_storage_configured() -> bool:
-    return bool(
-        settings.supabase_url
-        and settings.supabase_service_role_key
-        and settings.supabase_storage_bucket
-    )
+def _clean_setting(value: str | None) -> str | None:
+    if value is None:
+        return None
+
+    cleaned_value = value.strip()
+    return cleaned_value or None
+
+
+def _get_supabase_storage_settings() -> tuple[str, str, str] | None:
+    supabase_url = _clean_setting(settings.supabase_url)
+    service_role_key = _clean_setting(settings.supabase_service_role_key)
+    bucket = _clean_setting(settings.supabase_storage_bucket)
+
+    if not supabase_url or not service_role_key or not bucket:
+        return None
+
+    return supabase_url.rstrip("/"), service_role_key, bucket
 
 
 def _storage_folder_for_upload_dir(upload_dir: Path) -> str:
@@ -46,9 +59,14 @@ def _upload_to_supabase_storage(
     content_type: str,
     object_path: str,
 ) -> str:
-    supabase_url = settings.supabase_url.rstrip("/")
-    bucket = settings.supabase_storage_bucket
-    service_role_key = settings.supabase_service_role_key
+    supabase_settings = _get_supabase_storage_settings()
+    if supabase_settings is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Supabase Storage is not configured",
+        )
+
+    supabase_url, service_role_key, bucket = supabase_settings
     encoded_object_path = quote(object_path, safe="/")
     encoded_bucket = quote(bucket, safe="")
 
@@ -78,7 +96,20 @@ def _upload_to_supabase_storage(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Could not upload image",
                 )
-    except (HTTPError, URLError, TimeoutError) as exc:
+    except HTTPError as exc:
+        error_body = exc.read(500).decode("utf-8", errors="replace")
+        logger.warning(
+            "Supabase Storage upload failed: status=%s reason=%s body=%s",
+            exc.code,
+            exc.reason,
+            error_body,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not upload image",
+        ) from exc
+    except (URLError, TimeoutError, ValueError) as exc:
+        logger.warning("Supabase Storage upload failed: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Could not upload image",
@@ -116,7 +147,7 @@ def save_uploaded_image(
     extension, content_type = image_metadata
     filename = f"{filename_prefix}_{uuid4().hex}{extension}"
 
-    if _is_supabase_storage_configured():
+    if _get_supabase_storage_settings() is not None:
         storage_folder = _storage_folder_for_upload_dir(upload_dir)
         object_path = f"{storage_folder}/{filename}" if storage_folder else filename
         return _upload_to_supabase_storage(
