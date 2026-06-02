@@ -495,8 +495,6 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
                 items: data.styles,
                 selectedIds: _selectedStyleIds,
               ),
-              const SizedBox(height: 6),
-              const _SelectionOrderHint(),
             ],
           ),
         if (template.showInstruments)
@@ -508,8 +506,6 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
                 items: data.instruments,
                 selectedIds: _selectedInstrumentIds,
               ),
-              const SizedBox(height: 6),
-              const _SelectionOrderHint(),
             ],
           ),
         _OpportunitySection(
@@ -961,18 +957,6 @@ class _OpportunityFormTemplate {
           showStyles: true,
         );
     }
-  }
-}
-
-class _SelectionOrderHint extends StatelessWidget {
-  const _SelectionOrderHint();
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      'La primera seleccion aparecera en la portada del anuncio.',
-      style: Theme.of(context).textTheme.bodySmall,
-    );
   }
 }
 

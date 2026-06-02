@@ -5,11 +5,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
 import 'package:musihub_front/core/catalog/locations_api.dart';
-import 'package:musihub_front/core/config/api_config.dart';
 import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/push/push_notifications_service.dart';
 import 'package:musihub_front/core/session/token_store.dart';
-import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/core/widgets/contact_action_tile.dart';
 import 'package:musihub_front/core/widgets/location_selector.dart';
 import 'package:musihub_front/features/alerts/alerts_screen.dart';
@@ -23,6 +21,7 @@ import 'package:musihub_front/features/opportunities/my_opportunities_screen.dar
 import 'package:musihub_front/features/opportunities/opportunity_form_screen.dart';
 import 'package:musihub_front/features/opportunities/widgets/opportunity_feed_widgets.dart';
 import 'package:musihub_front/features/profile/profile_api.dart';
+import 'package:musihub_front/features/profile/widgets/profile_widgets.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key, required this.tokenStore});
@@ -419,7 +418,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 Text('Ajustes', style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 12),
-                _ProfileSettingsAction(
+                ProfileSettingsAction(
                   icon: Icons.edit_outlined,
                   title: 'Editar perfil',
                   subtitle: 'Actualiza tu informacion musical',
@@ -428,7 +427,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _startEditing();
                   },
                 ),
-                _ProfileSettingsAction(
+                ProfileSettingsAction(
                   icon: Icons.notifications_outlined,
                   title: 'Configurar alertas',
                   subtitle: 'Ajusta tipos, instrumentos, estilos y ubicacion',
@@ -437,7 +436,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _openAlertSettings();
                   },
                 ),
-                _ProfileSettingsAction(
+                ProfileSettingsAction(
                   icon: Icons.logout,
                   title: 'Cerrar sesion',
                   subtitle: 'Salir de esta cuenta',
@@ -527,7 +526,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _ProfileAvatar(photoUrl: photoUrl),
+            ProfileAvatar(photoUrl: photoUrl),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -538,7 +537,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 6),
-                  _RoleBadge(role: data.user.role),
+                  RoleBadge(role: data.user.role),
                   const SizedBox(height: 6),
                   Text(headline, style: Theme.of(context).textTheme.bodyMedium),
                 ],
@@ -548,17 +547,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         const SizedBox(height: 24),
         if (!_profileExists)
-          _ProfileEmptyState(onCreate: _startEditing)
+          ProfileEmptyState(onCreate: _startEditing)
         else ...[
-          if (bio != null) _ProfileSection(title: 'Bio', children: [Text(bio)]),
-          _ProfileSection(
+          if (bio != null) ProfileSection(title: 'Bio', children: [Text(bio)]),
+          ProfileSection(
             title: 'Mis bandas',
             children: [
               if (data.bands.isEmpty)
                 const Text('Todavia no perteneces a ninguna banda.')
               else
                 for (final band in data.bands.take(3)) ...[
-                  _ProfileBandTile(band: band, onTap: _openMyBands),
+                  ProfileBandTile(band: band, onTap: _openMyBands),
                   const SizedBox(height: 8),
                 ],
               OutlinedButton(
@@ -567,31 +566,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ],
           ),
-          _ProfileSection(
+          ProfileSection(
             title: 'Musica',
             children: [
               if (selectedInstruments.isNotEmpty) ...[
-                const _MusicalInfoLabel(
+                const MusicalInfoLabel(
                   icon: Icons.music_note_outlined,
                   label: 'Instrumentos',
                 ),
                 const SizedBox(height: 8),
-                _ChipWrap(items: selectedInstruments),
+                ChipWrap(items: selectedInstruments),
               ],
               if (selectedStyles.isNotEmpty) ...[
                 if (selectedInstruments.isNotEmpty) const SizedBox(height: 16),
-                const _MusicalInfoLabel(
+                const MusicalInfoLabel(
                   icon: Icons.library_music_outlined,
                   label: 'Estilos',
                 ),
                 const SizedBox(height: 8),
-                _ChipWrap(items: selectedStyles),
+                ChipWrap(items: selectedStyles),
               ],
               if (selectedInstruments.isEmpty && selectedStyles.isEmpty)
                 const Text('Sin instrumentos ni estilos indicados.'),
             ],
           ),
-          _ProfileSection(
+          ProfileSection(
             title: 'Contacto y enlaces',
             children: [
               if (contactEmail != null)
@@ -612,31 +611,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
         ],
-        _ProfileSection(
+        ProfileSection(
           title: 'Mi actividad',
           children: [
-            _ActivityActionTile(
+            ActivityActionTile(
               icon: Icons.campaign_outlined,
               title: 'Mis anuncios',
               subtitle: 'Edita, revisa o cierra tus publicaciones',
               onTap: _openMyOpportunities,
             ),
             const SizedBox(height: 10),
-            _ActivityActionTile(
+            ActivityActionTile(
               icon: Icons.inbox_outlined,
               title: 'Solicitudes recibidas',
               subtitle: 'Acepta o rechaza solicitudes de tus anuncios',
               onTap: _openReceivedContactRequests,
             ),
             const SizedBox(height: 10),
-            _ActivityActionTile(
+            ActivityActionTile(
               icon: Icons.send_outlined,
               title: 'Solicitudes enviadas',
               subtitle: 'Consulta el estado y contactos aceptados',
               onTap: _openSentContactRequests,
             ),
             const SizedBox(height: 10),
-            _ActivityActionTile(
+            ActivityActionTile(
               icon: Icons.notifications_outlined,
               title: 'Mis alertas',
               subtitle: 'Consulta oportunidades recomendadas para ti',
@@ -645,7 +644,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
         if (!_profileExists) ...[
-          _ActivityActionTile(
+          ActivityActionTile(
             icon: Icons.groups_outlined,
             title: 'Mis bandas',
             subtitle: 'Crea o gestiona tus proyectos musicales',
@@ -698,17 +697,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         _buildCurrentSummary(context, data),
         const SizedBox(height: 16),
-        _ProfileSection(
+        ProfileSection(
           title: 'Foto de perfil',
           children: [
-            _ProfilePhotoEditor(
+            ProfilePhotoEditor(
               photoUrl: photoUrl,
               isUploading: _isUploadingPhoto,
               onTap: _isUploadingPhoto ? null : _pickAndUploadProfilePhoto,
             ),
           ],
         ),
-        _ProfileSection(
+        ProfileSection(
           title: 'Datos basicos',
           children: [
             LocationSelector(
@@ -728,7 +727,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ],
         ),
-        _ProfileSection(
+        ProfileSection(
           title: 'Contacto y enlaces',
           children: [
             TextField(
@@ -764,7 +763,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ],
         ),
-        _ProfileSection(
+        ProfileSection(
           title: 'Instrumentos',
           children: [
             _buildInstrumentChips(data.instruments),
@@ -774,7 +773,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildClearSelectionButton(),
           ],
         ),
-        _ProfileSection(
+        ProfileSection(
           title: 'Estilos',
           children: [_buildStyleChips(data.styles)],
         ),
@@ -835,11 +834,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (bio != null) ...[const SizedBox(height: 8), Text(bio)],
         if (selectedInstruments.isNotEmpty) ...[
           const SizedBox(height: 12),
-          _ChipWrap(items: selectedInstruments),
+          ChipWrap(items: selectedInstruments),
         ],
         if (selectedStyles.isNotEmpty) ...[
           const SizedBox(height: 12),
-          _ChipWrap(items: selectedStyles),
+          ChipWrap(items: selectedStyles),
         ],
       ],
     );
@@ -1001,394 +1000,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 },
         ),
       ),
-    );
-  }
-}
-
-class _ProfilePhotoEditor extends StatelessWidget {
-  const _ProfilePhotoEditor({
-    required this.photoUrl,
-    required this.isUploading,
-    required this.onTap,
-  });
-
-  final String? photoUrl;
-  final bool isUploading;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        children: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              _ProfileAvatar(photoUrl: photoUrl),
-              if (isUploading)
-                Container(
-                  width: 76,
-                  height: 76,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.28),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Center(
-                    child: SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: onTap,
-            icon: const Icon(Icons.photo_library_outlined),
-            label: Text(isUploading ? 'Subiendo...' : 'Elegir foto'),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'JPG, PNG o WebP. Maximo 5 MB.',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProfileAvatar extends StatelessWidget {
-  const _ProfileAvatar({required this.photoUrl});
-
-  final String? photoUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    final resolvedPhotoUrl = ApiConfig.publicFileUrl(photoUrl);
-
-    return CircleAvatar(
-      radius: 38,
-      backgroundColor: MusiHubColors.fieldGrey,
-      backgroundImage: resolvedPhotoUrl.isEmpty
-          ? null
-          : NetworkImage(resolvedPhotoUrl),
-      child: resolvedPhotoUrl.isEmpty
-          ? const Icon(Icons.person_outline, size: 38, color: Colors.black54)
-          : null,
-    );
-  }
-}
-
-class _ProfileEmptyState extends StatelessWidget {
-  const _ProfileEmptyState({required this.onCreate});
-
-  final VoidCallback onCreate;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 24),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: MusiHubColors.fieldGrey,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Perfil pendiente',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Completa tu perfil para mostrar instrumentos, estilos y contacto.',
-          ),
-          const SizedBox(height: 16),
-          FilledButton(onPressed: onCreate, child: const Text('Crear perfil')),
-        ],
-      ),
-    );
-  }
-}
-
-class _RoleBadge extends StatelessWidget {
-  const _RoleBadge({required this.role});
-
-  final String role;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: MusiHubColors.primary.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: MusiHubColors.primary.withValues(alpha: 0.35),
-        ),
-      ),
-      child: Text(
-        _roleLabel(role),
-        style: const TextStyle(
-          color: MusiHubColors.primary,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-
-  String _roleLabel(String role) {
-    return switch (role) {
-      'musico' => 'Musico',
-      'venta' => 'Venta',
-      'sala_bar' => 'Sala/bar',
-      'academia_profesor' => 'Academia/Profesor',
-      _ => role,
-    };
-  }
-}
-
-class _ActivityActionTile extends StatelessWidget {
-  const _ActivityActionTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      elevation: 3,
-      shadowColor: Colors.black.withValues(alpha: 0.14),
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-          child: Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: MusiHubColors.primary.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: MusiHubColors.primary),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right, color: MusiHubColors.textGrey),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ProfileSettingsAction extends StatelessWidget {
-  const _ProfileSettingsAction({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-    this.danger = false,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-  final bool danger;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = danger ? Colors.redAccent : MusiHubColors.primary;
-
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: CircleAvatar(
-        backgroundColor: color.withValues(alpha: 0.12),
-        child: Icon(icon, color: color),
-      ),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: onTap,
-    );
-  }
-}
-
-class _ProfileBandTile extends StatelessWidget {
-  const _ProfileBandTile({required this.band, required this.onTap});
-
-  final Band band;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final location = _locationLabel();
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: MusiHubColors.primary.withValues(alpha: 0.72),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Row(
-          children: [
-            const CircleAvatar(
-              radius: 13,
-              backgroundColor: Colors.white,
-              child: Icon(
-                Icons.groups_outlined,
-                size: 16,
-                color: MusiHubColors.primary,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    band.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  if (location != null)
-                    Text(
-                      location,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white, fontSize: 11),
-                    ),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right, color: Colors.white),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String? _locationLabel() {
-    final parts = [
-      band.city,
-      band.province,
-    ].where((part) => part != null && part.trim().isNotEmpty).cast<String>();
-    final label = parts.join(', ');
-
-    return label.isEmpty ? null : label;
-  }
-}
-
-class _ProfileSection extends StatelessWidget {
-  const _ProfileSection({required this.title, required this.children});
-
-  final String title;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 12),
-          ...children,
-          const SizedBox(height: 8),
-          Divider(
-            color: MusiHubColors.primary.withValues(alpha: 0.38),
-            thickness: 1,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MusicalInfoLabel extends StatelessWidget {
-  const _MusicalInfoLabel({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: MusiHubColors.primary),
-        const SizedBox(width: 6),
-        Text(label, style: Theme.of(context).textTheme.titleSmall),
-      ],
-    );
-  }
-}
-
-class _ChipWrap extends StatelessWidget {
-  const _ChipWrap({required this.items});
-
-  final List<String> items;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: items
-          .map(
-            (item) => Chip(
-              label: Text(item),
-              backgroundColor: MusiHubColors.primary.withValues(alpha: 0.75),
-              labelStyle: const TextStyle(color: Colors.white),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(5),
-              ),
-            ),
-          )
-          .toList(),
     );
   }
 }

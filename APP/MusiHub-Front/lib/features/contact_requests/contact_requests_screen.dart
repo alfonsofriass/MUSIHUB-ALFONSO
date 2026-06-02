@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
+import 'package:musihub_front/core/formatters/date_formatters.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/core/widgets/contact_action_tile.dart';
@@ -276,7 +277,7 @@ class _ContactRequestCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          _dateLabel(request.createdAt),
+                          formatLocalDateLabel(request.createdAt),
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
@@ -354,20 +355,6 @@ class _ContactRequestCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _dateLabel(String value) {
-    final date = DateTime.tryParse(value);
-    if (date == null) {
-      return value;
-    }
-
-    final localDate = date.toLocal();
-    return '${_twoDigits(localDate.day)}/${_twoDigits(localDate.month)}/${localDate.year}';
-  }
-
-  String _twoDigits(int value) {
-    return value.toString().padLeft(2, '0');
   }
 }
 

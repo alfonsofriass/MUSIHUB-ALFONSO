@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:musihub_front/core/formatters/date_formatters.dart';
 import 'package:musihub_front/features/alerts/alerts_api.dart';
 import 'package:musihub_front/features/auth/login_screen.dart';
 import 'package:musihub_front/features/bands/bands_api.dart';
@@ -43,6 +44,16 @@ void main() {
       'min_price': '10',
       'max_price': '30',
     });
+  });
+
+  test('formats local date labels', () {
+    expect(formatLocalDateLabel('2026-06-01T10:05:00'), '01/06/2026');
+    expect(formatLocalDateLabel('not-a-date'), 'not-a-date');
+  });
+
+  test('formats local date time labels', () {
+    expect(formatLocalDateTimeLabel('2026-06-01T10:05:00'), '01/06/2026 10:05');
+    expect(formatLocalDateTimeLabel('not-a-date'), 'not-a-date');
   });
 
   test('builds opportunity text search query param', () {

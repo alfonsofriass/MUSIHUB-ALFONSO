@@ -1,87 +1,83 @@
 # MusiHub Front
 
-Frontend móvil de MusiHub, app desarrollada en Flutter para el TFG.
+Frontend movil de MusiHub, app desarrollada en Flutter para el TFG.
 
 ## Estado actual
-- La app Flutter ya está generada con nombre interno `musihub_front`.
-- Auth real conectado contra FastAPI:
-  - registro,
-  - login,
-  - validación de sesión con `/auth/me`.
-- Perfil musical mínimo conectado:
-  - carga de catálogos,
-  - lectura de perfil,
-  - pantalla de perfil en modo lectura,
-  - creación/edición de perfil,
-  - cierre de sesión desde perfil.
-- Anuncios mínimos conectados:
-  - listado público,
-  - detalle visual adaptado parcialmente,
-  - mis anuncios,
-  - favoritos/guardados,
-  - creación,
-  - edición,
-  - cierre.
-- Filtros mínimos en listado público de anuncios:
-  - tipo,
-  - ciudad,
-  - provincia,
-  - instrumento,
-  - estilo,
-  - fecha,
-  - precio.
-- Primer bloque visual desde Figma iniciado:
-  - tema global de MusiHub,
-  - pantalla de publicar/editar anuncio adaptada parcialmente.
-- Color principal de marca: lila/azul suave `#737DFF`, tomado del filtro activo del feed.
-- Feed/listado de anuncios adaptado parcialmente:
-  - cards de anuncio,
-  - chips,
-  - buscador visual,
-  - bottom navigation.
-- Detalle de anuncio adaptado parcialmente:
-  - fecha sin hora,
-  - autor provisional `Usuario #id`,
-  - favorito real,
-  - contacto/compartir pintados sin funcionalidad real.
-- Guardados conectado:
-  - guardar favorito,
-  - quitar favorito,
-  - listar favoritos del usuario.
-- Bandas conectado en primer bloque:
-  - listar mis bandas,
-  - ver detalle de banda,
-  - crear banda,
-  - editar datos basicos de banda,
-  - anadir/eliminar miembros de forma provisional por `user_id`,
-  - acciones separadas desde perfil de banda: `Invitar miembros` y `Configuracion`,
-  - publicar/editar anuncios como una banda propia,
-  - mostrar autor de banda en anuncios cuando el backend lo envie.
-- Alertas V1 conectado sin push real:
-  - configurar preferencias,
-  - activar/desactivar alertas,
-  - listar alertas generadas,
-  - abrir detalle del anuncio desde una alerta.
-- El feed es la entrada principal tras login o sesion guardada.
-- Desde Perfil se puede abrir `Mis anuncios`, `Mis bandas`, `Alertas` y cerrar sesion.
-- El diseño final queda pendiente porque se replicará desde Figma más adelante.
 
-## Documentación local
-- `MUSIHUB_FRONT_CONTEXT.md`: contexto vivo específico del frontend.
-- `WINDOWS_SETUP.md`: pasos para preparar el TFG en Windows.
-- `CODEX_WINDOWS_FRONT_PROMPT.md`: prompt listo para continuar en Codex desde Windows.
-- `main.tex`: memoria del TFG.
-- `db-diagram.txt`: referencia del esquema de base de datos general del proyecto.
+La app esta conectada contra el backend FastAPI real y cubre el MVP principal:
 
-## Alcance inmediato
-- Mantener la app simple y entendible.
-- Consolidar el flujo actual antes de pasar al siguiente bloque funcional.
-- Preparar el siguiente bloque funcional cuando backend esté listo.
+- autenticacion con registro, login, sesion guardada y logout;
+- onboarding de registro;
+- perfil musical editable, perfil publico y subida de foto de perfil;
+- anuncios: feed, detalle, crear, editar, cerrar y reabrir;
+- busqueda global sencilla de anuncios, perfiles y bandas;
+- filtros de anuncios por catalogos y ubicaciones cerradas;
+- favoritos/guardados;
+- solicitudes privadas de contacto;
+- bandas: crear, ver, editar, invitar miembros, publicar como banda, visibilidad en perfil y subida de foto de banda;
+- alertas configurables por tipo, ubicacion, instrumentos y estilos;
+- notificaciones push FCM y bandeja simple de notificaciones in-app;
+- compartir anuncio y abrir contactos con acciones del sistema cuando sea posible.
 
-Quedan fuera por ahora buscador de usuarios para miembros, visibilidad publica de bandas decidida por el propio miembro, solicitudes de banda, FCM, paginación, búsqueda por texto libre, orden avanzado y diseño final.
+El diseno toma Figma como referencia visual, pero se adapta con criterio a la funcionalidad real del MVP.
 
-## Comandos útiles
-Desde `APP/MusiHub-Front`:
+## Estructura principal
+
+```text
+lib/
+  main.dart
+  core/
+    api/
+    catalog/
+    config/
+    forms/
+    push/
+    session/
+    theme/
+    uploads/
+    widgets/
+  features/
+    alerts/
+    auth/
+    bands/
+    contact_requests/
+    notifications/
+    opportunities/
+    profile/
+    search/
+```
+
+Idea general:
+
+- `core/`: piezas compartidas y pequenas, como cliente HTTP, tema, sesion, push, ubicaciones, limites de inputs y widgets comunes.
+- `features/`: cada bloque funcional de MusiHub mantiene su pantalla, API y modelos cerca.
+- `test/widget_test.dart`: tests basicos de contratos, payloads, parsing y pantalla de login.
+
+## Configuracion de backend
+
+La URL base se define con `API_BASE_URL`.
+
+Chrome o escritorio local:
+
+```bash
+flutter run -d chrome --dart-define=API_BASE_URL=http://127.0.0.1:8000/api/v1
+```
+
+Emulador Android:
+
+```bash
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api/v1
+```
+
+Movil Android fisico:
+
+```bash
+flutter run --dart-define=API_BASE_URL=http://IP_DEL_PC:8000/api/v1
+```
+
+En movil fisico, el backend debe escuchar en `0.0.0.0` y el movil debe estar en la misma red que el PC.
+
+## Comandos utiles
 
 ```bash
 flutter pub get
@@ -89,14 +85,16 @@ flutter analyze
 flutter test
 ```
 
-Para ejecutar en Chrome contra backend local:
+## Notas de alcance
 
-```bash
-flutter run -d chrome --dart-define=API_BASE_URL=http://127.0.0.1:8000/api/v1
-```
+Quedan fuera del MVP actual:
 
-Para ejecutar en emulador Android contra backend local:
+- mensajeria/chat entre usuarios;
+- pagos;
+- subida de multiples fotos por anuncio;
+- paginacion avanzada;
+- orden avanzado;
+- envio agrupado real para alertas `daily`/`weekly`;
+- gestion avanzada de notificaciones en foreground o deep links desde push.
 
-```bash
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api/v1
-```
+Antes de refactorizar, mantener la prioridad del proyecto: app sencilla, entendible y funcional para el TFG.

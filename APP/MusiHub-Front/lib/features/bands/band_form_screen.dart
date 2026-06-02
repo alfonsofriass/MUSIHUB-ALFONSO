@@ -196,7 +196,7 @@ class _BandFormScreenState extends State<BandFormScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'La foto se anadira mas adelante.',
+          'Podras anadir la foto desde Configuracion cuando crees la banda.',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodySmall,
         ),

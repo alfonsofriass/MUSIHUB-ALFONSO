@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
+import 'package:musihub_front/core/formatters/date_formatters.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/core/widgets/musihub_empty_state.dart';
@@ -320,7 +321,7 @@ class _NotificationCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      _dateLabel(notification.createdAt),
+                      formatLocalDateTimeLabel(notification.createdAt),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                     if (unread) ...[
@@ -352,20 +353,6 @@ class _NotificationCard extends StatelessWidget {
       'contact_request_rejected' => Icons.block_outlined,
       _ => Icons.notifications_none,
     };
-  }
-
-  String _dateLabel(String value) {
-    final parsed = DateTime.tryParse(value);
-    if (parsed == null) {
-      return value;
-    }
-
-    final localDate = parsed.toLocal();
-    return '${_twoDigits(localDate.day)}/${_twoDigits(localDate.month)}/${localDate.year} ${_twoDigits(localDate.hour)}:${_twoDigits(localDate.minute)}';
-  }
-
-  String _twoDigits(int value) {
-    return value.toString().padLeft(2, '0');
   }
 }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:musihub_front/core/api/api_client.dart';
 import 'package:musihub_front/core/catalog/catalog_item.dart';
 import 'package:musihub_front/core/catalog/locations_api.dart';
+import 'package:musihub_front/core/formatters/date_formatters.dart';
 import 'package:musihub_front/core/session/token_store.dart';
 import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/core/widgets/location_selector.dart';
@@ -592,7 +593,7 @@ class _GeneratedAlertCard extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                _dateLabel(alert.createdAt),
+                formatLocalDateLabel(alert.createdAt),
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: 12),
@@ -634,20 +635,6 @@ class _GeneratedAlertCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _dateLabel(String value) {
-    final date = DateTime.tryParse(value);
-    if (date == null) {
-      return value;
-    }
-
-    final localDate = date.toLocal();
-    return '${_twoDigits(localDate.day)}/${_twoDigits(localDate.month)}/${localDate.year}';
-  }
-
-  String _twoDigits(int value) {
-    return value.toString().padLeft(2, '0');
   }
 }
 
