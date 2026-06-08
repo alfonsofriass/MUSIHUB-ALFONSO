@@ -442,25 +442,42 @@ class _MyOpportunityTags extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final labels = [
-      opportunityTypeTagLabel(opportunity.type),
+    final badges = [
+      _BadgeData(
+        label: opportunityTypeTagLabel(opportunity.type),
+        color: opportunityTypeTagColor(opportunity.type),
+        borderColor: opportunityTypeTagBorderColor(opportunity.type),
+      ),
       if (opportunity.instruments.isNotEmpty)
-        opportunity.instruments.first.name,
-      if (opportunity.styles.isNotEmpty) opportunity.styles.first.name,
+        _BadgeData(label: opportunity.instruments.first.name),
+      if (opportunity.styles.isNotEmpty)
+        _BadgeData(label: opportunity.styles.first.name),
     ];
 
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: labels.map((label) => _SmallBadge(label: label)).toList(),
+      children: badges.map((badge) => _SmallBadge(badge: badge)).toList(),
     );
   }
 }
 
-class _SmallBadge extends StatelessWidget {
-  const _SmallBadge({required this.label});
+class _BadgeData {
+  const _BadgeData({
+    required this.label,
+    this.color = MusiHubColors.fieldGrey,
+    this.borderColor = MusiHubColors.borderGrey,
+  });
 
   final String label;
+  final Color color;
+  final Color borderColor;
+}
+
+class _SmallBadge extends StatelessWidget {
+  const _SmallBadge({required this.badge});
+
+  final _BadgeData badge;
 
   @override
   Widget build(BuildContext context) {
@@ -468,12 +485,12 @@ class _SmallBadge extends StatelessWidget {
       constraints: const BoxConstraints(maxWidth: 116),
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
-        color: MusiHubColors.fieldGrey,
+        color: badge.color,
         borderRadius: BorderRadius.circular(5),
-        border: Border.all(color: MusiHubColors.borderGrey),
+        border: Border.all(color: badge.borderColor),
       ),
       child: Text(
-        label,
+        badge.label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),

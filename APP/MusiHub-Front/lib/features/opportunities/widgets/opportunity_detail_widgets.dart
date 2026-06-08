@@ -75,6 +75,7 @@ class _OpportunityTags extends StatelessWidget {
       _TagData(
         label: opportunityTypeTagLabel(opportunity.type),
         color: opportunityTypeTagColor(opportunity.type),
+        borderColor: opportunityTypeTagBorderColor(opportunity.type),
       ),
       for (final instrument in opportunity.instruments)
         _TagData(label: instrument.name),
@@ -90,10 +91,15 @@ class _OpportunityTags extends StatelessWidget {
 }
 
 class _TagData {
-  const _TagData({required this.label, this.color = MusiHubColors.fieldGrey});
+  const _TagData({
+    required this.label,
+    this.color = MusiHubColors.fieldGrey,
+    this.borderColor = MusiHubColors.borderGrey,
+  });
 
   final String label;
   final Color color;
+  final Color borderColor;
 }
 
 class _SmallTag extends StatelessWidget {
@@ -109,7 +115,7 @@ class _SmallTag extends StatelessWidget {
       decoration: BoxDecoration(
         color: tag.color,
         borderRadius: BorderRadius.circular(5),
-        border: Border.all(color: MusiHubColors.borderGrey),
+        border: Border.all(color: tag.borderColor),
       ),
       child: Text(
         tag.label,
@@ -229,7 +235,7 @@ class _DescriptionBox extends StatelessWidget {
       constraints: const BoxConstraints(minHeight: 136),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: MusiHubColors.fieldGrey.withValues(alpha: 0.55),
         border: Border.all(color: MusiHubColors.borderGrey),
         borderRadius: BorderRadius.circular(6),
       ),
@@ -299,24 +305,24 @@ class _AuthorTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFFD0D0D0),
-      borderRadius: BorderRadius.circular(4),
+      color: MusiHubColors.fieldGrey,
+      borderRadius: BorderRadius.circular(6),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(6),
         child: Container(
-          height: 44,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
+          constraints: const BoxConstraints(minHeight: 48),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFF9A9A9A)),
-            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: MusiHubColors.borderGrey),
+            borderRadius: BorderRadius.circular(6),
           ),
           child: Row(
             children: [
               CircleAvatar(
                 radius: 14,
-                backgroundColor: const Color(0xFF8F8F8F),
-                child: Icon(icon, size: 18, color: Colors.white),
+                backgroundColor: MusiHubColors.primary.withValues(alpha: 0.18),
+                child: Icon(icon, size: 18, color: MusiHubColors.primary),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -328,18 +334,25 @@ class _AuthorTile extends StatelessWidget {
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white),
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     Text(
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white, fontSize: 11),
+                      style: const TextStyle(
+                        color: MusiHubColors.textGrey,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Colors.white),
+              const Icon(Icons.chevron_right, color: MusiHubColors.textGrey),
             ],
           ),
         ),

@@ -231,6 +231,9 @@ class _SmallBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: MusiHubColors.primary.withValues(alpha: 0.75),
         borderRadius: BorderRadius.circular(5),
+        border: Border.all(
+          color: MusiHubColors.primary.withValues(alpha: 0.55),
+        ),
       ),
       child: Text(
         label,

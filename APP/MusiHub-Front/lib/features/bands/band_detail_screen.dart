@@ -590,6 +590,9 @@ class _BandChipWrap extends StatelessWidget {
               label: Text(item),
               backgroundColor: MusiHubColors.primary.withValues(alpha: 0.75),
               labelStyle: const TextStyle(color: Colors.white),
+              side: BorderSide(
+                color: MusiHubColors.primary.withValues(alpha: 0.55),
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(5),
               ),

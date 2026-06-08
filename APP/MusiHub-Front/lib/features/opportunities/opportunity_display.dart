@@ -38,16 +38,35 @@ String opportunityTypeTagLabel(OpportunityType type) {
 
 Color opportunityTypeTagColor(OpportunityType type) {
   switch (type.code) {
-    case 'eventos':
-      return const Color(0xFFFFD7D7);
     case 'clases':
       return const Color(0xFFE4E5FF);
     case 'bolos_sustituciones':
       return const Color(0xFFFFFF9D);
+    case 'busqueda_miembros':
+      return const Color(0xFFDDF4E6);
+    case 'eventos':
+      return const Color(0xFFFFD7D7);
     case 'compraventa':
       return const Color(0xFFE0F0FF);
     default:
       return MusiHubColors.fieldGrey;
+  }
+}
+
+Color opportunityTypeTagBorderColor(OpportunityType type) {
+  switch (type.code) {
+    case 'clases':
+      return const Color(0xFFC7CBFF);
+    case 'bolos_sustituciones':
+      return const Color(0xFFE9DE78);
+    case 'busqueda_miembros':
+      return const Color(0xFFB9DFC8);
+    case 'eventos':
+      return const Color(0xFFF0B8B8);
+    case 'compraventa':
+      return const Color(0xFFB9D9EF);
+    default:
+      return MusiHubColors.borderGrey;
   }
 }
 
@@ -66,9 +85,9 @@ String opportunityPriceLabel(String value) {
 }
 
 String opportunityShortDateLabel(String value) {
-  final parts = value.split('-');
+  final parts = _dateParts(value);
 
-  if (parts.length != 3) {
+  if (parts == null) {
     return value;
   }
 
@@ -76,9 +95,9 @@ String opportunityShortDateLabel(String value) {
 }
 
 String opportunityLongDateLabel(String value) {
-  final parts = value.split('-');
+  final parts = _dateParts(value);
 
-  if (parts.length != 3) {
+  if (parts == null) {
     return value;
   }
 
@@ -99,4 +118,15 @@ String opportunityLongDateLabel(String value) {
   };
 
   return '${parts[2]} $month ${parts[0]}';
+}
+
+List<String>? _dateParts(String value) {
+  final cleanValue = value.trim();
+  final datePart = cleanValue.split(RegExp(r'[T\s]')).first;
+
+  if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(datePart)) {
+    return null;
+  }
+
+  return datePart.split('-');
 }

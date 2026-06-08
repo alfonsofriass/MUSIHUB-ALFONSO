@@ -108,31 +108,11 @@ class _PublicProfileView extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
       children: [
-        Row(
-          children: [
-            _PublicAvatar(photoUrl: profile?.photoUrl),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    data.user.fullName,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 6),
-                  _PublicRoleBadge(role: data.user.role),
-                  if (location != null) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      location,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
+        _PublicHeader(
+          fullName: data.user.fullName,
+          role: data.user.role,
+          location: location,
+          photoUrl: profile?.photoUrl,
         ),
         const SizedBox(height: 24),
         if (profile == null)
@@ -214,6 +194,56 @@ class _PublicProfileView extends StatelessWidget {
   }
 }
 
+class _PublicHeader extends StatelessWidget {
+  const _PublicHeader({
+    required this.fullName,
+    required this.role,
+    required this.location,
+    required this.photoUrl,
+  });
+
+  final String fullName;
+  final String role;
+  final String? location;
+  final String? photoUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: MusiHubColors.fieldGrey.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: MusiHubColors.borderGrey),
+      ),
+      child: Row(
+        children: [
+          _PublicAvatar(photoUrl: photoUrl),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(fullName, style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    _PublicRoleBadge(role: role),
+                    if (location != null) _LocationPill(location: location!),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PublicAvatar extends StatelessWidget {
   const _PublicAvatar({required this.photoUrl});
 
@@ -223,15 +253,24 @@ class _PublicAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolvedPhotoUrl = ApiConfig.publicFileUrl(photoUrl);
 
-    return CircleAvatar(
-      radius: 38,
-      backgroundColor: MusiHubColors.fieldGrey,
-      backgroundImage: resolvedPhotoUrl.isEmpty
-          ? null
-          : NetworkImage(resolvedPhotoUrl),
-      child: resolvedPhotoUrl.isEmpty
-          ? const Icon(Icons.person_outline, size: 38, color: Colors.black54)
-          : null,
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: MusiHubColors.primary.withValues(alpha: 0.45),
+        ),
+      ),
+      child: CircleAvatar(
+        radius: 38,
+        backgroundColor: MusiHubColors.fieldGrey,
+        backgroundImage: resolvedPhotoUrl.isEmpty
+            ? null
+            : NetworkImage(resolvedPhotoUrl),
+        child: resolvedPhotoUrl.isEmpty
+            ? const Icon(Icons.person_outline, size: 38, color: Colors.black54)
+            : null,
+      ),
     );
   }
 }
@@ -271,6 +310,48 @@ class _PublicRoleBadge extends StatelessWidget {
       'academia_profesor' => 'Academia/Profesor',
       _ => role,
     };
+  }
+}
+
+class _LocationPill extends StatelessWidget {
+  const _LocationPill({required this.location});
+
+  final String location;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: MusiHubColors.borderGrey),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.location_on_outlined,
+            size: 13,
+            color: MusiHubColors.textGrey,
+          ),
+          const SizedBox(width: 3),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 150),
+            child: Text(
+              location,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: MusiHubColors.textGrey,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -405,6 +486,9 @@ class _PublicChipWrap extends StatelessWidget {
                 color: Colors.white,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
+              ),
+              side: BorderSide(
+                color: MusiHubColors.primary.withValues(alpha: 0.55),
               ),
             ),
           )

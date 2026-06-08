@@ -476,6 +476,10 @@ class _OpportunityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isClosed = !opportunity.isActive;
+    final authorLabel = _authorLabel();
+    final authorIcon = opportunity.authorBand == null
+        ? Icons.person_outline
+        : Icons.groups_outlined;
 
     return Material(
       color: isClosed ? MusiHubColors.fieldGrey : Colors.white,
@@ -519,6 +523,12 @@ class _OpportunityCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: MusiHubColors.borderGrey.withValues(alpha: 0.8),
+              ),
+              const SizedBox(height: 10),
               Text(
                 opportunity.title,
                 maxLines: 2,
@@ -527,23 +537,27 @@ class _OpportunityCard extends StatelessWidget {
                   color: isClosed ? MusiHubColors.textGrey : Colors.black,
                 ),
               ),
-              if (opportunity.authorBand != null) ...[
-                const SizedBox(height: 3),
+              if (authorLabel != null) ...[
+                const SizedBox(height: 5),
                 Row(
                   children: [
-                    const Icon(
-                      Icons.groups_outlined,
+                    Icon(
+                      authorIcon,
                       size: 14,
-                      color: MusiHubColors.primary,
+                      color: isClosed
+                          ? MusiHubColors.textGrey
+                          : MusiHubColors.primary,
                     ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        opportunity.authorBand!.name,
+                        'Por $authorLabel',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: MusiHubColors.primary,
+                          color: isClosed
+                              ? MusiHubColors.textGrey
+                              : MusiHubColors.primary,
                         ),
                       ),
                     ),
@@ -585,6 +599,20 @@ class _OpportunityCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String? _authorLabel() {
+    final bandName = opportunity.authorBand?.name.trim();
+    if (bandName != null && bandName.isNotEmpty) {
+      return bandName;
+    }
+
+    final userName = opportunity.authorUser?.fullName.trim();
+    if (userName != null && userName.isNotEmpty) {
+      return userName;
+    }
+
+    return null;
   }
 }
 
@@ -652,6 +680,7 @@ class _OpportunityTags extends StatelessWidget {
       _TagData(
         label: opportunityTypeTagLabel(opportunity.type),
         color: opportunityTypeTagColor(opportunity.type),
+        borderColor: opportunityTypeTagBorderColor(opportunity.type),
       ),
       if (opportunity.instruments.isNotEmpty)
         _TagData(label: opportunity.instruments.first.name),
@@ -668,10 +697,15 @@ class _OpportunityTags extends StatelessWidget {
 }
 
 class _TagData {
-  const _TagData({required this.label, this.color = MusiHubColors.fieldGrey});
+  const _TagData({
+    required this.label,
+    this.color = MusiHubColors.fieldGrey,
+    this.borderColor = MusiHubColors.borderGrey,
+  });
 
   final String label;
   final Color color;
+  final Color borderColor;
 }
 
 class _SmallTag extends StatelessWidget {
@@ -687,7 +721,7 @@ class _SmallTag extends StatelessWidget {
       decoration: BoxDecoration(
         color: tag.color,
         borderRadius: BorderRadius.circular(5),
-        border: Border.all(color: MusiHubColors.borderGrey),
+        border: Border.all(color: tag.borderColor),
       ),
       child: Text(
         tag.label,

@@ -102,8 +102,29 @@ class MusiHubTheme {
       chipTheme: baseTheme.chipTheme.copyWith(
         backgroundColor: MusiHubColors.fieldGrey,
         selectedColor: MusiHubColors.primary,
-        labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-        side: BorderSide.none,
+        checkmarkColor: Colors.white,
+        labelStyle: TextStyle(
+          color: WidgetStateColor.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return MusiHubColors.textGrey;
+            }
+
+            if (states.contains(WidgetState.selected)) {
+              return Colors.white;
+            }
+
+            return Colors.black;
+          }),
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+        side: WidgetStateBorderSide.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const BorderSide(color: MusiHubColors.primary, width: 1.2);
+          }
+
+          return const BorderSide(color: MusiHubColors.borderGrey);
+        }),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );

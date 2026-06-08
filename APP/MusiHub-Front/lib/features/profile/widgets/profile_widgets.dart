@@ -235,6 +235,16 @@ class ProfileBandTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: MusiHubColors.primary.withValues(alpha: 0.72),
           borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: MusiHubColors.primary.withValues(alpha: 0.55),
+          ),
+          boxShadow: [
+            BoxShadow(
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+              color: Colors.black.withValues(alpha: 0.08),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -294,10 +304,12 @@ class ProfileSection extends StatelessWidget {
     super.key,
     required this.title,
     required this.children,
+    this.icon,
   });
 
   final String title;
   final List<Widget> children;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -306,7 +318,29 @@ class ProfileSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: Theme.of(context).textTheme.titleMedium),
+          Row(
+            children: [
+              Container(
+                width: 3,
+                height: 18,
+                decoration: BoxDecoration(
+                  color: MusiHubColors.primary.withValues(alpha: 0.8),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              if (icon != null) ...[
+                const SizedBox(width: 7),
+                Icon(icon, size: 17, color: MusiHubColors.primary),
+              ],
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 12),
           ...children,
           const SizedBox(height: 8),
@@ -354,6 +388,9 @@ class ChipWrap extends StatelessWidget {
               label: Text(item),
               backgroundColor: MusiHubColors.primary.withValues(alpha: 0.75),
               labelStyle: const TextStyle(color: Colors.white),
+              side: BorderSide(
+                color: MusiHubColors.primary.withValues(alpha: 0.55),
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(5),
               ),

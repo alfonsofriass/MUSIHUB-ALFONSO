@@ -8,6 +8,7 @@ import 'package:musihub_front/core/catalog/locations_api.dart';
 import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/push/push_notifications_service.dart';
 import 'package:musihub_front/core/session/token_store.dart';
+import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/core/widgets/contact_action_tile.dart';
 import 'package:musihub_front/core/widgets/location_selector.dart';
 import 'package:musihub_front/features/alerts/alerts_screen.dart';
@@ -549,9 +550,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (!_profileExists)
           ProfileEmptyState(onCreate: _startEditing)
         else ...[
-          if (bio != null) ProfileSection(title: 'Bio', children: [Text(bio)]),
+          if (bio != null)
+            ProfileSection(
+              title: 'Bio',
+              icon: Icons.notes_outlined,
+              children: [Text(bio)],
+            ),
           ProfileSection(
             title: 'Mis bandas',
+            icon: Icons.groups_outlined,
             children: [
               if (data.bands.isEmpty)
                 const Text('Todavia no perteneces a ninguna banda.')
@@ -568,6 +575,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           ProfileSection(
             title: 'Musica',
+            icon: Icons.music_note_outlined,
             children: [
               if (selectedInstruments.isNotEmpty) ...[
                 const MusicalInfoLabel(
@@ -592,6 +600,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           ProfileSection(
             title: 'Contacto y enlaces',
+            icon: Icons.link_outlined,
             children: [
               if (contactEmail != null)
                 ContactActionTile(method: 'email', value: contactEmail),
@@ -613,6 +622,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
         ProfileSection(
           title: 'Mi actividad',
+          icon: Icons.apps_outlined,
           children: [
             ActivityActionTile(
               icon: Icons.campaign_outlined,
@@ -699,6 +709,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 16),
         ProfileSection(
           title: 'Foto de perfil',
+          icon: Icons.photo_camera_outlined,
           children: [
             ProfilePhotoEditor(
               photoUrl: photoUrl,
@@ -709,6 +720,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         ProfileSection(
           title: 'Datos basicos',
+          icon: Icons.badge_outlined,
           children: [
             LocationSelector(
               locations: data.locations,
@@ -729,6 +741,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         ProfileSection(
           title: 'Contacto y enlaces',
+          icon: Icons.link_outlined,
           children: [
             TextField(
               controller: _contactEmailController,
@@ -765,6 +778,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         ProfileSection(
           title: 'Instrumentos',
+          icon: Icons.music_note_outlined,
           children: [
             _buildInstrumentChips(data.instruments),
             const SizedBox(height: 16),
@@ -775,6 +789,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         ProfileSection(
           title: 'Estilos',
+          icon: Icons.library_music_outlined,
           children: [_buildStyleChips(data.styles)],
         ),
         FilledButton(
@@ -821,26 +836,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
       data.styles,
       _selectedStyleIds,
     );
+    final photoUrl = _textOrNull(_photoUrlController.text);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          _profileExists ? 'Editar perfil' : 'Crear perfil',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: 8),
-        Text(headline),
-        if (bio != null) ...[const SizedBox(height: 8), Text(bio)],
-        if (selectedInstruments.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          ChipWrap(items: selectedInstruments),
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: MusiHubColors.fieldGrey.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: MusiHubColors.borderGrey),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              ProfileAvatar(photoUrl: photoUrl),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _profileExists ? 'Editar perfil' : 'Crear perfil',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 6),
+                    RoleBadge(role: data.user.role),
+                    const SizedBox(height: 6),
+                    Text(
+                      headline,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (bio != null) ...[const SizedBox(height: 12), Text(bio)],
+          if (selectedInstruments.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            ChipWrap(items: selectedInstruments),
+          ],
+          if (selectedStyles.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            ChipWrap(items: selectedStyles),
+          ],
         ],
-        if (selectedStyles.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          ChipWrap(items: selectedStyles),
-        ],
-      ],
+      ),
     );
   }
 

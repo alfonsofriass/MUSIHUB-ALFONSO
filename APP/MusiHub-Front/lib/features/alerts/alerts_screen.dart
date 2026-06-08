@@ -361,8 +361,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
           'Oportunidades que encajan con tu perfil y preferencias.',
           style: Theme.of(context).textTheme.bodySmall,
         ),
-        const SizedBox(height: 16),
-        const _AlertScoreInfo(),
         const SizedBox(height: 18),
         if (data.alerts.isEmpty)
           const _EmptyAlerts()
@@ -510,41 +508,6 @@ class _AlertConfigCard extends StatelessWidget {
   }
 }
 
-class _AlertScoreInfo extends StatelessWidget {
-  const _AlertScoreInfo();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: MusiHubColors.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: MusiHubColors.primary.withValues(alpha: 0.18),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(
-            Icons.auto_awesome_outlined,
-            size: 20,
-            color: MusiHubColors.primary,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'La puntuacion resume cuanto encaja el anuncio con tus preferencias, ubicacion e intereses musicales. El motivo explica las coincidencias detectadas.',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _GeneratedAlertCard extends StatelessWidget {
   const _GeneratedAlertCard({required this.alert, required this.onTap});
 
@@ -554,6 +517,7 @@ class _GeneratedAlertCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final opportunity = alert.opportunity;
+    final reasonParts = _reasonParts(alert.reason);
 
     return Material(
       color: Colors.white,
@@ -578,12 +542,12 @@ class _GeneratedAlertCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Motivo de la alerta',
-                          style: Theme.of(context).textTheme.titleSmall,
+                          _scoreLabel(alert.score),
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          alert.reason,
+                          'Puntuacion de coincidencia',
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
@@ -591,7 +555,22 @@ class _GeneratedAlertCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              if (reasonParts.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'Coincide por',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 7,
+                  runSpacing: 7,
+                  children: reasonParts
+                      .map((reason) => _AlertReasonChip(label: reason))
+                      .toList(),
+                ),
+              ],
+              const SizedBox(height: 12),
               Text(
                 formatLocalDateLabel(alert.createdAt),
                 style: Theme.of(context).textTheme.bodySmall,
@@ -636,6 +615,26 @@ class _GeneratedAlertCard extends StatelessWidget {
       ),
     );
   }
+
+  List<String> _reasonParts(String reason) {
+    return reason
+        .split(',')
+        .map((part) => part.trim())
+        .where((part) => part.isNotEmpty)
+        .toList();
+  }
+
+  String _scoreLabel(int score) {
+    if (score >= 80) {
+      return 'Coincidencia alta';
+    }
+
+    if (score >= 50) {
+      return 'Coincidencia media';
+    }
+
+    return 'Coincidencia baja';
+  }
 }
 
 class _ScoreBadge extends StatelessWidget {
@@ -671,6 +670,34 @@ class _ScoreBadge extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AlertReasonChip extends StatelessWidget {
+  const _AlertReasonChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: MusiHubColors.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: MusiHubColors.primary.withValues(alpha: 0.24),
+        ),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: MusiHubColors.primary,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

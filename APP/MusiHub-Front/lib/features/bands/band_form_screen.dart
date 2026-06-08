@@ -7,6 +7,7 @@ import 'package:musihub_front/core/catalog/catalog_item.dart';
 import 'package:musihub_front/core/catalog/locations_api.dart';
 import 'package:musihub_front/core/forms/input_limits.dart';
 import 'package:musihub_front/core/session/token_store.dart';
+import 'package:musihub_front/core/theme/musihub_theme.dart';
 import 'package:musihub_front/core/uploads/image_upload_rules.dart';
 import 'package:musihub_front/core/widgets/location_selector.dart';
 import 'package:musihub_front/core/widgets/photo_picker_panel.dart';
@@ -271,9 +272,16 @@ class _BandFormScreenState extends State<BandFormScreen> {
           isUploading: _isSaving && _selectedBandPhotoFile != null,
           placeholderIcon: Icons.camera_alt_outlined,
         ),
+        const SizedBox(height: 12),
+        Text(
+          'Anade una foto y los datos basicos para crear tu proyecto musical.',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
         const SizedBox(height: 26),
         _BandFormSection(
           title: 'Informacion basica',
+          icon: Icons.badge_outlined,
           children: [
             _buildTextField(
               label: 'Nombre de la banda',
@@ -302,10 +310,12 @@ class _BandFormScreenState extends State<BandFormScreen> {
         ),
         _BandFormSection(
           title: 'Tu papel en la banda',
+          icon: Icons.music_note_outlined,
           children: [_buildInstrumentChips(data.instruments)],
         ),
         _BandFormSection(
           title: 'Estilo musical',
+          icon: Icons.library_music_outlined,
           children: [_buildStyleChips(data.styles)],
         ),
         FilledButton(
@@ -420,10 +430,15 @@ class _BandFormData {
 }
 
 class _BandFormSection extends StatelessWidget {
-  const _BandFormSection({required this.title, required this.children});
+  const _BandFormSection({
+    required this.title,
+    required this.children,
+    required this.icon,
+  });
 
   final String title;
   final List<Widget> children;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
@@ -432,9 +447,34 @@ class _BandFormSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: Theme.of(context).textTheme.titleLarge),
+          Row(
+            children: [
+              Container(
+                width: 3,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: MusiHubColors.primary.withValues(alpha: 0.8),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(icon, size: 18, color: MusiHubColors.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 12),
           ...children,
+          const SizedBox(height: 8),
+          Divider(
+            color: MusiHubColors.primary.withValues(alpha: 0.32),
+            thickness: 1,
+          ),
         ],
       ),
     );
