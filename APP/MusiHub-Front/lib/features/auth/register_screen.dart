@@ -767,9 +767,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       children: [
         const _StepProgress(currentStep: 3),
         const SizedBox(height: 24),
-        const Center(
-          child: MusiHubLogoMark(size: 64, icon: Icons.notifications_rounded),
-        ),
+        const Center(child: MusiHubLogoMark(size: 192)),
         const SizedBox(height: 22),
         Text(
           'No te pierdas ninguna oportunidad',
@@ -851,9 +849,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Spacer(),
-          const Center(
-            child: MusiHubLogoMark(size: 76, icon: Icons.star_rounded),
-          ),
+          const Center(child: MusiHubLogoMark(size: 224)),
           const SizedBox(height: 28),
           Text(
             'Perfil finalizado',

@@ -7,6 +7,7 @@ import 'package:musihub_front/features/auth/login_screen.dart';
 import 'package:musihub_front/features/bands/bands_api.dart';
 import 'package:musihub_front/features/notifications/notifications_api.dart';
 import 'package:musihub_front/features/opportunities/opportunities_api.dart';
+import 'package:musihub_front/features/opportunities/opportunity_display.dart';
 import 'package:musihub_front/features/profile/profile_api.dart';
 import 'package:musihub_front/features/search/search_api.dart';
 
@@ -18,6 +19,13 @@ void main() {
     expect(find.text('Email'), findsOneWidget);
     expect(find.text('Contrasena'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Iniciar sesion'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Crear cuenta'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+
     expect(find.widgetWithText(OutlinedButton, 'Crear cuenta'), findsOneWidget);
   });
 
@@ -54,6 +62,13 @@ void main() {
   test('formats local date time labels', () {
     expect(formatLocalDateTimeLabel('2026-06-01T10:05:00'), '01/06/2026 10:05');
     expect(formatLocalDateTimeLabel('not-a-date'), 'not-a-date');
+  });
+
+  test('formats opportunity date labels', () {
+    expect(opportunityShortDateLabel('2026-04-15'), '15/04');
+    expect(opportunityLongDateLabel('2026-04-15'), '15 Abr 2026');
+    expect(opportunityLongDateLabel('2026-04-15T20:00:00Z'), '15 Abr 2026');
+    expect(opportunityLongDateLabel('not-a-date'), 'not-a-date');
   });
 
   test('builds opportunity text search query param', () {

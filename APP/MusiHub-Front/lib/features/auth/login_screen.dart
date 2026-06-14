@@ -96,10 +96,10 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(28, 52, 28, 28),
+          padding: const EdgeInsets.fromLTRB(28, 28, 28, 28),
           children: [
-            const Center(child: MusiHubLogoMark()),
-            const SizedBox(height: 24),
+            const Center(child: MusiHubLogoMark(size: 236)),
+            const SizedBox(height: 12),
             Text(
               'MusiHub',
               textAlign: TextAlign.center,
@@ -111,7 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall,
             ),
-            const SizedBox(height: 56),
+            const SizedBox(height: 32),
             Text(
               'Iniciar sesion',
               style: Theme.of(context).textTheme.titleLarge,

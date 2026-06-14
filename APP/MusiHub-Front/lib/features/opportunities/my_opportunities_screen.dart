@@ -447,6 +447,7 @@ class _MyOpportunityTags extends StatelessWidget {
         label: opportunityTypeTagLabel(opportunity.type),
         color: opportunityTypeTagColor(opportunity.type),
         borderColor: opportunityTypeTagBorderColor(opportunity.type),
+        isType: true,
       ),
       if (opportunity.instruments.isNotEmpty)
         _BadgeData(label: opportunity.instruments.first.name),
@@ -465,13 +466,15 @@ class _MyOpportunityTags extends StatelessWidget {
 class _BadgeData {
   const _BadgeData({
     required this.label,
-    this.color = MusiHubColors.fieldGrey,
+    this.color = Colors.white,
     this.borderColor = MusiHubColors.borderGrey,
+    this.isType = false,
   });
 
   final String label;
   final Color color;
   final Color borderColor;
+  final bool isType;
 }
 
 class _SmallBadge extends StatelessWidget {
@@ -482,18 +485,36 @@ class _SmallBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(maxWidth: 116),
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      constraints: const BoxConstraints(maxWidth: 122),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: badge.color,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(999),
         border: Border.all(color: badge.borderColor),
       ),
-      child: Text(
-        badge.label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (badge.isType) ...[
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: badge.borderColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+          ],
+          Flexible(
+            child: Text(
+              badge.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -76,6 +76,7 @@ class _OpportunityTags extends StatelessWidget {
         label: opportunityTypeTagLabel(opportunity.type),
         color: opportunityTypeTagColor(opportunity.type),
         borderColor: opportunityTypeTagBorderColor(opportunity.type),
+        isType: true,
       ),
       for (final instrument in opportunity.instruments)
         _TagData(label: instrument.name),
@@ -93,13 +94,15 @@ class _OpportunityTags extends StatelessWidget {
 class _TagData {
   const _TagData({
     required this.label,
-    this.color = MusiHubColors.fieldGrey,
+    this.color = Colors.white,
     this.borderColor = MusiHubColors.borderGrey,
+    this.isType = false,
   });
 
   final String label;
   final Color color;
   final Color borderColor;
+  final bool isType;
 }
 
 class _SmallTag extends StatelessWidget {
@@ -110,19 +113,38 @@ class _SmallTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minWidth: 74, maxWidth: 124),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      constraints: const BoxConstraints(minWidth: 72, maxWidth: 142),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
         color: tag.color,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(999),
         border: Border.all(color: tag.borderColor),
       ),
-      child: Text(
-        tag.label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (tag.isType) ...[
+            Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(
+                color: tag.borderColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 7),
+          ],
+          Flexible(
+            child: Text(
+              tag.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
       ),
     );
   }

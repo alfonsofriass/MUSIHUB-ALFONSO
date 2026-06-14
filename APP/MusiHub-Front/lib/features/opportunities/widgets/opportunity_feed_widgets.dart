@@ -522,13 +522,7 @@ class _OpportunityCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Divider(
-                height: 1,
-                thickness: 1,
-                color: MusiHubColors.borderGrey.withValues(alpha: 0.8),
-              ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               Text(
                 opportunity.title,
                 maxLines: 2,
@@ -681,6 +675,7 @@ class _OpportunityTags extends StatelessWidget {
         label: opportunityTypeTagLabel(opportunity.type),
         color: opportunityTypeTagColor(opportunity.type),
         borderColor: opportunityTypeTagBorderColor(opportunity.type),
+        isType: true,
       ),
       if (opportunity.instruments.isNotEmpty)
         _TagData(label: opportunity.instruments.first.name),
@@ -699,13 +694,15 @@ class _OpportunityTags extends StatelessWidget {
 class _TagData {
   const _TagData({
     required this.label,
-    this.color = MusiHubColors.fieldGrey,
+    this.color = Colors.white,
     this.borderColor = MusiHubColors.borderGrey,
+    this.isType = false,
   });
 
   final String label;
   final Color color;
   final Color borderColor;
+  final bool isType;
 }
 
 class _SmallTag extends StatelessWidget {
@@ -716,19 +713,38 @@ class _SmallTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minWidth: 68, maxWidth: 116),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      constraints: const BoxConstraints(minWidth: 62, maxWidth: 122),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: tag.color,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(999),
         border: Border.all(color: tag.borderColor),
       ),
-      child: Text(
-        tag.label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (tag.isType) ...[
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: tag.borderColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+          ],
+          Flexible(
+            child: Text(
+              tag.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
       ),
     );
   }
