@@ -1,85 +1,45 @@
 # MusiHub Front
 
-Frontend movil de MusiHub, app desarrollada en Flutter para el TFG.
+Aplicacion movil de MusiHub desarrollada con Flutter para el Trabajo Fin de Grado.
 
-## Estado actual
+MusiHub es una app orientada a la comunidad musical. Permite crear un perfil musical, publicar oportunidades, buscar anuncios, gestionar bandas, guardar favoritos, solicitar contacto y recibir alertas personalizadas.
 
-La app esta conectada contra el backend FastAPI real y cubre el MVP principal:
+## Funcionalidades principales
 
-- autenticacion con registro, login, sesion guardada y logout;
-- onboarding de registro;
-- perfil musical editable, perfil publico y subida de foto de perfil;
-- anuncios: feed, detalle, crear, editar, cerrar y reabrir;
-- busqueda global sencilla de anuncios, perfiles y bandas;
-- filtros de anuncios por catalogos y ubicaciones cerradas;
-- favoritos/guardados;
-- solicitudes privadas de contacto;
-- bandas: crear, ver, editar, invitar miembros, publicar como banda, visibilidad en perfil y subida de foto de banda;
-- alertas configurables por tipo, ubicacion, instrumentos y estilos;
-- notificaciones push FCM y bandeja simple de notificaciones in-app;
-- compartir anuncio y abrir contactos con acciones del sistema cuando sea posible.
+- Registro, inicio de sesion y sesion guardada.
+- Onboarding inicial de usuario.
+- Perfil musical editable y perfil publico.
+- Publicacion, edicion, cierre y reapertura de anuncios.
+- Feed de oportunidades con busqueda y filtros.
+- Favoritos/guardados.
+- Solicitudes privadas de contacto.
+- Gestion de bandas.
+- Alertas configurables y notificaciones.
+- Subida de fotos de perfil y banda.
+- Compartir anuncios y abrir metodos de contacto.
 
-El diseno toma Figma como referencia visual, pero se adapta con criterio a la funcionalidad real del MVP.
-
-## Estructura principal
+## Estructura
 
 ```text
 lib/
   main.dart
-  core/
-    api/
-    catalog/
-    config/
-    forms/
-    push/
-    session/
-    theme/
-    uploads/
-    widgets/
-  features/
-    alerts/
-    auth/
-    bands/
-    contact_requests/
-    notifications/
-    opportunities/
-    profile/
-    search/
+  core/       Codigo compartido: API, sesion, tema, catalogos y widgets comunes.
+  features/   Funcionalidades principales: auth, perfil, anuncios, bandas, alertas, etc.
 ```
 
-Idea general:
+## Backend
 
-- `core/`: piezas compartidas y pequenas, como cliente HTTP, tema, sesion, push, ubicaciones, limites de inputs y widgets comunes.
-- `features/`: cada bloque funcional de MusiHub mantiene su pantalla, API y modelos cerca.
-- `test/widget_test.dart`: tests basicos de contratos, payloads, parsing y pantalla de login.
-
-## Configuracion de backend
-
-La URL base por defecto apunta al backend desplegado en Render:
+La app apunta por defecto al backend desplegado:
 
 ```text
 https://musihub-back.onrender.com/api/v1
 ```
 
-Ejecucion normal contra nube:
+Tambien se puede sobrescribir la URL con `API_BASE_URL`:
 
 ```bash
-flutter run -d <ID_DISPOSITIVO>
+flutter run -d <ID_DISPOSITIVO> --dart-define=API_BASE_URL=<URL_BACKEND>
 ```
-
-APK debug contra nube:
-
-```bash
-flutter build apk --debug
-```
-
-Tambien se puede sobrescribir la URL con `API_BASE_URL` si hace falta probar otro backend:
-
-```bash
-flutter run -d <ID_DISPOSITIVO> --dart-define=API_BASE_URL=https://musihub-back.onrender.com/api/v1
-```
-
-Nota: la primera peticion puede tardar si Render free estaba dormido por inactividad.
 
 ## Comandos utiles
 
@@ -87,18 +47,6 @@ Nota: la primera peticion puede tardar si Render free estaba dormido por inactiv
 flutter pub get
 flutter analyze
 flutter test
+flutter run -d <ID_DISPOSITIVO>
+flutter build apk --debug
 ```
-
-## Notas de alcance
-
-Quedan fuera del MVP actual:
-
-- mensajeria/chat entre usuarios;
-- pagos;
-- subida de multiples fotos por anuncio;
-- paginacion avanzada;
-- orden avanzado;
-- envio agrupado real para alertas `daily`/`weekly`;
-- deep links o navegacion automatica al tocar una push.
-
-Antes de refactorizar, mantener la prioridad del proyecto: app sencilla, entendible y funcional para el TFG.
