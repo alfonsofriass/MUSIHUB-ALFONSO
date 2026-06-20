@@ -4,7 +4,7 @@ from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.api.routes.opportunities import _generate_alerts_for_opportunity
+from app.alert_matching import generate_alerts_for_opportunity
 from app.db import Base
 from app.models import (
     Alert,
@@ -56,7 +56,7 @@ class AlertDuplicateTest(unittest.TestCase):
                 style=style,
             )
 
-            _generate_alerts_for_opportunity(
+            generate_alerts_for_opportunity(
                 db=db,
                 opportunity=opportunity,
                 opportunity_type=opportunity_type,
@@ -66,7 +66,7 @@ class AlertDuplicateTest(unittest.TestCase):
             )
             db.flush()
 
-            _generate_alerts_for_opportunity(
+            generate_alerts_for_opportunity(
                 db=db,
                 opportunity=opportunity,
                 opportunity_type=opportunity_type,

@@ -6,20 +6,23 @@ Table users {
   created_at timestamp [not null]
 }
 
-//Meter campo role dentro de users? o tenerlo asi separado(en el futuro varios roles un usuario)
 Table roles {
   id integer [primary key, increment]
-  code varchar [not null, unique] // musico, venta, sala_bar, academia_profesor
+  code varchar [not null, unique]
   name varchar [not null]
 }
 
-  Table user_roles {
+Table user_roles {
   user_id integer [not null]
   role_id integer [not null]
   is_primary boolean [not null, default: false]
+
+  indexes {
+    (user_id, role_id) [pk]
+  }
 }
 
-  Table profiles {
+Table profiles {
   id integer [primary key, increment]
   user_id integer [not null, unique]
   city varchar
@@ -29,16 +32,19 @@ Table roles {
   website_url varchar
   contact_email varchar
   contact_phone varchar
-  //red social?
   created_at timestamp [not null]
+}
+
+Table instruments {
+  id integer [primary key, increment]
+  name varchar [not null, unique]
 }
 
 Table music_styles {
   id integer [primary key, increment]
-  name varchar [not null, unique] // Rock, Jazz, Pop..
+  name varchar [not null, unique]
 }
 
-//Catalogo cerrado de ubicaciones MVP: Andalucia y ciudades principales
 Table provinces {
   id integer [primary key, increment]
   name varchar [not null, unique]
@@ -54,27 +60,22 @@ Table cities {
   }
 }
 
-Table profile_styles {
-  profile_id integer [not null]
-  style_id integer [not null]
-
-  indexes {
-      (profile_id, style_id) [pk]
-  }
-}
-  
-Table instruments {
-  id integer [primary key, increment]
-  name varchar [not null, unique] // Guitarra, Bateria, Piano...
-}
-//Por qué no meterlo solo en profiles; un usuario no tooca solo un instrumento, ademas sirve par busqueda
 Table profile_instruments {
   profile_id integer [not null]
   instrument_id integer [not null]
   is_primary boolean [not null, default: false]
 
   indexes {
-      (profile_id, instrument_id) [pk]
+    (profile_id, instrument_id) [pk]
+  }
+}
+
+Table profile_styles {
+  profile_id integer [not null]
+  style_id integer [not null]
+
+  indexes {
+    (profile_id, style_id) [pk]
   }
 }
 
@@ -92,15 +93,16 @@ Table bands {
 Table band_members {
   band_id integer [not null]
   user_id integer [not null]
-  role_in_band varchar [not null] // guitarrista, bateria, vocalista...
-  membership_status varchar [not null, default: 'pending'] // pending, accepted, rejected
-  is_visible_in_profile boolean [not null, default: true]// si quiere mostrar la banda en el perfil
+  role_in_band varchar [not null]
+  membership_status varchar [not null, default: 'pending']
+  is_visible_in_profile boolean [not null, default: true]
   joined_at timestamp
 
   indexes {
     (band_id, user_id) [pk]
   }
 }
+
 Table band_styles {
   band_id integer [not null]
   style_id integer [not null]
@@ -109,9 +111,6 @@ Table band_styles {
     (band_id, style_id) [pk]
   }
 }
-
-Ref: band_styles.band_id > bands.id
-Ref: band_styles.style_id > music_styles.id
 
 Table opportunity_types {
   id integer [primary key, increment]
@@ -122,31 +121,22 @@ Table opportunity_types {
 Table opportunities {
   id integer [primary key, increment]
   type_id integer [not null]
-  author_user_id integer [not null] // por qué debe publicarlo un usuario si o si
-  author_band_id integer // si el usuario publica hablando en nombre de una banda
+  author_user_id integer [not null]
+  author_band_id integer
   title varchar [not null]
   description text [not null]
   city varchar [not null]
-  province varchar [not null] //La rellena la app al elegir la ciudad
+  province varchar [not null]
   event_date timestamp
-  price_amount decimal // si hay precio
-  contact_method varchar [not null] // whatsapp, email, phone, other
-  contact_value varchar [not null] // dato privado; solo visible para el autor o si una solicitud de contacto fue aceptada
-  status varchar [not null, default: 'active'] // active, closed, expired
+  price_amount decimal
+  contact_method varchar [not null]
+  contact_value varchar [not null]
+  status varchar [not null, default: 'active']
   created_at timestamp [not null]
-  updated_at timestamp [not null] //nos servirá 
+  updated_at timestamp [not null]
   expires_at timestamp
-}//Boton Duplicar y editar (y ya se cambia lo que se necesite)
-
-//La oportunidad 15 está asociada al estilo Rock”
-Table opportunity_styles {
-  opportunity_id integer [not null]
-  style_id integer [not null]
-
-  indexes {
-    (opportunity_id, style_id) [pk]
-  }
 }
+
 Table opportunity_instruments {
   opportunity_id integer [not null]
   instrument_id integer [not null]
@@ -156,16 +146,47 @@ Table opportunity_instruments {
   }
 }
 
-//Config de cada cuanto quiere que le informe la app al usuario
+Table opportunity_styles {
+  opportunity_id integer [not null]
+  style_id integer [not null]
+
+  indexes {
+    (opportunity_id, style_id) [pk]
+  }
+}
+
+Table favorites {
+  user_id integer [not null]
+  opportunity_id integer [not null]
+
+  indexes {
+    (user_id, opportunity_id) [pk]
+  }
+}
+
+Table contact_requests {
+  id integer [primary key, increment]
+  opportunity_id integer [not null]
+  requester_user_id integer [not null]
+  owner_user_id integer [not null]
+  status varchar [not null, default: 'pending']
+  created_at timestamp [not null]
+  responded_at timestamp
+
+  indexes {
+    (opportunity_id, requester_user_id) [unique]
+  }
+}
+
 Table alert_preferences {
   id integer [primary key, increment]
   user_id integer [not null, unique]
-  frequency varchar [not null] // immediate; daily/weekly quedan como mejora futura
+  frequency varchar [not null]
   preferred_city varchar
-  preferred_province varchar //rellenada automaticamente si elige ciudad
+  preferred_province varchar
   notifications_enabled boolean [not null, default: true]
 }
-//Config sobre que quiere que le informe
+
 Table alert_preference_types {
   alert_preference_id integer [not null]
   opportunity_type_id integer [not null]
@@ -174,7 +195,7 @@ Table alert_preference_types {
     (alert_preference_id, opportunity_type_id) [pk]
   }
 }
-//Instrumentos de interes para alertas; independiente de los instrumentos del perfil
+
 Table alert_preference_instruments {
   alert_preference_id integer [not null]
   instrument_id integer [not null]
@@ -183,7 +204,7 @@ Table alert_preference_instruments {
     (alert_preference_id, instrument_id) [pk]
   }
 }
-//Estilos de interes para alertas; independiente de los estilos del perfil
+
 Table alert_preference_styles {
   alert_preference_id integer [not null]
   style_id integer [not null]
@@ -193,39 +214,23 @@ Table alert_preference_styles {
   }
 }
 
-//Tokens FCM de dispositivos autenticados; los usa el backend para enviar push
-Table device_tokens {
-  id integer [primary key, increment]
-  user_id integer [not null]
-  token varchar [not null, unique]
-  platform varchar [not null] // android, ios, web
-  created_at timestamp [not null]
-  last_seen_at timestamp [not null] // ultima vez que Flutter registro/actualizo el token
-
-  indexes {
-    (user_id)
-  }
-}
-
-//Alertas generadas por matching; se consultan en app y pueden entregarse por FCM
 Table alerts {
   id integer [primary key, increment]
   user_id integer [not null]
   opportunity_id integer [not null]
-  score integer [not null] // puntuacion explicable del matching
-  reason text [not null] // resumen de por que se genero la alerta
+  score integer [not null]
+  reason text [not null]
   created_at timestamp [not null]
 
   indexes {
-    (user_id, opportunity_id) [unique] // evita duplicar la misma alerta
+    (user_id, opportunity_id) [unique]
   }
 }
 
-//Bandeja simple de notificaciones in-app para la campana del usuario
 Table notifications {
   id integer [primary key, increment]
   user_id integer [not null]
-  type varchar [not null] // alert_match, contact_request_received, contact_request_accepted, contact_request_rejected
+  type varchar [not null]
   title varchar [not null]
   body text [not null]
   data json
@@ -237,58 +242,50 @@ Table notifications {
   }
 }
 
-//Solicitudes privadas para contactar por un anuncio; no son alertas de matching
-Table contact_requests {
+Table device_tokens {
   id integer [primary key, increment]
-  opportunity_id integer [not null]
-  requester_user_id integer [not null] // usuario interesado en contactar
-  owner_user_id integer [not null] // autor del anuncio en el momento de la solicitud
-  status varchar [not null, default: 'pending'] // pending, accepted, rejected
-  created_at timestamp [not null]
-  responded_at timestamp
-
-  indexes {
-    (opportunity_id, requester_user_id) [unique] // evita solicitudes duplicadas al mismo anuncio
-  }
-}
-
-//Favoritos: Relacion entre usuario y oportunidad: segunda relacion
-Table favorites {
   user_id integer [not null]
-  opportunity_id integer [not null]
+  token varchar [not null, unique]
+  platform varchar [not null]
+  created_at timestamp [not null]
+  last_seen_at timestamp [not null]
 
   indexes {
-    (user_id, opportunity_id) [pk]
+    (user_id)
   }
 }
 
-//Relaciones
 Ref: user_roles.user_id > users.id
 Ref: user_roles.role_id > roles.id
 Ref: profiles.user_id > users.id
 
 Ref: cities.province_id > provinces.id
 
+Ref: profile_instruments.profile_id > profiles.id
+Ref: profile_instruments.instrument_id > instruments.id
 Ref: profile_styles.profile_id > profiles.id
 Ref: profile_styles.style_id > music_styles.id
 
-Ref: profile_instruments.profile_id > profiles.id
-Ref: profile_instruments.instrument_id > instruments.id
-
 Ref: bands.created_by_user_id > users.id
-
 Ref: band_members.band_id > bands.id
 Ref: band_members.user_id > users.id
+Ref: band_styles.band_id > bands.id
+Ref: band_styles.style_id > music_styles.id
 
 Ref: opportunities.type_id > opportunity_types.id
 Ref: opportunities.author_user_id > users.id
 Ref: opportunities.author_band_id > bands.id
-
+Ref: opportunity_instruments.opportunity_id > opportunities.id
+Ref: opportunity_instruments.instrument_id > instruments.id
 Ref: opportunity_styles.opportunity_id > opportunities.id
 Ref: opportunity_styles.style_id > music_styles.id
 
-Ref: opportunity_instruments.opportunity_id > opportunities.id
-Ref: opportunity_instruments.instrument_id > instruments.id
+Ref: favorites.user_id > users.id
+Ref: favorites.opportunity_id > opportunities.id
+
+Ref: contact_requests.opportunity_id > opportunities.id
+Ref: contact_requests.requester_user_id > users.id
+Ref: contact_requests.owner_user_id > users.id
 
 Ref: alert_preferences.user_id > users.id
 Ref: alert_preference_types.alert_preference_id > alert_preferences.id
@@ -297,14 +294,9 @@ Ref: alert_preference_instruments.alert_preference_id > alert_preferences.id
 Ref: alert_preference_instruments.instrument_id > instruments.id
 Ref: alert_preference_styles.alert_preference_id > alert_preferences.id
 Ref: alert_preference_styles.style_id > music_styles.id
-Ref: device_tokens.user_id > users.id
 Ref: alerts.user_id > users.id
 Ref: alerts.opportunity_id > opportunities.id
+
 Ref: notifications.user_id > users.id
 
-Ref: contact_requests.opportunity_id > opportunities.id
-Ref: contact_requests.requester_user_id > users.id
-Ref: contact_requests.owner_user_id > users.id
-
-Ref: favorites.user_id > users.id
-Ref: favorites.opportunity_id > opportunities.id
+Ref: device_tokens.user_id > users.id
