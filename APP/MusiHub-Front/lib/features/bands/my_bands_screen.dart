@@ -39,7 +39,7 @@ class _MyBandsScreenState extends State<MyBandsScreen> {
     final token = await widget.tokenStore.readAccessToken();
 
     if (token == null || token.isEmpty) {
-      throw Exception('No hay sesion activa.');
+      throw Exception('No hay sesión activa.');
     }
 
     return _bandsApi.listMyBands(token);
@@ -265,7 +265,7 @@ class _EmptyBands extends StatelessWidget {
           const Icon(Icons.groups_outlined, color: MusiHubColors.textGrey),
           const SizedBox(height: 8),
           Text(
-            'Todavia no perteneces a ninguna banda.',
+            'Todavía no perteneces a ninguna banda.',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium,
           ),

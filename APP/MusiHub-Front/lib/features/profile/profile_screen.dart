@@ -88,7 +88,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final token = await widget.tokenStore.readAccessToken();
 
     if (token == null || token.isEmpty) {
-      throw Exception('No hay sesion activa.');
+      throw Exception('No hay sesión activa.');
     }
 
     _token = token;
@@ -150,7 +150,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (token == null || token.isEmpty) {
       setState(() {
-        _errorMessage = 'No hay sesion activa.';
+        _errorMessage = 'No hay sesión activa.';
         _successMessage = null;
       });
       return;
@@ -241,7 +241,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (token == null || token.isEmpty) {
       setState(() {
-        _errorMessage = 'No hay sesion activa.';
+        _errorMessage = 'No hay sesión activa.';
         _successMessage = null;
       });
       return;
@@ -422,7 +422,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ProfileSettingsAction(
                   icon: Icons.edit_outlined,
                   title: 'Editar perfil',
-                  subtitle: 'Actualiza tu informacion musical',
+                  subtitle: 'Actualiza tu información musical',
                   onTap: () {
                     Navigator.of(context).pop();
                     _startEditing();
@@ -431,7 +431,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ProfileSettingsAction(
                   icon: Icons.notifications_outlined,
                   title: 'Configurar alertas',
-                  subtitle: 'Ajusta tipos, instrumentos, estilos y ubicacion',
+                  subtitle: 'Ajusta tipos, instrumentos, estilos y ubicación',
                   onTap: () {
                     Navigator.of(context).pop();
                     _openAlertSettings();
@@ -439,7 +439,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 ProfileSettingsAction(
                   icon: Icons.logout,
-                  title: 'Cerrar sesion',
+                  title: 'Cerrar sesión',
                   subtitle: 'Salir de esta cuenta',
                   danger: true,
                   onTap: () {
@@ -561,7 +561,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: Icons.groups_outlined,
             children: [
               if (data.bands.isEmpty)
-                const Text('Todavia no perteneces a ninguna banda.')
+                const Text('Todavía no perteneces a ninguna banda.')
               else
                 for (final band in data.bands.take(3)) ...[
                   ProfileBandTile(band: band, onTap: _openMyBands),
@@ -574,7 +574,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
           ProfileSection(
-            title: 'Musica',
+            title: 'Música',
             icon: Icons.music_note_outlined,
             children: [
               if (selectedInstruments.isNotEmpty) ...[
@@ -719,7 +719,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
         ProfileSection(
-          title: 'Datos basicos',
+          title: 'Datos básicos',
           icon: Icons.badge_outlined,
           children: [
             LocationSelector(
@@ -759,7 +759,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               maxLength: InputLimits.phone,
               inputFormatters: InputLimits.phoneFormatters,
               decoration: const InputDecoration(
-                labelText: 'Telefono de contacto',
+                labelText: 'Teléfono de contacto',
                 counterText: '',
               ),
             ),
@@ -799,7 +799,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 12),
         OutlinedButton(
           onPressed: _isSaving ? null : _cancelEditing,
-          child: const Text('Cancelar edicion'),
+          child: const Text('Cancelar edición'),
         ),
         if (_successMessage != null) ...[
           const SizedBox(height: 16),

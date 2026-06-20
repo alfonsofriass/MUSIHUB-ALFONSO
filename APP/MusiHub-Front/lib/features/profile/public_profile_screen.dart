@@ -44,7 +44,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     final token = await widget.tokenStore.readAccessToken();
 
     if (token == null || token.isEmpty) {
-      throw Exception('No hay sesion activa.');
+      throw Exception('No hay sesión activa.');
     }
 
     return _profileApi.getPublicProfile(token: token, userId: widget.userId);
@@ -68,7 +68,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Perfil publico')),
+      appBar: AppBar(title: const Text('Perfil público')),
       body: SafeArea(
         child: FutureBuilder<PublicProfile>(
           future: _profileFuture,
@@ -128,7 +128,7 @@ class _PublicProfileView extends StatelessWidget {
               ],
             ),
           _PublicSection(
-            title: 'Informacion musical',
+            title: 'Información musical',
             children: [
               if (profile.instruments.isNotEmpty) ...[
                 Text(
@@ -155,7 +155,7 @@ class _PublicProfileView extends StatelessWidget {
                 ),
               ],
               if (profile.instruments.isEmpty && profile.styles.isEmpty)
-                const Text('Sin informacion musical visible.'),
+                const Text('Sin información musical visible.'),
             ],
           ),
         ],
@@ -367,7 +367,7 @@ class _PublicEmptyProfile extends StatelessWidget {
         color: MusiHubColors.fieldGrey,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Text('Este usuario todavia no ha completado su perfil.'),
+      child: const Text('Este usuario todavía no ha completado su perfil.'),
     );
   }
 }
@@ -511,7 +511,7 @@ class _PublicProfileLoadError extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'No se pudo cargar el perfil publico.',
+              'No se pudo cargar el perfil público.',
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
             const SizedBox(height: 16),

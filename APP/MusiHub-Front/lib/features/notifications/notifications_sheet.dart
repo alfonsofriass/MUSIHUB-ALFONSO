@@ -60,7 +60,7 @@ class _NotificationsSheetState extends State<_NotificationsSheet> {
     final token = await widget.tokenStore.readAccessToken();
 
     if (token == null || token.isEmpty) {
-      throw Exception('No hay sesion activa.');
+      throw Exception('No hay sesión activa.');
     }
 
     _token = token;
@@ -96,7 +96,7 @@ class _NotificationsSheetState extends State<_NotificationsSheet> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo marcar como leida.')),
+        const SnackBar(content: Text('No se pudo marcar como leída.')),
       );
     } finally {
       if (mounted) {
@@ -221,7 +221,7 @@ class _NotificationsSheetContent extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: isMarkingAll ? null : onMarkAllAsRead,
             icon: const Icon(Icons.done_all),
-            label: Text(isMarkingAll ? 'Marcando...' : 'Marcar todas leidas'),
+            label: Text(isMarkingAll ? 'Marcando...' : 'Marcar todas leídas'),
           ),
         ],
         const SizedBox(height: 16),
@@ -230,7 +230,7 @@ class _NotificationsSheetContent extends StatelessWidget {
               ? const MusiHubEmptyState(
                   icon: Icons.notifications_none,
                   title: 'Sin notificaciones',
-                  message: 'Aqui apareceran alertas y solicitudes importantes.',
+                  message: 'Aquí aparecerán alertas y solicitudes importantes.',
                 )
               : ListView.separated(
                   itemCount: response.items.length,
@@ -331,7 +331,7 @@ class _NotificationCard extends StatelessWidget {
                         child: TextButton.icon(
                           onPressed: isUpdating ? null : onMarkAsRead,
                           icon: const Icon(Icons.done, size: 18),
-                          label: Text(isUpdating ? 'Marcando...' : 'Leida'),
+                          label: Text(isUpdating ? 'Marcando...' : 'Leída'),
                         ),
                       ),
                     ],

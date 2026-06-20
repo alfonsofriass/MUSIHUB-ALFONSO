@@ -73,7 +73,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
     final token = await widget.tokenStore.readAccessToken();
 
     if (token == null || token.isEmpty) {
-      throw Exception('No hay sesion activa.');
+      throw Exception('No hay sesión activa.');
     }
 
     _token = token;
@@ -138,7 +138,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
     if (token == null || token.isEmpty) {
       setState(() {
-        _errorMessage = 'No hay sesion activa.';
+        _errorMessage = 'No hay sesión activa.';
         _successMessage = null;
       });
       return;
@@ -264,7 +264,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
         ),
         const SizedBox(height: 22),
         _AlertConfigCard(
-          title: 'Ubicacion',
+          title: 'Ubicación',
           subtitle: 'Filtra por ciudad o provincia si quieres alertas locales',
           children: [
             LocationSelector(
@@ -281,14 +281,14 @@ class _AlertsScreenState extends State<AlertsScreen> {
         const SizedBox(height: 18),
         _AlertConfigCard(
           title: 'Tipo de anuncio',
-          subtitle: 'Selecciona que tipos de anuncios te interesan',
+          subtitle: 'Selecciona qué tipos de anuncios te interesan',
           children: [_buildTypeChips(data.types)],
         ),
         const SizedBox(height: 18),
         _AlertConfigCard(
           title: 'Instrumentos',
           subtitle:
-              'Elige instrumentos de interes. Si no eliges ninguno, no se filtra por instrumento.',
+              'Elige instrumentos de interés. Si no eliges ninguno, no se filtra por instrumento.',
           children: [
             _buildCatalogChips(data.instruments, _selectedInstrumentIds),
           ],
@@ -297,7 +297,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
         _AlertConfigCard(
           title: 'Estilos musicales',
           subtitle:
-              'Elige estilos de interes. Si no eliges ninguno, no se filtra por estilo.',
+              'Elige estilos de interés. Si no eliges ninguno, no se filtra por estilo.',
           children: [_buildCatalogChips(data.styles, _selectedStyleIds)],
         ),
         const SizedBox(height: 18),
@@ -358,7 +358,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
         Text('Mis alertas', style: Theme.of(context).textTheme.headlineLarge),
         const SizedBox(height: 6),
         Text(
-          'Oportunidades que encajan con tu perfil y preferencias.',
+          'Oportunidades que encajan con tus preferencias.',
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: 18),
@@ -459,7 +459,7 @@ class _ActivationCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    'Recibiras coincidencias segun tus preferencias',
+                    'Recibirás coincidencias según tus preferencias',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
@@ -729,9 +729,9 @@ class _EmptyAlerts extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MusiHubEmptyState(
       icon: Icons.notifications_none,
-      title: 'Todavia no hay alertas',
+      title: 'Todavía no hay alertas',
       message:
-          'Cuando se publiquen anuncios que encajen contigo, apareceran aqui.',
+          'Cuando se publiquen anuncios que encajen contigo, aparecerán aquí.',
     );
   }
 }

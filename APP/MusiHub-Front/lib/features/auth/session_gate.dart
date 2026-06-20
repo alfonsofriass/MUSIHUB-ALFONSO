@@ -49,7 +49,7 @@ class _SessionGateState extends State<SessionGate> {
       await _tokenStore.clearAccessToken();
 
       return const LoginScreen(
-        initialMessage: 'La sesion anterior ya no es valida.',
+        initialMessage: 'La sesión anterior ya no es válida.',
       );
     }
   }

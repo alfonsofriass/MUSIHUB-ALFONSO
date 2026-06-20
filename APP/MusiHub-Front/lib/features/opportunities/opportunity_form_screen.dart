@@ -108,7 +108,7 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
     final token = await widget.tokenStore.readAccessToken();
 
     if (token == null || token.isEmpty) {
-      throw Exception('No hay sesion activa.');
+      throw Exception('No hay sesión activa.');
     }
 
     _token = token;
@@ -147,7 +147,7 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
 
     if (token == null || token.isEmpty) {
       setState(() {
-        _errorMessage = 'No hay sesion activa.';
+        _errorMessage = 'No hay sesión activa.';
       });
       return;
     }
@@ -251,13 +251,13 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
         _textOrNull(_cityController.text) == null ||
         _textOrNull(_provinceController.text) == null ||
         _textOrNull(_contactValueController.text) == null) {
-      return 'Completa titulo, descripcion, ubicacion y contacto.';
+      return 'Completa título, descripción, ubicación y contacto.';
     }
 
     if (template.showPrice &&
         _textOrNull(_priceController.text) != null &&
         _priceOrNull(_priceController.text) == null) {
-      return 'El precio debe ser un numero valido.';
+      return 'El precio debe ser un número válido.';
     }
 
     final contactError = _validateContactValue();
@@ -324,11 +324,11 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
       case 'phone':
         return _isValidPhoneLikeValue(contactValue)
             ? null
-            : 'Introduce un telefono valido.';
+            : 'Introduce un teléfono válido.';
       case 'email':
         return _isValidEmailValue(contactValue)
             ? null
-            : 'Introduce un email valido.';
+            : 'Introduce un email válido.';
       default:
         return null;
     }
@@ -435,19 +435,19 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
           children: [_buildAuthorSelector(data.bands)],
         ),
         _OpportunitySection(
-          title: 'Informacion basica',
+          title: 'Información básica',
           children: [
             _buildTextField(
-              label: 'Titulo del anuncio',
+              label: 'Título del anuncio',
               controller: _titleController,
               hintText: 'Ej: Clases de guitarra',
               maxLength: InputLimits.opportunityTitle,
             ),
             const SizedBox(height: 12),
             _buildTextField(
-              label: 'Descripcion',
+              label: 'Descripción',
               controller: _descriptionController,
-              hintText: 'Describe que ofreces o que buscas',
+              hintText: 'Describe qué ofreces o qué buscas',
               maxLength: InputLimits.opportunityDescription,
               maxLines: 3,
               showCounter: true,
@@ -627,7 +627,7 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
 
     if (contactEmail == null && contactPhone == null) {
       return Text(
-        'Puedes guardar email o telefono en tu perfil para rellenarlo aqui.',
+        'Puedes guardar email o teléfono en tu perfil para rellenarlo aquí.',
         style: Theme.of(context).textTheme.bodySmall,
       );
     }
@@ -654,7 +654,7 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
           ContactActionTile(
             method: 'phone',
             value: contactPhone,
-            title: 'Usar telefono del perfil',
+            title: 'Usar teléfono del perfil',
             trailingIcon: Icons.add_circle_outline,
             onTap: () => _useProfileContact('phone', contactPhone),
           ),
@@ -821,7 +821,7 @@ class _OpportunityFormScreenState extends State<OpportunityFormScreen> {
       case 'email':
         return 'Email';
       case 'phone':
-        return 'Telefono';
+        return 'Teléfono';
       default:
         return 'Otro';
     }

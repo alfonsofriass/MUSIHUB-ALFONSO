@@ -66,7 +66,7 @@ class _BandFormScreenState extends State<BandFormScreen> {
     final token = await widget.tokenStore.readAccessToken();
 
     if (token == null || token.isEmpty) {
-      throw Exception('No hay sesion activa.');
+      throw Exception('No hay sesión activa.');
     }
 
     _token = token;
@@ -91,7 +91,7 @@ class _BandFormScreenState extends State<BandFormScreen> {
 
     if (token == null || token.isEmpty) {
       setState(() {
-        _errorMessage = 'No hay sesion activa.';
+        _errorMessage = 'No hay sesión activa.';
       });
       return;
     }
@@ -217,7 +217,7 @@ class _BandFormScreenState extends State<BandFormScreen> {
     }
 
     if (ImageUploadRules.contentTypeForPath(file.path) == null) {
-      return 'Formato no valido. Usa JPG, PNG o WebP.';
+      return 'Formato no válido. Usa JPG, PNG o WebP.';
     }
 
     if (await ImageUploadRules.isTooLarge(file)) {
@@ -274,13 +274,13 @@ class _BandFormScreenState extends State<BandFormScreen> {
         ),
         const SizedBox(height: 12),
         Text(
-          'Anade una foto y los datos basicos para crear tu proyecto musical.',
+          'Añade una foto y los datos básicos para crear tu proyecto musical.',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: 26),
         _BandFormSection(
-          title: 'Informacion basica',
+          title: 'Información básica',
           icon: Icons.badge_outlined,
           children: [
             _buildTextField(
@@ -291,9 +291,9 @@ class _BandFormScreenState extends State<BandFormScreen> {
             ),
             const SizedBox(height: 12),
             _buildTextField(
-              label: 'Descripcion',
+              label: 'Descripción',
               controller: _bioController,
-              hintText: 'Cuenta que estilo haceis o que buscais',
+              hintText: 'Cuenta qué estilo hacéis o qué buscáis',
               maxLength: InputLimits.bandBio,
               maxLines: 4,
               showCounter: true,

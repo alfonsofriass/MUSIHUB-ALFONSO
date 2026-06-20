@@ -17,8 +17,8 @@ void main() {
 
     expect(find.text('MusiHub'), findsOneWidget);
     expect(find.text('Email'), findsOneWidget);
-    expect(find.text('Contrasena'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Iniciar sesion'), findsOneWidget);
+    expect(find.text('Contraseña'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Iniciar sesión'), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.text('Crear cuenta'),

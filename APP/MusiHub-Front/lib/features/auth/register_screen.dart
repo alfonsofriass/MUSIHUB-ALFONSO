@@ -53,7 +53,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _RoleOption(
       code: 'academia_profesor',
       title: 'Academia/Profesor',
-      subtitle: 'Ofrezco formacion musical',
+      subtitle: 'Ofrezco formación musical',
       icon: Icons.school_outlined,
     ),
   ];
@@ -201,7 +201,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         if (!_privacyAccepted) {
           setState(() {
             _errorMessage =
-                'Acepta los terminos y la politica de privacidad para continuar.';
+                'Acepta los términos y la política de privacidad para continuar.';
           });
           return;
         }
@@ -219,11 +219,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     setState(() {
       if (fullName.isEmpty || email.isEmpty || password.isEmpty) {
-        _errorMessage = 'Rellena nombre, email y contrasena.';
+        _errorMessage = 'Rellena nombre, email y contraseña.';
       } else if (password.length < 8) {
-        _errorMessage = 'La contrasena debe tener al menos 8 caracteres.';
+        _errorMessage = 'La contraseña debe tener al menos 8 caracteres.';
       } else if (password != repeatedPassword) {
-        _errorMessage = 'Las contrasenas no coinciden.';
+        _errorMessage = 'Las contraseñas no coinciden.';
       } else {
         _errorMessage = null;
       }
@@ -381,7 +381,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await _profileApi.uploadMyProfilePhoto(token: token, file: file);
     } on UnsupportedProfilePhotoTypeException {
       throw const _OnboardingPhotoException(
-        'Formato no valido. Usa JPG, PNG o WebP.',
+        'Formato no válido. Usa JPG, PNG o WebP.',
       );
     } on ProfilePhotoTooLargeException {
       throw const _OnboardingPhotoException('La foto no puede superar 5 MB.');
@@ -397,7 +397,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (ImageUploadRules.contentTypeForPath(file.path) == null) {
       throw const _OnboardingPhotoException(
-        'Formato no valido. Usa JPG, PNG o WebP.',
+        'Formato no válido. Usa JPG, PNG o WebP.',
       );
     }
 
@@ -611,27 +611,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
         _LabeledField(
-          label: 'Contrasena',
+          label: 'Contraseña',
           child: TextField(
             controller: _passwordController,
             obscureText: true,
             maxLength: InputLimits.password,
             textInputAction: TextInputAction.next,
             decoration: const InputDecoration(
-              hintText: 'Minimo 8 caracteres',
+              hintText: 'Mínimo 8 caracteres',
               counterText: '',
             ),
           ),
         ),
         _LabeledField(
-          label: 'Repite tu contrasena',
+          label: 'Repite tu contraseña',
           child: TextField(
             controller: _repeatPasswordController,
             obscureText: true,
             maxLength: InputLimits.password,
             onSubmitted: (_) => _continue(catalogs: null),
             decoration: const InputDecoration(
-              hintText: 'Repite tu contrasena anterior',
+              hintText: 'Repite tu contraseña anterior',
               counterText: '',
             ),
           ),
@@ -653,7 +653,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         const _StepProgress(currentStep: 1),
         const SizedBox(height: 24),
         Text(
-          'Elige el tipo de perfil que mas te represente',
+          'Elige el tipo de perfil que más te represente',
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: 18),
@@ -686,7 +686,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         const _StepProgress(currentStep: 2),
         const SizedBox(height: 24),
         Text(
-          'Anade informacion basica para que otros puedan conocerte mejor.',
+          'Añade información básica para que otros puedan conocerte mejor.',
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: 24),
@@ -697,7 +697,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
         const SizedBox(height: 26),
         _LabeledField(
-          label: 'Ubicacion',
+          label: 'Ubicación',
           child: LocationSelector(
             locations: catalogs.locations,
             provinceController: _provinceController,
@@ -708,7 +708,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
         _ChipSection(
           title: 'Instrumentos',
-          subtitle: 'El primero que selecciones sera tu instrumento principal',
+          subtitle: 'El primero que selecciones será tu instrumento principal',
           items: catalogs.instruments,
           selectedIds: _selectedInstrumentIds,
           onTap: _toggleInstrument,
@@ -722,7 +722,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
         const SizedBox(height: 18),
         _LabeledField(
-          label: 'Telefono de contacto',
+          label: 'Teléfono de contacto',
           child: TextField(
             controller: _contactPhoneController,
             keyboardType: TextInputType.phone,
@@ -735,7 +735,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
         Text(
-          'Tu email de cuenta se guardara como contacto por defecto. Podras cambiarlo desde Perfil.',
+          'Tu email de cuenta se guardará como contacto por defecto. Podrás cambiarlo desde Perfil.',
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: 18),
@@ -747,7 +747,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             maxLines: 5,
             decoration: const InputDecoration(
               hintText:
-                  'Que buscas, que te apasiona, que experiencia tienes...',
+                  'Qué buscas, qué te apasiona, qué experiencia tienes...',
               counterText: '',
             ),
           ),
@@ -776,7 +776,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Personaliza las alertas segun tus intereses. Podras modificarlas cuando quieras.',
+          'Personaliza las alertas según tus intereses. Podrás modificarlas cuando quieras.',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodySmall,
         ),
@@ -805,7 +805,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ],
         const SizedBox(height: 14),
         _ChipSection(
-          title: 'Instrumentos de interes',
+          title: 'Instrumentos de interés',
           subtitle: 'Si no eliges ninguno, no se filtra por instrumento',
           items: catalogs.instruments,
           selectedIds: _selectedAlertInstrumentIds,
@@ -813,7 +813,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
         const SizedBox(height: 18),
         _ChipSection(
-          title: 'Estilos de interes',
+          title: 'Estilos de interés',
           subtitle: 'Si no eliges ninguno, no se filtra por estilo',
           items: catalogs.styles,
           selectedIds: _selectedAlertStyleIds,

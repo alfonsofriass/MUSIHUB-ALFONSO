@@ -54,7 +54,7 @@ class _ContactRequestsScreenState extends State<ContactRequestsScreen> {
     final token = await widget.tokenStore.readAccessToken();
 
     if (token == null || token.isEmpty) {
-      throw Exception('No hay sesion activa.');
+      throw Exception('No hay sesión activa.');
     }
 
     _token = token;
@@ -423,7 +423,7 @@ class _ContactRequestsHint extends StatelessWidget {
             child: Text(
               isReceivedMode
                   ? 'Acepta una solicitud para que esa persona vea tu dato de contacto.'
-                  : 'Cuando una solicitud sea aceptada, aqui veras el contacto del anuncio.',
+                  : 'Cuando una solicitud sea aceptada, aquí verás el contacto del anuncio.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
@@ -532,8 +532,8 @@ class _EmptyContactRequests extends StatelessWidget {
           ? 'Sin solicitudes recibidas'
           : 'Sin solicitudes enviadas',
       message: isReceivedMode
-          ? 'Cuando alguien quiera contactar por uno de tus anuncios, aparecera aqui.'
-          : 'Cuando solicites contacto desde un anuncio, podras seguir aqui su estado.',
+          ? 'Cuando alguien quiera contactar por uno de tus anuncios, aparecerá aquí.'
+          : 'Cuando solicites contacto desde un anuncio, podrás seguir aquí su estado.',
     );
   }
 }

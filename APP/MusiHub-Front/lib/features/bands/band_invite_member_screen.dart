@@ -61,7 +61,7 @@ class _BandInviteMemberScreenState extends State<BandInviteMemberScreen> {
     final token = await widget.tokenStore.readAccessToken();
 
     if (token == null || token.isEmpty) {
-      throw Exception('No hay sesion activa.');
+      throw Exception('No hay sesión activa.');
     }
 
     _token = token;
@@ -72,7 +72,7 @@ class _BandInviteMemberScreenState extends State<BandInviteMemberScreen> {
     final token = _token;
 
     if (token == null || token.isEmpty) {
-      throw Exception('No hay sesion activa.');
+      throw Exception('No hay sesión activa.');
     }
 
     final memberIds = _band.members.map((member) => member.userId).toSet();
@@ -116,7 +116,7 @@ class _BandInviteMemberScreenState extends State<BandInviteMemberScreen> {
 
     if (token == null || token.isEmpty) {
       setState(() {
-        _errorMessage = 'No hay sesion activa.';
+        _errorMessage = 'No hay sesión activa.';
       });
       return;
     }
@@ -172,7 +172,7 @@ class _BandInviteMemberScreenState extends State<BandInviteMemberScreen> {
 
     if (token == null || token.isEmpty) {
       setState(() {
-        _errorMessage = 'No hay sesion activa.';
+        _errorMessage = 'No hay sesión activa.';
       });
       return;
     }
@@ -301,7 +301,7 @@ class _BandInviteMemberScreenState extends State<BandInviteMemberScreen> {
         _InviteSection(
           title: 'Miembros(${_band.members.length})',
           children: _band.members.isEmpty
-              ? [const Text('Todavia no hay miembros visibles.')]
+              ? [const Text('Todavía no hay miembros visibles.')]
               : _band.members
                     .map(
                       (member) => _InviteMemberTile(
@@ -364,7 +364,7 @@ class _BandInviteMemberScreenState extends State<BandInviteMemberScreen> {
 
           if (profiles.isEmpty) {
             return const Text(
-              'No hay perfiles disponibles para esta busqueda.',
+              'No hay perfiles disponibles para esta búsqueda.',
             );
           }
 

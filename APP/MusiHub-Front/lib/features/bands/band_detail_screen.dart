@@ -49,7 +49,7 @@ class _BandDetailScreenState extends State<BandDetailScreen> {
     final token = await widget.tokenStore.readAccessToken();
 
     if (token == null || token.isEmpty) {
-      throw Exception('No hay sesion activa.');
+      throw Exception('No hay sesión activa.');
     }
 
     final bandFuture = _bandsApi.getBand(token: token, bandId: widget.bandId);
@@ -241,14 +241,14 @@ class _BandDetail extends StatelessWidget {
             Text(
               band.bio?.trim().isNotEmpty == true
                   ? band.bio!.trim()
-                  : 'Todavia no hay descripcion de la banda.',
+                  : 'Todavía no hay descripción de la banda.',
             ),
           ],
         ),
         _BandSection(
           title: 'Miembros',
           children: band.members.isEmpty
-              ? [const Text('Todavia no hay miembros visibles.')]
+              ? [const Text('Todavía no hay miembros visibles.')]
               : band.members
                     .map(
                       (member) => _BandMemberTile(band: band, member: member),
@@ -256,7 +256,7 @@ class _BandDetail extends StatelessWidget {
                     .toList(),
         ),
         _BandSection(
-          title: 'Informacion Musical',
+          title: 'Información Musical',
           children: [
             Text(
               'Instrumentos',
@@ -560,7 +560,7 @@ class _BandVisibilityTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Decide si esta banda aparece en tu perfil publico.',
+                    'Decide si esta banda aparece en tu perfil público.',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],

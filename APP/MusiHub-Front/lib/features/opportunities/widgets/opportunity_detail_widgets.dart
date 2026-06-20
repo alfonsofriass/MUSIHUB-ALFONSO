@@ -40,7 +40,7 @@ class OpportunityDetailContent extends StatelessWidget {
         const SizedBox(height: 26),
         _OpportunityMeta(opportunity: opportunity),
         const SizedBox(height: 26),
-        Text('Descripcion', style: Theme.of(context).textTheme.titleMedium),
+        Text('Descripción', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         _DescriptionBox(description: opportunity.description),
         const SizedBox(height: 20),
@@ -189,7 +189,7 @@ class _OpportunityMeta extends StatelessWidget {
       opportunity.province,
     ].where((part) => part != null && part.isNotEmpty).cast<String>().toList();
 
-    return parts.isEmpty ? 'Sin ubicacion' : parts.join(', ');
+    return parts.isEmpty ? 'Sin ubicación' : parts.join(', ');
   }
 }
 
@@ -412,14 +412,14 @@ class _ContactAction extends StatelessWidget {
     if (!opportunity.isActive) {
       return const _ContactNotice(
         icon: Icons.lock_outline,
-        text: 'Este anuncio esta cerrado y ya no acepta solicitudes.',
+        text: 'Este anuncio está cerrado y ya no acepta solicitudes.',
       );
     }
 
     if (isOwnOpportunity) {
       return const _ContactNotice(
         icon: Icons.lock_outline,
-        text: 'Tu dato de contacto no esta visible publicamente.',
+        text: 'Tu dato de contacto no está visible públicamente.',
       );
     }
 
@@ -427,7 +427,7 @@ class _ContactAction extends StatelessWidget {
       return const _ContactStateNotice(
         icon: Icons.mark_email_unread_outlined,
         text: 'Solicitud enviada',
-        detail: 'El anunciante todavia no ha respondido.',
+        detail: 'El anunciante todavía no ha respondido.',
       );
     }
 
@@ -444,7 +444,7 @@ class _ContactAction extends StatelessWidget {
       return const _ContactStateNotice(
         icon: Icons.mark_email_read_outlined,
         text: 'Solicitud aceptada',
-        detail: 'El contacto todavia no esta disponible.',
+        detail: 'El contacto todavía no está disponible.',
       );
     }
 

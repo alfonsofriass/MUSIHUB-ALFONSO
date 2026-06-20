@@ -60,7 +60,7 @@ class _SearchScreenState extends State<SearchScreen> {
     final token = await widget.tokenStore.readAccessToken();
 
     if (token == null || token.isEmpty) {
-      throw Exception('No hay sesion activa.');
+      throw Exception('No hay sesión activa.');
     }
 
     final opportunitiesFuture = _opportunitiesApi.listOpportunities(
@@ -242,7 +242,7 @@ class _OpportunityResultsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     if (opportunities.isEmpty) {
       return const _EmptySearchTab(
-        message: 'No hay anuncios para esta busqueda.',
+        message: 'No hay anuncios para esta búsqueda.',
       );
     }
 
@@ -271,7 +271,7 @@ class _ProfileResultsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     if (profiles.isEmpty) {
       return const _EmptySearchTab(
-        message: 'No hay perfiles para esta busqueda.',
+        message: 'No hay perfiles para esta búsqueda.',
       );
     }
 
@@ -300,7 +300,7 @@ class _BandResultsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     if (bands.isEmpty) {
       return const _EmptySearchTab(
-        message: 'No hay bandas para esta busqueda.',
+        message: 'No hay bandas para esta búsqueda.',
       );
     }
 
@@ -536,7 +536,7 @@ class _SearchLoadError extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'No se pudo completar la busqueda.',
+              'No se pudo completar la búsqueda.',
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
             const SizedBox(height: 16),

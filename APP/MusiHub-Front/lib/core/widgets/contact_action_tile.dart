@@ -150,7 +150,7 @@ String _contactLabel(String method) {
     case 'email':
       return 'Email';
     case 'phone':
-      return 'Telefono';
+      return 'Teléfono';
     case 'website':
       return 'Enlace personal';
     default:

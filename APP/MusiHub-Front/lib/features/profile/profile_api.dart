@@ -60,7 +60,7 @@ class ProfileApi {
     final response = await _apiClient.get('/profile/$userId', token: token);
 
     if (response.statusCode != 200) {
-      throw Exception('No se pudo cargar el perfil publico.');
+      throw Exception('No se pudo cargar el perfil público.');
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;

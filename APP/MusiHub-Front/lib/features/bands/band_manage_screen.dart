@@ -82,7 +82,7 @@ class _BandManageScreenState extends State<BandManageScreen> {
     final token = await widget.tokenStore.readAccessToken();
 
     if (token == null || token.isEmpty) {
-      throw Exception('No hay sesion activa.');
+      throw Exception('No hay sesión activa.');
     }
 
     _token = token;
@@ -100,7 +100,7 @@ class _BandManageScreenState extends State<BandManageScreen> {
 
     if (token == null || token.isEmpty) {
       setState(() {
-        _errorMessage = 'No hay sesion activa.';
+        _errorMessage = 'No hay sesión activa.';
       });
       return;
     }
@@ -156,7 +156,7 @@ class _BandManageScreenState extends State<BandManageScreen> {
 
     if (token == null || token.isEmpty) {
       setState(() {
-        _errorMessage = 'No hay sesion activa.';
+        _errorMessage = 'No hay sesión activa.';
       });
       return;
     }
@@ -196,7 +196,7 @@ class _BandManageScreenState extends State<BandManageScreen> {
       if (!mounted) return;
 
       setState(() {
-        _errorMessage = 'Formato no valido. Usa JPG, PNG o WebP.';
+        _errorMessage = 'Formato no válido. Usa JPG, PNG o WebP.';
       });
     } on BandPhotoTooLargeException {
       if (!mounted) return;
@@ -230,7 +230,7 @@ class _BandManageScreenState extends State<BandManageScreen> {
 
     if (token == null || token.isEmpty) {
       setState(() {
-        _errorMessage = 'No hay sesion activa.';
+        _errorMessage = 'No hay sesión activa.';
       });
       return;
     }
@@ -286,7 +286,7 @@ class _BandManageScreenState extends State<BandManageScreen> {
         return AlertDialog(
           title: const Text('Eliminar banda'),
           content: const Text(
-            'Esta accion no se puede deshacer. Los anuncios asociados se conservaran sin banda.',
+            'Esta acción no se puede deshacer. Los anuncios asociados se conservarán sin banda.',
           ),
           actions: [
             TextButton(
@@ -361,7 +361,7 @@ class _BandManageScreenState extends State<BandManageScreen> {
         ),
         const SizedBox(height: 26),
         _BandManageSection(
-          title: 'Informacion basica',
+          title: 'Información básica',
           children: [
             _buildTextField(
               label: 'Nombre de la banda',
@@ -370,7 +370,7 @@ class _BandManageScreenState extends State<BandManageScreen> {
             ),
             const SizedBox(height: 12),
             _buildTextField(
-              label: 'Descripcion',
+              label: 'Descripción',
               controller: _bioController,
               maxLength: InputLimits.bandBio,
               maxLines: 4,

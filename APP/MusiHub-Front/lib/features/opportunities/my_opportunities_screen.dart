@@ -40,7 +40,7 @@ class _MyOpportunitiesScreenState extends State<MyOpportunitiesScreen> {
     final token = await widget.tokenStore.readAccessToken();
 
     if (token == null || token.isEmpty) {
-      throw Exception('No hay sesion activa.');
+      throw Exception('No hay sesión activa.');
     }
 
     return _opportunitiesApi.listMyOpportunities(token);
@@ -190,7 +190,7 @@ class _MyOpportunitiesScreenState extends State<MyOpportunitiesScreen> {
                   if (opportunities.isEmpty)
                     MusiHubEmptyState(
                       icon: Icons.campaign_outlined,
-                      title: 'Todavia no tienes anuncios',
+                      title: 'Todavía no tienes anuncios',
                       message:
                           'Publica tu primera oportunidad para que aparezca en la comunidad.',
                       action: FilledButton.icon(

@@ -126,7 +126,7 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
     final token = await widget.tokenStore.readAccessToken();
 
     if (token == null || token.isEmpty) {
-      throw Exception('No hay sesion activa.');
+      throw Exception('No hay sesión activa.');
     }
 
     final opportunitiesFuture = _opportunitiesApi.listOpportunities(
@@ -152,7 +152,7 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
     final token = await widget.tokenStore.readAccessToken();
 
     if (token == null || token.isEmpty) {
-      throw Exception('No hay sesion activa.');
+      throw Exception('No hay sesión activa.');
     }
 
     final response = await _notificationsApi.listNotifications(token);
@@ -402,11 +402,11 @@ class _OpportunitiesListScreenState extends State<OpportunitiesListScreen> {
 
     if ((minPriceText != null && minPrice == null) ||
         (maxPriceText != null && maxPrice == null)) {
-      return 'El precio debe ser un numero valido.';
+      return 'El precio debe ser un número válido.';
     }
 
     if (minPrice != null && maxPrice != null && minPrice > maxPrice) {
-      return 'El precio minimo no puede superar al precio maximo.';
+      return 'El precio mínimo no puede superar al precio máximo.';
     }
 
     return null;

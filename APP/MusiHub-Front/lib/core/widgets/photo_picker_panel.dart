@@ -76,7 +76,7 @@ class PhotoPickerPanel extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'JPG, PNG o WebP. Maximo 5 MB.',
+            'JPG, PNG o WebP. Máximo 5 MB.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],

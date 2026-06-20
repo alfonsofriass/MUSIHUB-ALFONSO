@@ -57,7 +57,7 @@ class _OpportunityDetailScreenState extends State<OpportunityDetailScreen> {
     final token = await widget.tokenStore.readAccessToken();
 
     if (token == null || token.isEmpty) {
-      throw Exception('No hay sesion activa.');
+      throw Exception('No hay sesión activa.');
     }
 
     final opportunityFuture = _opportunitiesApi.getOpportunity(

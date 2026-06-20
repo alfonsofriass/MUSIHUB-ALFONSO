@@ -17,7 +17,7 @@ class AuthApi {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('No se pudo iniciar sesion.');
+      throw Exception('No se pudo iniciar sesión.');
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;

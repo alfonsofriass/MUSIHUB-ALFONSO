@@ -262,7 +262,7 @@ class _AlertActivationTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  'Recibiras avisos segun tus preferencias',
+                  'Recibirás avisos según tus preferencias',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -325,7 +325,7 @@ class _OpportunityTypeTile extends StatelessWidget {
 
   String _opportunityTypeSubtitle(String code) {
     return switch (code) {
-      'clases' => 'Clases, talleres y formacion',
+      'clases' => 'Clases, talleres y formación',
       'bolos_sustituciones' => 'Bolos y sustituciones musicales',
       'busqueda_miembros' => 'Bandas que buscan miembros',
       'eventos' => 'Eventos y oportunidades musicales',
@@ -367,19 +367,19 @@ class _PrivacyConsentCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Acepto los terminos y la politica de privacidad',
+                  'Acepto los términos y la política de privacidad',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'MusiHub usara tus datos para crear tu cuenta, perfil, anuncios, bandas, favoritos, alertas y solicitudes de contacto.',
+                  'MusiHub usará tus datos para crear tu cuenta, perfil, anuncios, bandas, favoritos, alertas y solicitudes de contacto.',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton(
                     onPressed: onOpenPrivacy,
-                    child: const Text('Ver informacion sobre privacidad'),
+                    child: const Text('Ver información sobre privacidad'),
                   ),
                 ),
               ],
@@ -425,7 +425,7 @@ class _PrivacyInfoSheet extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              'MusiHub utiliza tus datos para ofrecer las funciones principales de la app y mostrar informacion musical relevante a otros usuarios.',
+              'MusiHub utiliza tus datos para ofrecer las funciones principales de la app y mostrar información musical relevante a otros usuarios.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 20),
@@ -433,7 +433,7 @@ class _PrivacyInfoSheet extends StatelessWidget {
               title: 'Datos que usamos',
               items: [
                 'Nombre, email y rol de usuario.',
-                'Ciudad, provincia, instrumentos, estilos y biografia.',
+                'Ciudad, provincia, instrumentos, estilos y biografía.',
                 'Bandas, anuncios, favoritos, alertas y solicitudes de contacto.',
                 'Token del dispositivo para notificaciones push si activas alertas.',
               ],
@@ -441,8 +441,8 @@ class _PrivacyInfoSheet extends StatelessWidget {
             const _PrivacyInfoSection(
               title: 'Visibilidad',
               items: [
-                'Tu perfil publico puede mostrar nombre, ubicacion, instrumentos, estilos y bandas visibles.',
-                'Tus datos de contacto no se muestran publicamente.',
+                'Tu perfil público puede mostrar nombre, ubicación, instrumentos, estilos y bandas visibles.',
+                'Tus datos de contacto no se muestran públicamente.',
                 'El contacto de anuncios se comparte solo si aceptas una solicitud.',
               ],
             ),
@@ -451,7 +451,7 @@ class _PrivacyInfoSheet extends StatelessWidget {
               items: [
                 'No usamos tus datos para publicidad.',
                 'No vendemos tus datos a terceros.',
-                'Puedes cerrar sesion y solicitar la modificacion o eliminacion de tus datos.',
+                'Puedes cerrar sesión y solicitar la modificación o eliminación de tus datos.',
               ],
             ),
             const SizedBox(height: 8),
@@ -515,10 +515,10 @@ class _LoginFooter extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'Ya tienes cuenta?',
+            '¿Ya tienes cuenta?',
             style: Theme.of(context).textTheme.bodySmall,
           ),
-          TextButton(onPressed: onTap, child: const Text('Inicia sesion')),
+          TextButton(onPressed: onTap, child: const Text('Inicia sesión')),
         ],
       ),
     );
@@ -566,7 +566,7 @@ class _CatalogLoadError extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'No se pudieron cargar los catalogos.',
+              'No se pudieron cargar los catálogos.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium,
             ),

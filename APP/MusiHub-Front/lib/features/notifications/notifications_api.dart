@@ -28,7 +28,7 @@ class NotificationsApi {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('No se pudo marcar la notificacion como leida.');
+      throw Exception('No se pudo marcar la notificación como leída.');
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -42,7 +42,7 @@ class NotificationsApi {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('No se pudieron marcar las notificaciones como leidas.');
+      throw Exception('No se pudieron marcar las notificaciones como leídas.');
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;

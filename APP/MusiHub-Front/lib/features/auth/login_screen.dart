@@ -74,7 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       setState(() {
-        _errorMessage = 'No se pudo iniciar sesion. Revisa los datos.';
+        _errorMessage = 'No se pudo iniciar sesión. Revisa los datos.';
       });
     } finally {
       if (mounted) {
@@ -113,7 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 32),
             Text(
-              'Iniciar sesion',
+              'Iniciar sesión',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 18),
@@ -139,15 +139,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 }
               },
               decoration: const InputDecoration(
-                labelText: 'Contrasena',
-                hintText: 'Introduce tu contrasena',
+                labelText: 'Contraseña',
+                hintText: 'Introduce tu contraseña',
                 counterText: '',
               ),
             ),
             const SizedBox(height: 24),
             FilledButton(
               onPressed: _isLoading ? null : _login,
-              child: Text(_isLoading ? 'Entrando...' : 'Iniciar sesion'),
+              child: Text(_isLoading ? 'Entrando...' : 'Iniciar sesión'),
             ),
             const SizedBox(height: 12),
             OutlinedButton(

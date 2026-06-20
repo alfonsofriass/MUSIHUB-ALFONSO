@@ -313,7 +313,7 @@ class OpportunityAdvancedFilters extends StatelessWidget {
               ),
               textInputAction: TextInputAction.search,
               decoration: const InputDecoration(
-                labelText: 'Precio minimo',
+                labelText: 'Precio mínimo',
                 counterText: '',
               ),
               onSubmitted: (_) => onApply(),
@@ -328,7 +328,7 @@ class OpportunityAdvancedFilters extends StatelessWidget {
               ),
               textInputAction: TextInputAction.search,
               decoration: const InputDecoration(
-                labelText: 'Precio maximo',
+                labelText: 'Precio máximo',
                 counterText: '',
               ),
               onSubmitted: (_) => onApply(),

@@ -41,7 +41,7 @@ class _FavoriteOpportunitiesScreenState
     final token = await widget.tokenStore.readAccessToken();
 
     if (token == null || token.isEmpty) {
-      throw Exception('No hay sesion activa.');
+      throw Exception('No hay sesión activa.');
     }
 
     return _opportunitiesApi.listFavoriteOpportunities(token);
@@ -138,7 +138,7 @@ class _FavoriteOpportunitiesScreenState
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Anuncios que quieres revisar o contactar mas adelante.',
+                    'Anuncios que quieres revisar o contactar más adelante.',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(height: 16),
@@ -148,7 +148,7 @@ class _FavoriteOpportunitiesScreenState
                         .map((opportunity) => opportunity.id)
                         .toSet(),
                     hasFilters: false,
-                    emptyMessage: 'Todavia no has guardado ningun anuncio.',
+                    emptyMessage: 'Todavía no has guardado ningún anuncio.',
                     onOpen: _openDetail,
                     onFavoriteTap: _removeFavorite,
                   ),
