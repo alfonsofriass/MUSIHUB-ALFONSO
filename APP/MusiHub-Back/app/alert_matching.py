@@ -18,7 +18,6 @@ ALERT_CITY_SCORE = 20
 ALERT_PROVINCE_SCORE = 10
 ALERT_INSTRUMENT_SCORE = 20
 ALERT_STYLE_SCORE = 20
-ALERT_MIN_SCORE = 50
 
 
 def _matches_optional_text(expected: str | None, actual: str) -> bool:
@@ -105,8 +104,6 @@ def generate_alerts_for_opportunity(
             reasons.append("Estilo compatible")
 
         score = min(score, 100)
-        if score < ALERT_MIN_SCORE:
-            continue
 
         existing_alert = db.scalar(
             select(Alert).where(
